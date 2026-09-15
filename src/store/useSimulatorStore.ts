@@ -26,6 +26,7 @@ export interface SimulatorState {
   modulesW: number;
   modulesH: number;
   pitchMm: number;
+  targetOutdoorNits: number; // Luminosità operativa outdoor di riferimento (standard 5.000 nit)
 
   // S3: APL
   aplSource: 'manual' | 'video' | 'foto';
@@ -79,6 +80,7 @@ export interface SimulatorState {
   setModulesW: (w: number) => void;
   setModulesH: (h: number) => void;
   setPitchMm: (p: number) => void;
+  setTargetOutdoorNits: (nits: number) => void;
   setDimensioniMetri: (baseM: number, altezzaM: number) => void;
   setRisoluzionePx: (resX: number, resY: number) => void;
   setAplPercent: (apl: number, source?: 'manual' | 'video' | 'foto', fileName?: string) => void;
@@ -104,6 +106,7 @@ export const useSimulatorStore = create<SimulatorState>()(
       modulesW: 5,
       modulesH: 3,
       pitchMm: 3.9,
+      targetOutdoorNits: 5000,
 
       aplSource: 'manual',
       aplPercent: CONFIG.DEFAULT_APL_PERCENT,
@@ -139,7 +142,7 @@ export const useSimulatorStore = create<SimulatorState>()(
         submitted: false,
       },
 
-      setStep: (step) => set({ currentStep: Math.max(0, Math.min(9, step)) }),
+      setStep: (step) => set({ currentStep: step }),
       nextStep: () => set((s) => ({ currentStep: Math.min(9, s.currentStep + 1) })),
       prevStep: () => set((s) => ({ currentStep: Math.max(0, s.currentStep - 1) })),
 
@@ -158,44 +161,34 @@ export const useSimulatorStore = create<SimulatorState>()(
 
       setSizingMode: (sizingMode) => set({ sizingMode }),
       setFormatId: (formatId) => set({ formatId }),
-      setModulesW: (modulesW) => set({ modulesW: Math.max(1, Math.min(30, modulesW)) }),
-      setModulesH: (modulesH) => set({ modulesH: Math.max(1, Math.min(20, modulesH)) }),
+      setModulesW: (modulesW) => set({ modulesW: Math.max(1, modulesW) }),
+      setModulesH: (modulesH) => set({ modulesH: Math.max(1, modulesH) }),
       setPitchMm: (pitchMm) => set({ pitchMm }),
+      setTargetOutdoorNits: (targetOutdoorNits) =>
+        set({ targetOutdoorNits: Math.max(2500, Math.min(12000, targetOutdoorNits)) }),
 
       setDimensioniMetri: (baseM, altezzaM) => {
-        const state = get();
-        const format = CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
-        const cabWM = format.widthMm / 1000;
-        const cabHM = format.heightMm / 1000;
-        const w = Math.max(1, Math.round(baseM / cabWM));
-        const h = Math.max(1, Math.round(altezzaM / cabHM));
+        const s = get();
+        const format = CABINET_FORMATS.find((f) => f.id === s.formatId) || CABINET_FORMATS[0];
+        const w = Math.max(1, Math.round((baseM * 1000) / format.widthMm));
+        const h = Math.max(1, Math.round((altezzaM * 1000) / format.heightMm));
         set({ modulesW: w, modulesH: h });
       },
 
       setRisoluzionePx: (resX, resY) => {
-        const state = get();
-        const format = CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
-        const baseM = (resX * state.pitchMm) / 1000;
-        const altezzaM = (resY * state.pitchMm) / 1000;
-        const cabWM = format.widthMm / 1000;
-        const cabHM = format.heightMm / 1000;
-        const w = Math.max(1, Math.round(baseM / cabWM));
-        const h = Math.max(1, Math.round(altezzaM / cabHM));
+        const s = get();
+        const format = CABINET_FORMATS.find((f) => f.id === s.formatId) || CABINET_FORMATS[0];
+        const pxW = format.widthMm / s.pitchMm;
+        const pxH = format.heightMm / s.pitchMm;
+        const w = Math.max(1, Math.round(resX / pxW));
+        const h = Math.max(1, Math.round(resY / pxH));
         set({ modulesW: w, modulesH: h });
       },
 
       setAplPercent: (aplPercent, aplSource = 'manual', videoFileName) =>
-        set({
-          aplPercent: Math.max(5, Math.min(100, Math.round(aplPercent))),
-          aplSource,
-          videoFileName: videoFileName ?? get().videoFileName,
-        }),
+        set({ aplPercent, aplSource, videoFileName }),
 
-      setHasStandby: (hasStandby) =>
-        set({
-          hasStandby,
-          pStandbyWmq: hasStandby ? CONFIG.P_STANDBY_DEFAULT : 0,
-        }),
+      setHasStandby: (hasStandby) => set({ hasStandby }),
 
       setNightDimming: (hasNightDimming, nightDimmingPercent) =>
         set((s) => ({
@@ -238,14 +231,15 @@ export const useSimulatorStore = create<SimulatorState>()(
           modulesW: 5,
           modulesH: 3,
           pitchMm: 3.9,
+          targetOutdoorNits: 5000,
           aplSource: 'manual',
           aplPercent: CONFIG.DEFAULT_APL_PERCENT,
-          videoFileName: undefined,
           hasStandby: true,
           pStandbyWmq: CONFIG.P_STANDBY_DEFAULT,
           hasNightDimming: true,
           nightDimmingPercent: CONFIG.DEFAULT_NIGHT_DIMMING_PERCENT,
           operatingHoursDay: CONFIG.DEFAULT_OPERATING_HOURS_DAY,
+          operatingDaysMonth: CONFIG.DEFAULT_OPERATING_DAYS_MONTH,
           tariffEurKwh: CONFIG.DEFAULT_TARIFF_EUR_KWH,
           liveLumDiurna: 100,
           fleetOptions: {
@@ -267,14 +261,15 @@ export const useSimulatorStore = create<SimulatorState>()(
       name: 'ledwall-energy-simulator-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
-        currentStep: s.currentStep,
         dataSource: s.dataSource,
         formatId: s.formatId,
         modulesW: s.modulesW,
         modulesH: s.modulesH,
         pitchMm: s.pitchMm,
+        targetOutdoorNits: s.targetOutdoorNits,
         aplPercent: s.aplPercent,
         hasStandby: s.hasStandby,
+        pStandbyWmq: s.pStandbyWmq,
         hasNightDimming: s.hasNightDimming,
         nightDimmingPercent: s.nightDimmingPercent,
         operatingHoursDay: s.operatingHoursDay,
@@ -291,11 +286,11 @@ export function useSimulatorComputed() {
   const format: CabinetFormat =
     CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
 
-  // Calcolo potenza massima e standby reali basate sul passo pixel selezionato
-  const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, 6500);
+  // Calcolo potenza massima e standby reali basate sul passo pixel selezionato e luminosità target (5.000 nit)
+  const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000);
   const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
   const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? (
-    state.pitchMm >= 6.0 ? 30 : state.pitchMm >= 4.0 ? 40 : 50
+    state.pitchMm >= 6.0 ? 20 : state.pitchMm >= 4.0 ? 40 : 50
   );
 
   const dimensions: ScreenDimensions = calcolaDimensioniSchermo(

@@ -6,7 +6,7 @@ import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulato
 import { CABINET_FORMATS, PIXEL_PITCH_PRESETS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
 import { stimaPotenzaDaPassoNit, getMaxNitsForPitch } from '../../core/physics';
-import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock, Sun } from 'lucide-react';
 
 export const S2Dimensions: React.FC = () => {
   const {
@@ -30,12 +30,13 @@ export const S2Dimensions: React.FC = () => {
   // Stato APL in tempo reale dal canvas
   const [liveApl, setLiveApl] = useState<number>(32);
 
-  // Calcolo consumi in tempo reale basati sull'APL istantaneo e sulla fisica reale del passo pixel selezionato
+  // Calcolo consumi in tempo reale basati sull'APL istantaneo e sulla fisica reale del passo pixel a 5.000 Nit
+  const targetOutdoorNits = useSimulatorStore((s) => s.targetOutdoorNits) || 5000;
   const effectiveLiveApl = Math.max(0.05, Math.min(1, (liveApl ?? 30) / 100));
-  const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, 6500);
+  const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, targetOutdoorNits);
   const pMaxWmq = useSimulatorStore.getState().datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
   const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? (
-    pitchMm >= 6.0 ? 30 : pitchMm >= 4.0 ? 40 : 50
+    pitchMm >= 6.0 ? 20 : pitchMm >= 4.0 ? 40 : 50
   );
   const livePowerWmq = pStandbyWmq + effectiveLiveApl * (pMaxWmq - pStandbyWmq);
   const livePowerKw = (livePowerWmq * dimensions.areaM2) / 1000;
@@ -581,27 +582,108 @@ export const S2Dimensions: React.FC = () => {
           ) : (
 
             <>
-              {/* Passo Pixel Presets */}
-              <div>
-                <label className="block text-xs font-semibold text-[#868D97] mb-2 uppercase tracking-wide">
-                  Passo Pixel (Pitch):
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {PIXEL_PITCH_PRESETS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setPitchMm(p)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        pitchMm === p
-                          ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                          : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
-                      }`}
-                    >
-                      P{p} mm
-                    </button>
-                  ))}
+              {/* Passo Pixel & Target Nits Operativi Outdoor */}
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-[#07090C] border border-[#1A2028]">
+                  <div className="flex items-center space-x-2">
+                    <Sun className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+                    <div>
+                      <div className="text-xs font-semibold text-white flex items-center space-x-1.5">
+                        <span>Luminosità Operativa Outdoor:</span>
+                        <span className="text-[#34D399] font-mono font-bold">{fmt(targetOutdoorNits)} Nit</span>
+                      </div>
+                      <div className="text-[10px] text-[#868D97]">Standard di calcolo per confrontare lo sforzo dei semiconduttori</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    {[4000, 5000, 6000].map((nitVal) => (
+                      <button
+                        key={nitVal}
+                        type="button"
+                        onClick={() => useSimulatorStore.getState().setTargetOutdoorNits(nitVal)}
+                        className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                          targetOutdoorNits === nitVal
+                            ? 'bg-[#12B76A] text-white font-bold shadow-sm'
+                            : 'bg-[#10141D] text-[#9AA3AD] border border-[#1A2028] hover:text-white'
+                        }`}
+                      >
+                        {fmt(nitVal)} Nit
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-semibold text-[#868D97] uppercase tracking-wide">
+                      Passo Pixel (Pitch) &amp; Sforzo Semiconduttore:
+                    </label>
+                    <span className="text-[10px] text-[#868D97]">
+                      % = carico termico per erogare {fmt(targetOutdoorNits)} Nit
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {PIXEL_PITCH_PRESETS.map((p) => {
+                      const pEst = stimaPotenzaDaPassoNit(p, targetOutdoorNits);
+                      const isSelected = pitchMm === p;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPitchMm(p)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
+                            isSelected
+                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
+                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                          }`}
+                        >
+                          <span>P{p} mm</span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                              pEst.sforzoPercent >= 90
+                                ? isSelected
+                                  ? 'bg-[#7F1D1D] text-[#FCA5A5]'
+                                  : 'bg-[#3D1414] text-[#F87171]'
+                                : pEst.sforzoPercent >= 65
+                                ? isSelected
+                                  ? 'bg-[#78350F] text-[#FDE68A]'
+                                  : 'bg-[#2E200B] text-[#FBBF24]'
+                                : isSelected
+                                ? 'bg-[#163826] text-[#A7F3D0]'
+                                : 'bg-[#0D2818] text-[#34D399]'
+                            }`}
+                          >
+                            {pEst.sforzoPercent}%
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Banner esplicativo sforzo e thermal droop */}
+                {hardwareEstimate.sforzoPercent >= 90 ? (
+                  <div className="p-2.5 rounded-lg bg-[#3D1414]/60 border border-[#7F1D1D] text-[11px] text-[#FCA5A5] flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-[#F87171] flex-shrink-0" />
+                    <span>
+                      <strong>Sforzo estremo ({hardwareEstimate.sforzoPercent}%) per erogare {fmt(targetOutdoorNits)} Nit:</strong> I micro-diodi {hardwareEstimate.tecnologiaChip.split(' ')[0]} lavorano a saturazione termica (Tj &gt; 90°C). Il severo <em>Thermal Droop</em> abbatte l&apos;efficienza a {hardwareEstimate.efficienzaLmPerW} lm/W ({hardwareEstimate.pMaxWmq} W/m² max), richiedendo fino al triplo di potenza rispetto a un passo a grana generosa.
+                    </span>
+                  </div>
+                ) : hardwareEstimate.sforzoPercent >= 65 ? (
+                  <div className="p-2.5 rounded-lg bg-[#2E200B]/60 border border-[#78350F] text-[11px] text-[#FDE68A] flex items-center space-x-2">
+                    <Zap className="w-4 h-4 text-[#FBBF24] flex-shrink-0" />
+                    <span>
+                      <strong>Sforzo intermedio ({hardwareEstimate.sforzoPercent}%) a {fmt(targetOutdoorNits)} Nit:</strong> Diodi compatti {hardwareEstimate.tecnologiaChip.split(' ')[0]} con resa media ({hardwareEstimate.efficienzaLmPerW} lm/W, {hardwareEstimate.pMaxWmq} W/m² max). Consumo doppio rispetto a P10.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-[#0D2818]/60 border border-[#163826] text-[11px] text-[#A7F3D0] flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-[#34D399] flex-shrink-0" />
+                    <span>
+                      <strong>Chip generoso a riposo (Sforzo {hardwareEstimate.sforzoPercent}% a {fmt(targetOutdoorNits)} Nit):</strong> Ampia camera ottica, minima corrente If e temperatura bassa (Tj &lt; 45°C). Massima resa ({hardwareEstimate.efficienzaLmPerW} lm/W, {hardwareEstimate.pMaxWmq} W/m² max): consuma solo una frazione rispetto a un passo fine!
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Format Selector if in Cabinet mode */}
@@ -761,6 +843,7 @@ export const S2Dimensions: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-1.5 text-[10px]">
                   <span className="text-[#34D399] font-mono">Max {pMaxWmq} W/m²</span>
+                  <span className="text-[#868D97] font-mono">@ {fmt(targetOutdoorNits)} nit</span>
                   <span className="text-[#868D97] font-mono">· CEI 64-8</span>
                 </div>
               </div>
@@ -780,6 +863,27 @@ export const S2Dimensions: React.FC = () => {
                     {Math.round(livePowerWmq)} W/m²
                   </div>
                 </div>
+              </div>
+
+              {/* Indicatore di sforzo termico e resa fotometrica */}
+              <div className="flex items-center justify-between pt-0.5 text-[10px]">
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[#868D97]">Sforzo Chip:</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded font-mono font-bold border ${
+                      hardwareEstimate.sforzoPercent >= 90
+                        ? 'bg-[#3D1414] text-[#F87171] border-[#7F1D1D]'
+                        : hardwareEstimate.sforzoPercent >= 65
+                        ? 'bg-[#2E200B] text-[#FBBF24] border-[#78350F]'
+                        : 'bg-[#0D2818] text-[#34D399] border-[#163826]'
+                    }`}
+                  >
+                    {hardwareEstimate.sforzoPercent}%
+                  </span>
+                </div>
+                <span className="text-[#868D97] font-mono">
+                  Resa: <strong className="text-[#E8EDF2]">{hardwareEstimate.efficienzaLmPerW} lm/W</strong>
+                </span>
               </div>
 
               {/* Griglia 3 metriche sub-energetiche */}
@@ -816,8 +920,8 @@ export const S2Dimensions: React.FC = () => {
               </div>
               <div className="flex justify-between py-1 border-b border-[#161F30]">
                 <span className="text-[#868D97]">Passo Pixel:</span>
-                <span className="text-white font-semibold tabular-nums">
-                  P{pitchMm} mm ({hardwareEstimate.tecnologiaChip.split(' ')[0]} · max {pMaxWmq} W/m²)
+                <span className="text-white font-semibold tabular-nums text-right">
+                  P{pitchMm} mm ({hardwareEstimate.tecnologiaChip.split(' ')[0]} · Sforzo {hardwareEstimate.sforzoPercent}% · max {pMaxWmq} W/m²)
                 </span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#161F30]">

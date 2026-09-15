@@ -356,15 +356,20 @@ export interface HardwareComparisonResult {
   maxPhysicalNits: number;
   isAtPhysicalLimit: boolean;
   limitReason: string;
+  sforzoPercent: number; // % di sforzo del chip (duty cycle / carico termico) per erogare i nit target
 }
 
 /**
- * Calcola e stima i consumi fisici reali comparando passo pixel e luminosità (Nits)
- * Risolve quesiti fotometrici (es. P3.91 @ 6500 nit vs P6.67 @ 10000 nit)
+ * Calcola e stima i consumi fisici reali comparando passo pixel e luminosità (Nits).
+ * Modella accuratamente lo SFORZO del semiconduttore (duty cycle):
+ * A 5.000 Nit (standard outdoor):
+ * - P2.9 mm lavora al ~95% di sforzo (saturazione termica, Tj > 90°C, forte Thermal Droop, resa 55 lm/W)
+ * - P3.91 mm lavora al ~71% di sforzo (carico medio-alto, resa 82 lm/W)
+ * - P10.0 mm lavora al ~33% di sforzo (a riposo, chip freddo Tj < 45°C, massima efficienza 145 lm/W)
  */
 export function stimaPotenzaDaPassoNit(
   pitchMm: number,
-  nits: number,
+  nits: number = 5000,
   areaM2: number = 32,
   tariffaEurKwh: number = 0.35,
   oreGiorno: number = 18,
@@ -375,24 +380,41 @@ export function stimaPotenzaDaPassoNit(
   const effectiveNits = Math.min(nits, limit.maxNits);
   const isAtPhysicalLimit = nits >= limit.maxNits;
 
+  // Calcolo dello Sforzo del chip (duty cycle % per raggiungere i nit target)
+  // Per i passi grandi (P10) il massimale di progetto su chip generosi SMD3535/DIP è 15.000 nit
+  const nominalCeiling = pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : limit.maxNits;
+  const sforzoPercent = Math.min(100, Math.max(15, Math.round((nits / nominalCeiling) * 100)));
+
   const pixelM2 = Math.round((1000 / pitchMm) * (1000 / pitchMm));
   const numDriversM2 = Math.round((pixelM2 * 3) / 16);
 
-  // Perdite fisse logica IC e commutazione ad alta frequenza (3840Hz PWM)
-  const pLogicWmq = Math.min(130, Math.max(30, Math.round((pixelM2 / 65536) * 95)));
+  // Perdite fisse della logica IC e switching PWM ad alta frequenza (3840Hz)
+  // P2.6 ha 148k pixel/m² e migliaia di IC = ~125 W/m²; P10 ha 10k pixel/m² = ~22 W/m²
+  const pLogicWmq = Math.round(
+    pitchMm <= 2.6 ? 125 :
+    pitchMm <= 2.9 ? 110 :
+    pitchMm <= 3.91 ? 85 :
+    pitchMm <= 4.81 ? 60 :
+    pitchMm <= 6.67 ? 38 :
+    pitchMm <= 8.0 ? 28 : 22
+  );
 
-  // Efficienza ottica ed emissione termica del package
-  let efficienzaLmPerW = 120;
+  // Efficienza fotometrica (lm/W) in funzione dello SFORZO e del Thermal Droop
+  let efficienzaLmPerW: number;
   const tecnologiaChip = limit.chipType;
 
   if (pitchMm <= 2.9) {
-    efficienzaLmPerW = 65;
+    // Sforzo estremo 90-100%: Tj > 90°C, forte thermal droop, quantum efficiency ridotta
+    efficienzaLmPerW = sforzoPercent >= 85 ? 55 : 68;
   } else if (pitchMm <= 3.91) {
-    // Un passo 3.91 spinto oltre 5.000 nit soffre di forte calo di efficienza (Thermal Droop)
-    efficienzaLmPerW = effectiveNits > 5000 ? 75 : 95;
-  } else if (pitchMm >= 6.0) {
-    // I passi 6.67-10mm montano chip generosi con dissipazione termica ottimale
-    efficienzaLmPerW = 135;
+    // Sforzo medio 70-75%: Tj ~70°C
+    efficienzaLmPerW = sforzoPercent >= 70 ? 82 : 98;
+  } else if (pitchMm <= 4.81) {
+    efficienzaLmPerW = sforzoPercent >= 70 ? 95 : 110;
+  } else {
+    // Passi generosi P6.67, P8, P10: a 5000 nit lavorano al 30-40% di sforzo ("a riposo")
+    // Diodi freddi (Tj < 45°C), minima corrente diretta If, massima efficienza ottica
+    efficienzaLmPerW = sforzoPercent <= 50 ? 145 : 130;
   }
 
   // Flusso fotometrico richiesto (con nits vincolati al limite fisico)
@@ -404,8 +426,10 @@ export function stimaPotenzaDaPassoNit(
   }
 
   const pMaxWmq = Math.round(pLogicWmq + pLedWmq);
+  // Potenza standby base scalata sul passo
+  const pStandbyBase = pitchMm >= 6.0 ? 20 : pitchMm >= 4.0 ? 40 : 50;
   // Potenza media con APL al 30%
-  const pMedioWmq = Math.round(50 + 0.30 * pMaxWmq * 0.85);
+  const pMedioWmq = Math.round(pStandbyBase + 0.30 * (pMaxWmq - pStandbyBase));
 
   const kwMedio = (pMedioWmq * areaM2) / 1000;
   const annualKwh = kwMedio * oreGiorno * 365;
@@ -423,6 +447,7 @@ export function stimaPotenzaDaPassoNit(
     maxPhysicalNits: limit.maxNits,
     isAtPhysicalLimit,
     limitReason: limit.limitReason,
+    sforzoPercent,
   };
 }
 
