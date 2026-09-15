@@ -1,69 +1,103 @@
-import Image from "next/image";
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { useSimulatorStore } from '../store/useSimulatorStore';
+import { WizardHeader } from '../components/wizard/WizardHeader';
+import { WizardFooter } from '../components/wizard/WizardFooter';
+
+import { S0Landing } from '../components/wizard/S0Landing';
+import { S1DataSource } from '../components/wizard/S1DataSource';
+import { S2Dimensions } from '../components/wizard/S2Dimensions';
+import { S3AplEngine } from '../components/wizard/S3AplEngine';
+import { S4Standby } from '../components/wizard/S4Standby';
+import { S5NightDimming } from '../components/wizard/S5NightDimming';
+import { S6ScheduleTariff } from '../components/wizard/S6ScheduleTariff';
+import { S7Dashboard } from '../components/wizard/S7Dashboard';
+import { S8ScenarioComparison } from '../components/wizard/S8ScenarioComparison';
+import { S9ReportExport } from '../components/wizard/S9ReportExport';
 
 export default function Home() {
+  const {
+    currentStep,
+    setModulesW,
+    setModulesH,
+    setPitchMm,
+    setAplPercent,
+    setSchedule,
+  } = useSimulatorStore();
+
+  const [mounted, setMounted] = useState(false);
+
+  // Evita hydration mismatch con localStorage e legge parametri URL su mount
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      const h = params.get('h');
+      const p = params.get('p');
+      const apl = params.get('apl');
+      const hours = params.get('hours');
+      const tariff = params.get('tariff');
+
+      if (w) setModulesW(parseInt(w, 10));
+      if (h) setModulesH(parseInt(h, 10));
+      if (p) setPitchMm(parseFloat(p));
+      if (apl) setAplPercent(parseInt(apl, 10), 'manual');
+      if (hours || tariff) {
+        setSchedule(
+          hours ? parseInt(hours, 10) : 18,
+          tariff ? parseFloat(tariff) : 0.35
+        );
+      }
+    }
+  }, [setModulesW, setModulesH, setPitchMm, setAplPercent, setSchedule]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center text-xs font-medium text-[#667085]">
+        <span>Inizializzazione simulatore...</span>
+      </div>
+    );
+  }
+
+  const renderScreen = () => {
+    switch (currentStep) {
+      case 0:
+        return <S0Landing key="s0" />;
+      case 1:
+        return <S1DataSource key="s1" />;
+      case 2:
+        return <S2Dimensions key="s2" />;
+      case 3:
+        return <S3AplEngine key="s3" />;
+      case 4:
+        return <S4Standby key="s4" />;
+      case 5:
+        return <S5NightDimming key="s5" />;
+      case 6:
+        return <S6ScheduleTariff key="s6" />;
+      case 7:
+        return <S7Dashboard key="s7" />;
+      case 8:
+        return <S8ScenarioComparison key="s8" />;
+      case 9:
+        return <S9ReportExport key="s9" />;
+      default:
+        return <S0Landing key="s0" />;
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="min-h-screen flex flex-col justify-between bg-white selection:bg-[#ECFDF3] selection:text-[#027A48]">
+      <WizardHeader />
+      <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-center items-center">
+        <AnimatePresence mode="wait">
+          {renderScreen()}
+        </AnimatePresence>
       </main>
+      <WizardFooter />
     </div>
   );
 }
