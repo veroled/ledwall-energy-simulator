@@ -214,12 +214,13 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
           offCtx.fillStyle = sunGrad;
           offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
-          // Particelle dorate ad alta energia
+          // Particelle dorate ad alta energia normalizzate
+          const solarPartSize = Math.max(1, Math.round(diodeCols * 0.003));
           particles.forEach((p) => {
             p.x = (p.x + p.vx * 0.04 + 1) % 1;
             p.y = (p.y + p.vy * 0.04 + 1) % 1;
             offCtx.fillStyle = '#EA580C';
-            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, 1.2, 1.2);
+            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, solarPartSize, solarPartSize);
           });
 
           // Kinetic Typography Solar Drive ad altissimo contrasto
@@ -282,18 +283,19 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
           offCtx.fillStyle = grad;
           offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
-          // Onde glaciali e riflessi di luce
-          const iceWave = Math.sin(t * 2) * 10;
+          // Onde glaciali e riflessi di luce normalizzati
+          const iceWave = Math.sin(t * 2) * (diodeCols * 0.02);
           offCtx.fillStyle = 'rgba(14, 165, 233, 0.35)';
           offCtx.beginPath();
           offCtx.arc(diodeCols * 0.65 + iceWave, diodeRows * 0.5, diodeCols * 0.45, 0, Math.PI * 2);
           offCtx.fill();
 
           // Particelle di brina/ghiaccio
+          const icePartSize = Math.max(1, Math.round(diodeCols * 0.003));
           particles.forEach((p) => {
             p.y = (p.y + 0.003 + 1) % 1;
             offCtx.fillStyle = '#0284C7';
-            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, 1.4, 1.4);
+            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, icePartSize, icePartSize);
           });
 
           // Kinetic Typo Arctic
@@ -355,8 +357,8 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
           offCtx.fillStyle = grad;
           offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
-          // Equalizzatore audio-reattivo
-          const numBars = Math.min(22, Math.floor(diodeCols / 4));
+          // Equalizzatore audio-reattivo (numero fisso di 22 barre indipendentemente dalla risoluzione)
+          const numBars = 22;
           const barWidth = diodeCols / numBars;
           for (let b = 0; b < numBars; b++) {
             const h = Math.abs(Math.sin(t * 3.5 + b * 0.7)) * (diodeRows * 0.45);
@@ -365,14 +367,15 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
             barGrad.addColorStop(0.6, '#FF007F');
             barGrad.addColorStop(1, '#6600FF');
             offCtx.fillStyle = barGrad;
-            offCtx.fillRect(b * barWidth + 1, diodeRows - h, barWidth - 2, h);
+            offCtx.fillRect(b * barWidth + 1, diodeRows - h, Math.max(1, barWidth - 2), h);
           }
 
+          const partSize = Math.max(1, Math.round(diodeCols * 0.003));
           particles.forEach((p) => {
             p.x = (p.x + p.vx * 0.05 + 1) % 1;
             p.y = (p.y + p.vy * 0.05 + 1) % 1;
             offCtx.fillStyle = p.hue > 0.5 ? '#00F5FF' : '#FF007F';
-            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, 1.3, 1.3);
+            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, partSize, partSize);
           });
 
           if (aspect >= 2.0) {
@@ -407,8 +410,9 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
             offCtx.textAlign = 'center';
             offCtx.textBaseline = 'middle';
 
-            const sweepX = (t * 60) % (diodeCols * 1.5) - diodeCols * 0.25;
-            const textGrad = offCtx.createLinearGradient(sweepX - 25, 0, sweepX + 25, 0);
+            const sweepX = ((t * 0.25) % 1.5 - 0.25) * diodeCols;
+            const sweepW = diodeCols * 0.08;
+            const textGrad = offCtx.createLinearGradient(sweepX - sweepW, 0, sweepX + sweepW, 0);
             textGrad.addColorStop(0, '#00F5FF');
             textGrad.addColorStop(0.5, '#FFFFFF');
             textGrad.addColorStop(1, '#FF007F');
@@ -435,14 +439,18 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
           offCtx.fillStyle = grad;
           offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
-          const chevronOffset = (t * 40) % 24;
-          offCtx.strokeStyle = 'rgba(255, 102, 0, 0.4)';
-          offCtx.lineWidth = 2;
-          for (let x = -24; x < diodeCols + 24; x += 18) {
+          // Sfondo a chevrons normalizzato: 24 linee proporzionali coerenti per qualsiasi passo pixel
+          const numChevrons = 24;
+          const chevronSpacing = diodeCols / numChevrons;
+          const chevronOffset = ((t * 0.75) % 1) * chevronSpacing;
+          const chevronPeak = chevronSpacing * 0.35;
+          offCtx.strokeStyle = 'rgba(255, 102, 0, 0.45)';
+          offCtx.lineWidth = Math.max(1, Math.round(diodeCols * 0.0035));
+          for (let x = -chevronSpacing * 2; x < diodeCols + chevronSpacing * 2; x += chevronSpacing) {
             const cx = x + chevronOffset;
             offCtx.beginPath();
             offCtx.moveTo(cx, 0);
-            offCtx.lineTo(cx + 8, diodeRows / 2);
+            offCtx.lineTo(cx + chevronPeak, diodeRows / 2);
             offCtx.lineTo(cx, diodeRows);
             offCtx.stroke();
           }
@@ -507,18 +515,20 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
           offCtx.fillStyle = grad;
           offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
-          const goldX = (t * 18) % (diodeCols * 1.6) - diodeCols * 0.3;
-          const goldBeam = offCtx.createLinearGradient(goldX - 20, 0, goldX + 20, diodeRows);
+          const goldX = ((t * 0.15) % 1.6 - 0.3) * diodeCols;
+          const beamW = diodeCols * 0.08;
+          const goldBeam = offCtx.createLinearGradient(goldX - beamW, 0, goldX + beamW, diodeRows);
           goldBeam.addColorStop(0, 'rgba(255, 215, 0, 0)');
           goldBeam.addColorStop(0.5, 'rgba(255, 235, 140, 0.45)');
           goldBeam.addColorStop(1, 'rgba(255, 215, 0, 0)');
           offCtx.fillStyle = goldBeam;
           offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
+          const partSize = Math.max(1, Math.round(diodeCols * 0.003));
           particles.forEach((p) => {
             p.y = (p.y - 0.003 + 1) % 1;
             offCtx.fillStyle = '#FFD700';
-            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, 1.2, 1.2);
+            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, partSize, partSize);
           });
 
           if (aspect >= 2.0) {
@@ -582,12 +592,12 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
           const waveR = Math.min(diodeCols, diodeRows) * 0.4;
           offCtx.fillStyle = 'rgba(0, 255, 136, 0.35)';
           offCtx.beginPath();
-          offCtx.arc(diodeCols * 0.7 + Math.sin(t) * 12, diodeRows * 0.4, waveR, 0, Math.PI * 2);
+          offCtx.arc(diodeCols * 0.7 + Math.sin(t) * (diodeCols * 0.025), diodeRows * 0.4, waveR, 0, Math.PI * 2);
           offCtx.fill();
 
           offCtx.fillStyle = 'rgba(0, 229, 255, 0.28)';
           offCtx.beginPath();
-          offCtx.arc(diodeCols * 0.25 - Math.cos(t) * 10, diodeRows * 0.65, waveR * 0.9, 0, Math.PI * 2);
+          offCtx.arc(diodeCols * 0.25 - Math.cos(t) * (diodeCols * 0.02), diodeRows * 0.65, waveR * 0.9, 0, Math.PI * 2);
           offCtx.fill();
 
           if (aspect >= 2.0) {
@@ -622,8 +632,9 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
             offCtx.textAlign = 'center';
             offCtx.textBaseline = 'middle';
 
-            const shimmer = (t * 40) % (diodeCols * 1.5) - diodeCols * 0.25;
-            const textGrad = offCtx.createLinearGradient(shimmer - 30, 0, shimmer + 30, 0);
+            const shimmer = ((t * 0.25) % 1.5 - 0.25) * diodeCols;
+            const shimmerW = diodeCols * 0.08;
+            const textGrad = offCtx.createLinearGradient(shimmer - shimmerW, 0, shimmer + shimmerW, 0);
             textGrad.addColorStop(0, '#FFFFFF');
             textGrad.addColorStop(0.5, '#72F6B8');
             textGrad.addColorStop(1, '#00E5FF');
