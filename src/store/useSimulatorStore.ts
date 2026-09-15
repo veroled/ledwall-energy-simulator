@@ -8,6 +8,7 @@ import {
   calcolaDimensioniSchermo,
   calcolaProfiloEnergetico,
   confrontaScenari,
+  stimaPotenzaDaPassoNit,
   ScreenDimensions,
   DailyEnergyProfile,
   ScenarioResult,
@@ -290,7 +291,12 @@ export function useSimulatorComputed() {
   const format: CabinetFormat =
     CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
 
-  const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? CONFIG.P_MAX_DEFAULT;
+  // Calcolo potenza massima e standby reali basate sul passo pixel selezionato
+  const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, 6500);
+  const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
+  const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? (
+    state.pitchMm >= 6.0 ? 30 : state.pitchMm >= 4.0 ? 40 : 50
+  );
 
   const dimensions: ScreenDimensions = calcolaDimensioniSchermo(
     state.modulesW,
@@ -312,7 +318,7 @@ export function useSimulatorComputed() {
     state.hasNightDimming,
     state.tariffEurKwh,
     pMax,
-    state.pStandbyWmq
+    pStandby
   );
 
   const scenario: ScenarioResult = confrontaScenari(
@@ -322,7 +328,7 @@ export function useSimulatorComputed() {
     state.tariffEurKwh,
     state.fleetOptions,
     pMax,
-    state.pStandbyWmq
+    pStandby
   );
 
   const instantaneousPowerKw = (profile.dayPowerWmq * dimensions.areaM2) / 1000;

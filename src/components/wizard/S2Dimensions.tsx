@@ -30,10 +30,13 @@ export const S2Dimensions: React.FC = () => {
   // Stato APL in tempo reale dal canvas
   const [liveApl, setLiveApl] = useState<number>(32);
 
-  // Calcolo consumi in tempo reale basati sull'APL istantaneo del canvas
+  // Calcolo consumi in tempo reale basati sull'APL istantaneo e sulla fisica reale del passo pixel selezionato
   const effectiveLiveApl = Math.max(0.05, Math.min(1, (liveApl ?? 30) / 100));
-  const pMaxWmq = CONFIG.P_MAX_DEFAULT;
-  const pStandbyWmq = CONFIG.P_STANDBY_DEFAULT;
+  const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, 6500);
+  const pMaxWmq = useSimulatorStore.getState().datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
+  const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? (
+    pitchMm >= 6.0 ? 30 : pitchMm >= 4.0 ? 40 : 50
+  );
   const livePowerWmq = pStandbyWmq + effectiveLiveApl * (pMaxWmq - pStandbyWmq);
   const livePowerKw = (livePowerWmq * dimensions.areaM2) / 1000;
 
@@ -756,7 +759,10 @@ export const S2Dimensions: React.FC = () => {
                   <Zap className="w-3.5 h-3.5 text-[#F59E0B]" />
                   <span className="text-[11px] font-bold text-white uppercase tracking-wider">Consumo in Tempo Reale</span>
                 </div>
-                <span className="text-[10px] text-[#868D97] font-mono">CEI 64-8</span>
+                <div className="flex items-center space-x-1.5 text-[10px]">
+                  <span className="text-[#34D399] font-mono">Max {pMaxWmq} W/m²</span>
+                  <span className="text-[#868D97] font-mono">· CEI 64-8</span>
+                </div>
               </div>
 
               <div className="flex items-baseline justify-between">
@@ -810,7 +816,9 @@ export const S2Dimensions: React.FC = () => {
               </div>
               <div className="flex justify-between py-1 border-b border-[#161F30]">
                 <span className="text-[#868D97]">Passo Pixel:</span>
-                <span className="text-white font-semibold tabular-nums">P{pitchMm} mm ({format.name})</span>
+                <span className="text-white font-semibold tabular-nums">
+                  P{pitchMm} mm ({hardwareEstimate.tecnologiaChip.split(' ')[0]} · max {pMaxWmq} W/m²)
+                </span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#161F30]">
                 <span className="text-[#868D97]">Risoluzione Totale:</span>
