@@ -59,7 +59,7 @@ export const S2Dimensions: React.FC = () => {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      className="w-full max-w-5xl space-y-6"
+      className="w-full max-w-5xl space-y-4"
     >
       <div className="text-center space-y-2">
         <span className="text-xs font-semibold text-[#12B76A] tracking-wider uppercase">

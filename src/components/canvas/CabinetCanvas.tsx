@@ -3,26 +3,44 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
 import { CABINET_FORMATS } from '../../config/config';
-import { Play, Pause, ZoomIn, Sparkles, Layers, SlidersHorizontal, RefreshCw } from 'lucide-react';
+import { Play, Pause, Sparkles, Zap, Crown, Monitor, SlidersHorizontal, RotateCw } from 'lucide-react';
+
+// Tipologie di Cartelli Pubblicitari DOOH ("Partelli / Cartelli") ad altissimo contrasto e colori vivaci
+export type SpotType = 'cyber' | 'turbo' | 'luxury' | 'veroled' | 'rgb';
+
+interface SpotMeta {
+  id: SpotType;
+  label: string;
+  badge: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accentColor: string;
+}
+
+const SPOTS: SpotMeta[] = [
+  { id: 'cyber', label: 'Cyber 8K', badge: 'NEON CYBER', icon: Sparkles, accentColor: '#00F5FF' },
+  { id: 'turbo', label: 'Turbo Energy', badge: 'HIGH VOLTAGE', icon: Zap, accentColor: '#FF6600' },
+  { id: 'luxury', label: 'Milano Gold', badge: 'LUXURY DOOH', icon: Crown, accentColor: '#FFD700' },
+  { id: 'veroled', label: 'VeroLED Pro', badge: 'BROADCAST', icon: Monitor, accentColor: '#00FF88' },
+  { id: 'rgb', label: 'Test RGB', badge: 'SMPTE CALIB', icon: SlidersHorizontal, accentColor: '#38BDF8' },
+];
 
 export const CabinetCanvas: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
 
-  // Modalità scena: 'kinetic' (DOOH kinetic typo), 'glitch' (Cyber Glitch continuo), 'rgb' (Test Pattern)
-  const [sceneMode, setSceneMode] = useState<'kinetic' | 'glitch' | 'rgb'>('kinetic');
+  // Selezione cartello DOOH attivo
+  const [activeSpot, setActiveSpot] = useState<SpotType>('cyber');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [showMacroLoupe, setShowMacroLoupe] = useState<boolean>(true);
+  const [autoRotate, setAutoRotate] = useState<boolean>(true); // Rotazione automatica cartelli ogni 5s
 
   const { modulesW, modulesH, formatId, pitchMm, setModulesW, setModulesH } = useSimulatorStore();
   const format = CABINET_FORMATS.find((f) => f.id === formatId) || CABINET_FORMATS[0];
 
-  // Calcoli fisici esatti e conteggio reale dei pixel
+  // Dimensioni fisiche e calcolo pixel esatti
   const widthM = (modulesW * format.widthMm) / 1000;
   const heightM = (modulesH * format.heightMm) / 1000;
   const areaM2 = widthM * heightM;
 
-  // Pixel esatti per singolo cabinet e totali
   const cabPixW = Math.round(format.widthMm / pitchMm);
   const cabPixH = Math.round(format.heightMm / pitchMm);
   const totalPixW = modulesW * cabPixW;
@@ -30,7 +48,7 @@ export const CabinetCanvas: React.FC = () => {
   const totalDiodes = totalPixW * totalPixH;
   const totalWeightKg = modulesW * modulesH * format.weightKg;
 
-  // Loop di animazione a 60fps con kinetic typography, glitch e adattamento totale a qualsiasi formato
+  // Loop animazione 60fps con quantizzazione reale a diodi fisici, bloom 10.000 nit e kinetic typography
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -38,32 +56,51 @@ export const CabinetCanvas: React.FC = () => {
     if (!ctx) return;
 
     let startTime = performance.now();
-    let glitchActive = false;
-    let glitchDuration = 0;
-    let nextGlitchTime = 1800;
+    let currentSpot = activeSpot;
+    let lastSpotSwitchTime = performance.now();
+    let spotIndex = SPOTS.findIndex((s) => s.id === activeSpot);
 
-    // Offscreen buffer per generare la grafica animata adattiva
+    // Offscreen buffer a risoluzione nativa della matrice diodi
     const offCanvas = document.createElement('canvas');
     const offCtx = offCanvas.getContext('2d');
 
-    const render = (currentTime: number) => {
-      const elapsed = isPlaying ? (currentTime - startTime) / 1000 : 0;
+    // Buffer per pre-renderizzare il tassello della maschera louver a diodi
+    const tileCanvas = document.createElement('canvas');
+    const tileCtx = tileCanvas.getContext('2d');
 
-      // Gestione glitch casuale periodico (ogni 2.2 - 3.8 secondi)
-      if (isPlaying) {
-        if (!glitchActive && currentTime > nextGlitchTime) {
-          glitchActive = true;
-          glitchDuration = currentTime + 100 + Math.random() * 150;
-        } else if (glitchActive && currentTime > glitchDuration) {
-          glitchActive = false;
-          nextGlitchTime = currentTime + 2400 + Math.random() * 2200;
+    let currentTilePitch = 0;
+    let louverPattern: CanvasPattern | null = null;
+
+    // Generatore particelle cinetiche luminescenti
+    const particles = Array.from({ length: 28 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.08,
+      vy: -0.04 - Math.random() * 0.08,
+      size: 0.8 + Math.random() * 1.6,
+      hue: Math.random(),
+    }));
+
+    const render = (currentTime: number) => {
+      // Rotazione automatica dei cartelli DOOH ogni 5.5 secondi
+      if (autoRotate && isPlaying) {
+        if (currentTime - lastSpotSwitchTime > 5500) {
+          spotIndex = (spotIndex + 1) % SPOTS.length;
+          currentSpot = SPOTS[spotIndex].id;
+          setActiveSpot(currentSpot);
+          lastSpotSwitchTime = currentTime;
         }
+      } else {
+        currentSpot = activeSpot;
       }
 
-      // Dimensioni canvas responsive ad alta densità
+      const elapsed = isPlaying ? (currentTime - startTime) / 1000 : 0;
+      const t = elapsed;
+
+      // Dimensioni responsive del canvas
       const containerW = canvas.parentElement?.clientWidth || 580;
       const displayW = Math.max(320, containerW);
-      const displayH = 340;
+      const displayH = 290;
 
       const dpr = window.devicePixelRatio || 1;
       if (canvas.width !== displayW * dpr || canvas.height !== displayH * dpr) {
@@ -76,13 +113,13 @@ export const CabinetCanvas: React.FC = () => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Sfondo profondo
+      // Sfondo scuro profondo dello chassis
       ctx.fillStyle = '#030508';
       ctx.fillRect(0, 0, displayW, displayH);
 
-      // Calcolo area utile display
-      const paddingX = 42;
-      const paddingY = 38;
+      // Calcolo area visibile dello schermo
+      const paddingX = 36;
+      const paddingY = 26;
       const availW = displayW - paddingX * 2;
       const availH = displayH - paddingY * 2;
 
@@ -95,21 +132,21 @@ export const CabinetCanvas: React.FC = () => {
         screenW = screenH * aspect;
       }
 
-      const startX = (displayW - screenW) / 2;
-      const startY = (displayH - screenH) / 2 + 4;
+      const startX = Math.round((displayW - screenW) / 2);
+      const startY = Math.round((displayH - screenH) / 2 + 4);
 
       const cabW = screenW / modulesW;
       const cabH = screenH / modulesH;
 
-      // 1. CHASSIS METALLICO PERIMETRALE
-      ctx.fillStyle = '#080C14';
+      // 1. CHASSIS ESTERNO IN ALLUMINIO DIE-CAST
+      ctx.fillStyle = '#070A0F';
       ctx.fillRect(startX - 4, startY - 4, screenW + 8, screenH + 8);
-      ctx.strokeStyle = '#1D2533';
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#161F2E';
+      ctx.lineWidth = 1.4;
       ctx.strokeRect(startX - 4, startY - 4, screenW + 8, screenH + 8);
 
-      // Viti e staffe angolari
-      ctx.fillStyle = '#323E50';
+      // Viti angolari di fissaggio a telaio
+      ctx.fillStyle = '#2B374A';
       ctx.beginPath();
       ctx.arc(startX - 2, startY - 2, 1.8, 0, Math.PI * 2);
       ctx.arc(startX + screenW + 2, startY - 2, 1.8, 0, Math.PI * 2);
@@ -117,252 +154,429 @@ export const CabinetCanvas: React.FC = () => {
       ctx.arc(startX + screenW + 2, startY + screenH + 2, 1.8, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. RENDERING CONTENUTO GRAFICO DINAMICO SU OFFSCREEN BUFFER ADATTIVO
-      const bufW = Math.max(320, Math.round(screenW));
-      const bufH = Math.max(100, Math.round(screenH));
-      if (offCanvas.width !== bufW || offCanvas.height !== bufH) {
-        offCanvas.width = bufW;
-        offCanvas.height = bufH;
+      // 2. CALCOLO DELLA PASSO DIODO REALE (PIXEL FISICI DISCRETI)
+      // Più il passo pitch è grande (P10), più i singoli diodi sono grossi e distanziati con ampi spazi neri!
+      // A P2.6, la densità è altissima e fine.
+      const diodePitch = Math.max(2.6, Math.min(9.5, 2.6 + (pitchMm - 2.6) * 0.72));
+      const diodeCols = Math.max(20, Math.floor(screenW / diodePitch));
+      const diodeRows = Math.max(12, Math.floor(screenH / diodePitch));
+
+      const actualScreenWidth = diodeCols * diodePitch;
+      const actualScreenHeight = diodeRows * diodePitch;
+      const offsetX = startX + (screenW - actualScreenWidth) / 2;
+      const offsetY = startY + (screenH - actualScreenHeight) / 2;
+
+      // Aggiornamento offscreen buffer alla risoluzione esatta della matrice diodi
+      if (offCanvas.width !== diodeCols || offCanvas.height !== diodeRows) {
+        offCanvas.width = diodeCols;
+        offCanvas.height = diodeRows;
       }
 
+      // Aggiornamento del pattern del tassello Louver Mask
+      const tilePitchInt = Math.round(diodePitch);
+      if (currentTilePitch !== tilePitchInt || !louverPattern) {
+        currentTilePitch = tilePitchInt;
+        tileCanvas.width = tilePitchInt;
+        tileCanvas.height = tilePitchInt;
+        if (tileCtx) {
+          // Maschera nera plastica matte intorno al diodo
+          tileCtx.fillStyle = '#020407';
+          tileCtx.fillRect(0, 0, tilePitchInt, tilePitchInt);
+
+          // Apertura ottica circolare al centro (trasparente: fa passare la luce viva del LED)
+          tileCtx.globalCompositeOperation = 'destination-out';
+          tileCtx.beginPath();
+          const radius = Math.max(1, (tilePitchInt * 0.44));
+          tileCtx.arc(tilePitchInt / 2, tilePitchInt / 2, radius, 0, Math.PI * 2);
+          tileCtx.fill();
+          tileCtx.globalCompositeOperation = 'source-over';
+
+          // Bordo conico riflettente della lente del package SMD
+          tileCtx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+          tileCtx.lineWidth = 0.6;
+          tileCtx.beginPath();
+          tileCtx.arc(tilePitchInt / 2, tilePitchInt / 2, radius, 0, Math.PI * 2);
+          tileCtx.stroke();
+        }
+        louverPattern = ctx.createPattern(tileCanvas, 'repeat');
+      }
+
+      // 3. GENERAZIONE CONTENUTI VIVACI NELL'OFFSCREEN BUFFER (DIODO PER DIODO)
       if (offCtx) {
-        offCtx.clearRect(0, 0, bufW, bufH);
+        offCtx.clearRect(0, 0, diodeCols, diodeRows);
 
-        if (sceneMode === 'rgb') {
-          // Pattern calibrazione RGB a barre
-          const colors = ['#FF0033', '#00FF66', '#0066FF', '#FFFF00', '#00FFFF', '#FF00FF', '#FFFFFF', '#12B76A'];
-          const barW = bufW / colors.length;
-          colors.forEach((col, i) => {
-            offCtx.fillStyle = col;
-            offCtx.fillRect(i * barW, 0, barW, bufH);
+        if (currentSpot === 'rgb') {
+          // ================= CARTELLO 5: TEST COLLAUDO RGB SMPTE =================
+          const testColors = [
+            '#FF0000', // Red
+            '#00FF00', // Green
+            '#0033FF', // Blue
+            '#FFFF00', // Yellow
+            '#00FFFF', // Cyan
+            '#FF00FF', // Magenta
+            '#FFFFFF', // White 100%
+            '#12B76A', // VeroLED Green
+          ];
+          const barW = diodeCols / testColors.length;
+          testColors.forEach((color, i) => {
+            offCtx.fillStyle = color;
+            offCtx.fillRect(i * barW, 0, barW, diodeRows);
           });
-        } else {
-          // MODALITÀ DOOH KINETIC & GLITCH (ADATTAMENTO TOTALE A QUALSIASI FORMATO)
-          const t = elapsed;
 
-          // Sfondo vibrante con onde cinetiche
-          const grad = offCtx.createLinearGradient(0, 0, bufW, bufH);
-          const shift = Math.sin(t * 0.8) * 0.2;
-          grad.addColorStop(0, '#020A14');
-          grad.addColorStop(Math.max(0, 0.35 + shift), '#07251E');
-          grad.addColorStop(Math.min(1, 0.7 + shift), '#12B76A');
-          grad.addColorStop(1, '#05192C');
-          offCtx.fillStyle = grad;
-          offCtx.fillRect(0, 0, bufW, bufH);
-
-          // Onde luminose animate
-          const pulse = Math.sin(t * 2) * 0.15 + 0.85;
-          offCtx.fillStyle = 'rgba(18, 183, 106, 0.35)';
-          offCtx.beginPath();
-          offCtx.arc(
-            bufW * 0.7 + Math.cos(t) * 25,
-            bufH * 0.4 + Math.sin(t * 1.2) * 15,
-            Math.min(bufW, bufH) * 0.45 * pulse,
-            0,
-            Math.PI * 2
-          );
-          offCtx.fill();
-
-          offCtx.fillStyle = 'rgba(56, 189, 248, 0.25)';
-          offCtx.beginPath();
-          offCtx.arc(
-            bufW * 0.25 - Math.sin(t) * 20,
-            bufH * 0.65 + Math.cos(t) * 15,
-            Math.min(bufW, bufH) * 0.4 * pulse,
-            0,
-            Math.PI * 2
-          );
-          offCtx.fill();
-
-          // Griglia geometrica cyber
-          offCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          // Griglia di allineamento bianca
+          offCtx.strokeStyle = '#000000';
           offCtx.lineWidth = 1;
-          const gridCols = 8;
-          for (let i = 0; i <= gridCols; i++) {
+          offCtx.strokeRect(0, 0, diodeCols, diodeRows);
+          offCtx.fillStyle = '#000000';
+          offCtx.font = `900 ${Math.max(7, Math.floor(diodeRows * 0.18))}px Inter, sans-serif`;
+          offCtx.textAlign = 'center';
+          offCtx.textBaseline = 'middle';
+          offCtx.fillText(`SMPTE 100% · P${pitchMm}mm`, diodeCols / 2, diodeRows * 0.5);
+
+        } else if (currentSpot === 'cyber') {
+          // ================= CARTELLO 1: CYBERPUNK 8K (CYAN & NEON MAGENTA) =================
+          // Sfondo profondo con gradiente laser ultra-saturo
+          const grad = offCtx.createLinearGradient(0, 0, diodeCols, diodeRows);
+          grad.addColorStop(0, '#020014');
+          grad.addColorStop(0.4, '#190033');
+          grad.addColorStop(0.75, '#001A33');
+          grad.addColorStop(1, '#000814');
+          offCtx.fillStyle = grad;
+          offCtx.fillRect(0, 0, diodeCols, diodeRows);
+
+          // Raggi ed equalizzatore grafico audio-reattivo sul fondo
+          const numBars = Math.min(18, Math.floor(diodeCols / 4));
+          const barWidth = diodeCols / numBars;
+          for (let b = 0; b < numBars; b++) {
+            const h = Math.abs(Math.sin(t * 3.5 + b * 0.7)) * (diodeRows * 0.45);
+            const barGrad = offCtx.createLinearGradient(0, diodeRows - h, 0, diodeRows);
+            barGrad.addColorStop(0, '#00F5FF');
+            barGrad.addColorStop(0.6, '#FF007F');
+            barGrad.addColorStop(1, '#6600FF');
+            offCtx.fillStyle = barGrad;
+            offCtx.fillRect(b * barWidth + 1, diodeRows - h, barWidth - 2, h);
+          }
+
+          // Particelle cinetiche al neon
+          particles.forEach((p) => {
+            p.x = (p.x + p.vx * 0.05 + 1) % 1;
+            p.y = (p.y + p.vy * 0.05 + 1) % 1;
+            offCtx.fillStyle = p.hue > 0.5 ? '#00F5FF' : '#FF007F';
+            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, 1.5, 1.5);
+          });
+
+          // Kinetic Typography Cyber
+          if (aspect >= 2.0) {
+            // Layout Wide Banner
+            const fSize = Math.min(diodeRows * 0.52, diodeCols * 0.16);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'left';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#00F5FF';
+            offCtx.fillText('CYBER VISION', diodeCols * 0.04, diodeRows * 0.4);
+
+            offCtx.fillStyle = '#FFE600';
+            offCtx.font = `800 ${fSize * 0.45}px Inter, sans-serif`;
+            offCtx.fillText('8K HDR · 3840Hz REFRESH', diodeCols * 0.04, diodeRows * 0.78);
+          } else if (aspect <= 0.85) {
+            // Layout Totem Verticale
+            const fSize = Math.min(diodeCols * 0.32, diodeRows * 0.16);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#00F5FF';
+            offCtx.fillText('CYBER', diodeCols / 2, diodeRows * 0.25);
+            offCtx.fillStyle = '#FF007F';
+            offCtx.fillText('NEON', diodeCols / 2, diodeRows * 0.45);
+            offCtx.fillStyle = '#FFE600';
+            offCtx.fillText('8K HDR', diodeCols / 2, diodeRows * 0.65);
+          } else {
+            // Layout Standard
+            const titleSize = Math.min(diodeCols * 0.22, diodeRows * 0.34);
+            offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+
+            // Glow sweep text
+            const sweepX = (t * 60) % (diodeCols * 1.5) - diodeCols * 0.25;
+            const textGrad = offCtx.createLinearGradient(sweepX - 25, 0, sweepX + 25, 0);
+            textGrad.addColorStop(0, '#00F5FF');
+            textGrad.addColorStop(0.5, '#FFFFFF');
+            textGrad.addColorStop(1, '#FF007F');
+            offCtx.fillStyle = textGrad;
+            offCtx.fillText('CYBER 8K', diodeCols / 2, diodeRows * 0.42);
+
+            // Ticker tape scorrevole inferiore
+            const tickerSize = Math.min(diodeCols * 0.06, diodeRows * 0.16);
+            offCtx.font = `800 ${tickerSize}px Inter, sans-serif`;
+            offCtx.fillStyle = '#FFE600';
+            offCtx.textAlign = 'left';
+            const tickTxt = '★ ULTRA NEON DOOH · 10.000 NITS OUTDOOR · P' + pitchMm + 'mm HIGH REFRESH · ';
+            const tW = offCtx.measureText(tickTxt).width || 120;
+            const scrollX = -( (t * 22) % tW );
+            offCtx.fillText(tickTxt + tickTxt, diodeCols * 0.04 + scrollX, diodeRows * 0.82);
+          }
+
+          // Cyber glitch sweep
+          if (Math.sin(t * 8) > 0.82) {
+            const gy = Math.floor(Math.random() * diodeRows);
+            const gh = Math.floor(Math.random() * 4) + 1;
+            offCtx.fillStyle = '#00F5FF';
+            offCtx.fillRect(0, gy, diodeCols, gh);
+          }
+
+        } else if (currentSpot === 'turbo') {
+          // ================= CARTELLO 2: TURBO ENERGY (ELECTRIC LIME & BLAZING SUN ORANGE) =================
+          // Sfondo energia vibrante
+          const grad = offCtx.createLinearGradient(0, 0, diodeCols, diodeRows);
+          grad.addColorStop(0, '#100600');
+          grad.addColorStop(0.4, '#3D1300');
+          grad.addColorStop(0.8, '#0B2404');
+          grad.addColorStop(1, '#020C02');
+          offCtx.fillStyle = grad;
+          offCtx.fillRect(0, 0, diodeCols, diodeRows);
+
+          // Chevrons cinetici ad alta velocità
+          const chevronOffset = (t * 40) % 24;
+          offCtx.strokeStyle = 'rgba(255, 102, 0, 0.4)';
+          offCtx.lineWidth = 2;
+          for (let x = -24; x < diodeCols + 24; x += 18) {
+            const cx = x + chevronOffset;
             offCtx.beginPath();
-            offCtx.moveTo((i * bufW) / gridCols, 0);
-            offCtx.lineTo((i * bufW) / gridCols, bufH);
+            offCtx.moveTo(cx, 0);
+            offCtx.lineTo(cx + 8, diodeRows / 2);
+            offCtx.lineTo(cx, diodeRows);
             offCtx.stroke();
           }
 
-          offCtx.save();
-
-          // GLITCH EFFECT: Spostamento orizzontale a fette (cyber slice glitch)
-          const isGlitching = glitchActive || sceneMode === 'glitch';
-          if (isGlitching) {
-            const slices = 4;
-            const sliceH = bufH / slices;
-            for (let s = 0; s < slices; s++) {
-              if (Math.sin(t * 30 + s) > 0.1) {
-                const sOffset = (Math.sin(t * 50 + s * 10) * (glitchActive ? 14 : 7));
-                const sliceY = s * sliceH;
-                try {
-                  const sliceImg = offCtx.getImageData(0, sliceY, bufW, sliceH);
-                  offCtx.putImageData(sliceImg, sOffset, sliceY);
-                } catch {
-                  // Fallback sicuro se off-canvas ha vincoli cross-origin
-                }
-              }
-            }
-          }
-
-          // KINETIC TYPOGRAPHY ADATTIVA (CALCOLO GEOMETRICO DELLO SPAZIO PER NON TAGLIARE MAI I TESTI)
+          // Typo audace Turbo
           if (aspect >= 2.0) {
-            // 1. FORMATO WIDE / STRISCIONE ORIZZONTALE (es. 8x2, 10x2, 12x3)
-            const titleSize = Math.min(bufH * 0.46, bufW * 0.18);
-            offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
-            offCtx.fillStyle = '#FFFFFF';
+            let fSize = Math.min(diodeRows * 0.50, diodeCols * 0.13);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            while (offCtx.measureText('TURBO FORCE').width > diodeCols * 0.55 && fSize > 6) {
+              fSize -= 1;
+              offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            }
             offCtx.textAlign = 'left';
             offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#FF6600';
+            offCtx.fillText('TURBO FORCE', diodeCols * 0.05, diodeRows * 0.42);
 
-            // Titolo cinetico con shimmer
-            const shimmerX = (t * 220) % (bufW * 0.6);
-            const textGrad = offCtx.createLinearGradient(shimmerX - 60, 0, shimmerX + 60, 0);
-            textGrad.addColorStop(0, '#FFFFFF');
-            textGrad.addColorStop(0.5, '#72F6B8');
-            textGrad.addColorStop(1, '#FFFFFF');
-            offCtx.fillStyle = textGrad;
-            offCtx.fillText('VEROLED', bufW * 0.05, bufH * 0.40);
-
-            // Ticker tape cinetico a scorrimento orizzontale in basso
-            const tickerSize = Math.min(bufH * 0.22, bufW * 0.05);
-            offCtx.font = `700 ${tickerSize}px Inter, sans-serif`;
-            offCtx.fillStyle = '#34D399';
-            const tickerText = '▶ EXPRESSIONS OF LIGHT · 3840Hz REFRESH · P' + pitchMm + 'mm HIGH BRIGHTNESS · ';
-            const tWidth = offCtx.measureText(tickerText).width || 300;
-            const scrollX = -( (t * 60) % tWidth );
-            offCtx.fillText(tickerText + tickerText, bufW * 0.05 + scrollX, bufH * 0.78);
-
-            // Telemetria destra
-            offCtx.textAlign = 'right';
-            offCtx.font = `600 ${tickerSize * 0.9}px Inter, sans-serif`;
-            offCtx.fillStyle = '#E8EDF2';
-            offCtx.fillText(`${totalPixW}×${totalPixH} PX`, bufW * 0.95, bufH * 0.40);
-            offCtx.fillStyle = '#9AA3AD';
-            offCtx.fillText(`P${pitchMm} mm`, bufW * 0.95, bufH * 0.78);
+            offCtx.fillStyle = '#00FF66';
+            offCtx.font = `800 ${fSize * 0.45}px Inter, sans-serif`;
+            offCtx.fillText('100% RAW ENERGY · ZERO COMPROMISE', diodeCols * 0.05, diodeRows * 0.8);
           } else if (aspect <= 0.85) {
-            // 2. FORMATO VERTICALE / TOTEM (es. 2x4, 2x5, 2x6)
-            // Testo impilato verticale, grande e perfettamente centrato
-            const titleSize = Math.min(bufW * 0.32, bufH * 0.14);
-            offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
-            offCtx.fillStyle = '#FFFFFF';
+            const fSize = Math.min(diodeCols * 0.30, diodeRows * 0.15);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
             offCtx.textAlign = 'center';
             offCtx.textBaseline = 'middle';
-
-            const pulseScale = 1 + Math.sin(t * 2) * 0.03;
-            offCtx.save();
-            offCtx.scale(pulseScale, pulseScale);
-            offCtx.fillText('VERO', (bufW / 2) / pulseScale, (bufH * 0.22) / pulseScale);
-            offCtx.fillText('LED', (bufW / 2) / pulseScale, (bufH * 0.38) / pulseScale);
-            offCtx.restore();
-
-            // Sottotitoli compatti verticali
-            const subSize = Math.min(bufW * 0.15, bufH * 0.065);
-            offCtx.font = `800 ${subSize}px Inter, sans-serif`;
-            offCtx.fillStyle = '#34D399';
-            offCtx.fillText('OUTDOOR', bufW / 2, bufH * 0.58);
-
-            offCtx.font = `600 ${subSize * 0.9}px Inter, sans-serif`;
+            offCtx.fillStyle = '#FF6600';
+            offCtx.fillText('TURBO', diodeCols / 2, diodeRows * 0.25);
+            offCtx.fillStyle = '#00FF66';
+            offCtx.fillText('FORCE', diodeCols / 2, diodeRows * 0.45);
             offCtx.fillStyle = '#FFFFFF';
-            offCtx.fillText(`P${pitchMm} mm`, bufW / 2, bufH * 0.72);
-
-            offCtx.fillStyle = '#9AA3AD';
-            offCtx.font = `500 ${subSize * 0.8}px Inter, sans-serif`;
-            offCtx.fillText(`${totalPixW}×${totalPixH}`, bufW / 2, bufH * 0.86);
+            offCtx.fillText('100%', diodeCols / 2, diodeRows * 0.65);
           } else {
-            // 3. FORMATO STANDARD / BILLBOARD (es. 6x4, 5x3, 4x3, 4x4)
-            // Header HUD
-            const hudSize = Math.min(bufW * 0.045, bufH * 0.09);
-            offCtx.font = `700 ${hudSize}px Inter, sans-serif`;
-            offCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-            offCtx.textAlign = 'left';
-            offCtx.textBaseline = 'top';
-            offCtx.fillText(`● LIVE · P${pitchMm} mm`, bufW * 0.05, bufH * 0.08);
-
-            offCtx.textAlign = 'right';
-            offCtx.fillText(`${totalPixW} × ${totalPixH} PX`, bufW * 0.95, bufH * 0.08);
-
-            // Typo BIG VEROLED centrata con kinetic breathing
-            const titleSize = Math.min(bufW * 0.23, bufH * 0.32);
+            // Standard layout: impilato dinamico ultra-punchy
+            const titleSize = Math.min(diodeCols * 0.22, diodeRows * 0.27);
             offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
             offCtx.textAlign = 'center';
             offCtx.textBaseline = 'middle';
 
-            const kineticScale = 1 + Math.sin(t * 1.8) * 0.025;
+            const pulse = 1 + Math.sin(t * 4) * 0.035;
             offCtx.save();
-            offCtx.scale(kineticScale, kineticScale);
-
-            // Shimmer effect sulle lettere
-            const shimmerX = (t * 180) % (bufW * 1.2);
-            const textGrad = offCtx.createLinearGradient(shimmerX - 80, 0, shimmerX + 80, 0);
-            textGrad.addColorStop(0, '#FFFFFF');
-            textGrad.addColorStop(0.5, '#72F6B8');
-            textGrad.addColorStop(1, '#FFFFFF');
-            offCtx.fillStyle = textGrad;
-            offCtx.fillText('VEROLED', (bufW / 2) / kineticScale, (bufH * 0.44) / kineticScale);
+            offCtx.scale(pulse, pulse);
+            offCtx.fillStyle = '#FF6600';
+            offCtx.fillText('TURBO', (diodeCols / 2) / pulse, (diodeRows * 0.28) / pulse);
+            offCtx.fillStyle = '#00FF66';
+            offCtx.fillText('FORCE', (diodeCols / 2) / pulse, (diodeRows * 0.52) / pulse);
             offCtx.restore();
 
-            // Ticker tape cinetico orizzontale a scorrimento continuo in basso (non si taglia mai!)
-            const tickerSize = Math.min(bufW * 0.052, bufH * 0.12);
-            offCtx.font = `700 ${tickerSize}px Inter, sans-serif`;
-            offCtx.fillStyle = '#34D399';
+            const tickerSize = Math.min(diodeCols * 0.058, diodeRows * 0.15);
+            offCtx.font = `800 ${tickerSize}px Inter, sans-serif`;
+            offCtx.fillStyle = '#FFFFFF';
             offCtx.textAlign = 'left';
-            offCtx.textBaseline = 'middle';
-
-            const tickerText = '★ EXPRESSIONS OF LIGHT · HIGH RESOLUTION DOOH · 3840Hz PWM REFRESH · VEROLED FLEET MONITOR · ';
-            const tWidth = offCtx.measureText(tickerText).width || 350;
-            const scrollX = -( (t * 55) % tWidth );
-            offCtx.fillText(tickerText + tickerText, bufW * 0.05 + scrollX, bufH * 0.78);
+            const tickTxt = '⚡ MAXIMUM POWER · ZERO EMISSION · HIGH VOLTAGE PERFORMANCE · ';
+            const tW = offCtx.measureText(tickTxt).width || 120;
+            const scrollX = -( (t * 26) % tW );
+            offCtx.fillText(tickTxt + tickTxt, diodeCols * 0.04 + scrollX, diodeRows * 0.82);
           }
 
-          // Scanline PWM dinamica a scorrimento
-          const scanY = ((t * 140) % bufH);
-          offCtx.fillStyle = 'rgba(255, 255, 255, 0.14)';
-          offCtx.fillRect(0, scanY, bufW, Math.max(2, bufH * 0.035));
+        } else if (currentSpot === 'luxury') {
+          // ================= CARTELLO 3: MILANO GOLD (LIQUID GOLD & ROYAL CRIMSON) =================
+          const grad = offCtx.createLinearGradient(0, 0, diodeCols, diodeRows);
+          grad.addColorStop(0, '#120A00');
+          grad.addColorStop(0.5, '#261702');
+          grad.addColorStop(1, '#0A0005');
+          offCtx.fillStyle = grad;
+          offCtx.fillRect(0, 0, diodeCols, diodeRows);
 
-          offCtx.restore();
+          // Riflesso sweep dorato ad arco
+          const goldX = (t * 18) % (diodeCols * 1.6) - diodeCols * 0.3;
+          const goldBeam = offCtx.createLinearGradient(goldX - 20, 0, goldX + 20, diodeRows);
+          goldBeam.addColorStop(0, 'rgba(255, 215, 0, 0)');
+          goldBeam.addColorStop(0.5, 'rgba(255, 235, 140, 0.45)');
+          goldBeam.addColorStop(1, 'rgba(255, 215, 0, 0)');
+          offCtx.fillStyle = goldBeam;
+          offCtx.fillRect(0, 0, diodeCols, diodeRows);
+
+          // Particelle dorate fluttuanti
+          particles.forEach((p) => {
+            p.y = (p.y - 0.003 + 1) % 1;
+            offCtx.fillStyle = '#FFD700';
+            offCtx.fillRect(p.x * diodeCols, p.y * diodeRows, 1.2, 1.2);
+          });
+
+          // Typo Luxury
+          if (aspect >= 2.0) {
+            let fSize = Math.min(diodeRows * 0.50, diodeCols * 0.13);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            while (offCtx.measureText('MILANO COUTURE').width > diodeCols * 0.55 && fSize > 6) {
+              fSize -= 1;
+              offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            }
+            offCtx.textAlign = 'left';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#FFD700';
+            offCtx.fillText('MILANO COUTURE', diodeCols * 0.05, diodeRows * 0.42);
+
+            offCtx.fillStyle = '#FFF2B2';
+            offCtx.font = `700 ${fSize * 0.42}px Inter, sans-serif`;
+            offCtx.fillText('DIAMOND EDITION · TIMELESS LUXURY', diodeCols * 0.05, diodeRows * 0.8);
+          } else if (aspect <= 0.85) {
+            const fSize = Math.min(diodeCols * 0.28, diodeRows * 0.15);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#FFD700';
+            offCtx.fillText('MILANO', diodeCols / 2, diodeRows * 0.26);
+            offCtx.fillStyle = '#FFF2B2';
+            offCtx.fillText('GOLD', diodeCols / 2, diodeRows * 0.46);
+            offCtx.fillStyle = '#FF1744';
+            offCtx.fillText('EDITION', diodeCols / 2, diodeRows * 0.66);
+          } else {
+            let titleSize = Math.min(diodeCols * 0.19, diodeRows * 0.32);
+            offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
+            while (offCtx.measureText('MILANO GOLD').width > diodeCols * 0.86 && titleSize > 6) {
+              titleSize -= 1;
+              offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
+            }
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#FFD700';
+            offCtx.fillText('MILANO GOLD', diodeCols / 2, diodeRows * 0.42);
+
+            const tickerSize = Math.min(diodeCols * 0.058, diodeRows * 0.15);
+            offCtx.font = `700 ${tickerSize}px Inter, sans-serif`;
+            offCtx.fillStyle = '#FFF2B2';
+            offCtx.textAlign = 'left';
+            const tickTxt = '◆ DIAMOND EDITION ◆ HIGH LUXURY JEWELRY ◆ VOGUE MILANO ◆ ';
+            const tW = offCtx.measureText(tickTxt).width || 120;
+            const scrollX = -( (t * 18) % tW );
+            offCtx.fillText(tickTxt + tickTxt, diodeCols * 0.04 + scrollX, diodeRows * 0.82);
+          }
+
+        } else {
+          // ================= CARTELLO 4: VEROLED PRO (EMERALD GREEN & ELECTRIC AZURE) =================
+          const grad = offCtx.createLinearGradient(0, 0, diodeCols, diodeRows);
+          grad.addColorStop(0, '#021008');
+          grad.addColorStop(0.45, '#002E19');
+          grad.addColorStop(0.85, '#011A24');
+          grad.addColorStop(1, '#020A10');
+          offCtx.fillStyle = grad;
+          offCtx.fillRect(0, 0, diodeCols, diodeRows);
+
+          // Onde luminose azzurre e smeraldo
+          const waveR = Math.min(diodeCols, diodeRows) * 0.4;
+          offCtx.fillStyle = 'rgba(0, 255, 136, 0.35)';
+          offCtx.beginPath();
+          offCtx.arc(diodeCols * 0.7 + Math.sin(t) * 12, diodeRows * 0.4, waveR, 0, Math.PI * 2);
+          offCtx.fill();
+
+          offCtx.fillStyle = 'rgba(0, 229, 255, 0.28)';
+          offCtx.beginPath();
+          offCtx.arc(diodeCols * 0.25 - Math.cos(t) * 10, diodeRows * 0.65, waveR * 0.9, 0, Math.PI * 2);
+          offCtx.fill();
+
+          // Typo VeroLED
+          if (aspect >= 2.0) {
+            const fSize = Math.min(diodeRows * 0.52, diodeCols * 0.17);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'left';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#FFFFFF';
+            offCtx.fillText('VEROLED', diodeCols * 0.05, diodeRows * 0.42);
+
+            offCtx.fillStyle = '#00FF88';
+            offCtx.font = `800 ${fSize * 0.45}px Inter, sans-serif`;
+            offCtx.fillText('EXPRESSIONS OF LIGHT · FLEET MONITOR PRO', diodeCols * 0.05, diodeRows * 0.8);
+          } else if (aspect <= 0.85) {
+            const fSize = Math.min(diodeCols * 0.3, diodeRows * 0.16);
+            offCtx.font = `900 ${fSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillStyle = '#FFFFFF';
+            offCtx.fillText('VERO', diodeCols / 2, diodeRows * 0.26);
+            offCtx.fillStyle = '#00FF88';
+            offCtx.fillText('LED', diodeCols / 2, diodeRows * 0.46);
+            offCtx.fillStyle = '#00E5FF';
+            offCtx.fillText('OUTDOOR', diodeCols / 2, diodeRows * 0.66);
+          } else {
+            const titleSize = Math.min(diodeCols * 0.24, diodeRows * 0.35);
+            offCtx.font = `900 ${titleSize}px Inter, sans-serif`;
+            offCtx.textAlign = 'center';
+            offCtx.textBaseline = 'middle';
+
+            const shimmer = (t * 40) % (diodeCols * 1.5) - diodeCols * 0.25;
+            const textGrad = offCtx.createLinearGradient(shimmer - 30, 0, shimmer + 30, 0);
+            textGrad.addColorStop(0, '#FFFFFF');
+            textGrad.addColorStop(0.5, '#72F6B8');
+            textGrad.addColorStop(1, '#00E5FF');
+            offCtx.fillStyle = textGrad;
+            offCtx.fillText('VEROLED', diodeCols / 2, diodeRows * 0.42);
+
+            const tickerSize = Math.min(diodeCols * 0.06, diodeRows * 0.15);
+            offCtx.font = `800 ${tickerSize}px Inter, sans-serif`;
+            offCtx.fillStyle = '#00FF88';
+            offCtx.textAlign = 'left';
+            const tickTxt = '★ EXPRESSIONS OF LIGHT · 3840Hz HIGH REFRESH · CEI 64-8 CERTIFIED · ';
+            const tW = offCtx.measureText(tickTxt).width || 120;
+            const scrollX = -( (t * 22) % tW );
+            offCtx.fillText(tickTxt + tickTxt, diodeCols * 0.04 + scrollX, diodeRows * 0.82);
+          }
         }
       }
 
-      // 3. PROIEZIONE SULLA MATRICE DIODI FISICA (CONTA ESATTA DEI PIXEL)
-      ctx.drawImage(offCanvas, startX, startY, screenW, screenH);
+      // 4. PROIEZIONE A DIODI REALI CON QUANTIZZAZIONE NEAREST-NEIGHBOR
+      // Disattiviamo l'interpolazione anti-aliasing in modo che OGNI singolo pixel sia un blocco solido e netto!
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(offCanvas, offsetX, offsetY, actualScreenWidth, actualScreenHeight);
 
-      // RETINATURA FISICA A DIODI (LOUVER MASK):
-      // Spaziatura diodi direttamente proporzionale al pixel pitch (più fine a P2.6, molto sgranata e grossa a P8/P10)
-      const diodeStep = Math.max(3.0, Math.min(8.8, 3.0 + (pitchMm - 2.6) * 0.62));
-      const colsDiodes = Math.round(screenW / diodeStep);
-      const rowsDiodes = Math.round(screenH / diodeStep);
-
-      const dxStep = screenW / colsDiodes;
-      const dyStep = screenH / rowsDiodes;
-
-      // Maschera nera dei socket dei singoli diodi SMD
-      ctx.fillStyle = '#05070B';
-      for (let r = 0; r < rowsDiodes; r++) {
-        const py = startY + r * dyStep;
-        for (let c = 0; c < colsDiodes; c++) {
-          const px = startX + c * dxStep;
-
-          // Bordo socket quadrato nero intorno a ciascun package SMD
-          ctx.strokeStyle = 'rgba(2, 3, 5, 0.85)';
-          ctx.lineWidth = 0.9;
-          ctx.strokeRect(px, py, dxStep, dyStep);
-
-          // Mascheramento per dare forma circolare all'ottica SMD
-          ctx.fillStyle = 'rgba(2, 3, 5, 0.42)';
-          ctx.fillRect(px, py, dxStep * 0.15, dyStep);
-          ctx.fillRect(px + dxStep * 0.85, py, dxStep * 0.15, dyStep);
-          ctx.fillRect(px, py, dxStep, dyStep * 0.15);
-          ctx.fillRect(px, py + dyStep * 0.85, dxStep, dyStep * 0.15);
-        }
+      // 5. APPLICAZIONE DELLA MASCHERA OTTICA LOUVER A DIODI SMD (VERA STRUTTURA A PUNTI LED)
+      // Il louver pattern copre i bordi con plastica nera opaca e lascia aperte solo le aperture circolari dei singoli diodi!
+      if (louverPattern) {
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.fillStyle = louverPattern;
+        ctx.fillRect(0, 0, actualScreenWidth, actualScreenHeight);
+        ctx.restore();
       }
 
-      // 4. FUGHE MECCANICHE DEI CABINET (1.5mm) E DEI SOTTOMODULI
-      ctx.strokeStyle = '#010203';
-      ctx.lineWidth = 1.6;
+      // 6. BLOOM EMISSIVO AD ALTA LUMINANZA (EFFETTO 10.000 NIT OUTDOOR)
+      // I colori brillanti irradiano una leggera luminescenza ottica sui diodi circostanti
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.28;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(offCanvas, offsetX, offsetY, actualScreenWidth, actualScreenHeight);
+      ctx.restore();
+
+      // 7. FUGHE MECCANICHE DEI CABINET DIE-CAST (1.5mm) E SOTTOMODULI
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1.8;
 
       for (let c = 1; c < modulesW; c++) {
-        const cx = startX + c * cabW;
+        const cx = Math.round(startX + c * cabW);
         ctx.beginPath();
         ctx.moveTo(cx, startY);
         ctx.lineTo(cx, startY + screenH);
@@ -370,7 +584,7 @@ export const CabinetCanvas: React.FC = () => {
       }
 
       for (let r = 1; r < modulesH; r++) {
-        const ry = startY + r * cabH;
+        const ry = Math.round(startY + r * cabH);
         ctx.beginPath();
         ctx.moveTo(startX, ry);
         ctx.lineTo(startX + screenW, ry);
@@ -378,24 +592,24 @@ export const CabinetCanvas: React.FC = () => {
       }
 
       // Sottomoduli interni
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.lineWidth = 0.8;
       for (let c = 0; c < modulesW; c++) {
-        const mx = startX + c * cabW + cabW / 2;
+        const mx = Math.round(startX + c * cabW + cabW / 2);
         ctx.beginPath();
         ctx.moveTo(mx, startY);
         ctx.lineTo(mx, startY + screenH);
         ctx.stroke();
       }
       for (let r = 0; r < modulesH; r++) {
-        const my = startY + r * cabH + cabH / 2;
+        const my = Math.round(startY + r * cabH + cabH / 2);
         ctx.beginPath();
         ctx.moveTo(startX, my);
         ctx.lineTo(startX + screenW, my);
         ctx.stroke();
       }
 
-      // 5. QUOTE ARCHITETTONICHE DI PRECISIONE
+      // 8. QUOTE ARCHITETTONICHE DI PRECISIONE
       ctx.fillStyle = '#9AA3AD';
       ctx.font = '600 11px Inter, sans-serif';
       ctx.textAlign = 'center';
@@ -432,79 +646,6 @@ export const CabinetCanvas: React.FC = () => {
       ctx.stroke();
       ctx.restore();
 
-      // 6. LENTE D'INGRANDIMENTO MACRO 8X (ISPEZIONE FISICA DEL SINGOLO DIODO SMD)
-      if (showMacroLoupe) {
-        const loupeSize = 110;
-        const loupeX = startX + screenW - loupeSize - 8;
-        const loupeY = startY + screenH - loupeSize - 8;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(loupeX + loupeSize / 2, loupeY + loupeSize / 2, loupeSize / 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#060910';
-        ctx.fill();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = '#12B76A';
-        ctx.stroke();
-        ctx.clip();
-
-        // Disegno 4 package SMD reali ingranditi al microscopio ottico
-        const pSize = 38;
-        const cx = loupeX + loupeSize / 2;
-        const cy = loupeY + loupeSize / 2;
-
-        const smdOffsets = [
-          [-pSize / 2 - 2, -pSize / 2 - 2],
-          [pSize / 2 + 2, -pSize / 2 - 2],
-          [-pSize / 2 - 2, pSize / 2 + 2],
-          [pSize / 2 + 2, pSize / 2 + 2],
-        ];
-
-        smdOffsets.forEach(([ox, oy]) => {
-          const sx = cx + ox;
-          const sy = cy + oy;
-
-          // Corpo nero package SMD metallico
-          ctx.fillStyle = '#0D1117';
-          ctx.fillRect(sx - pSize / 2, sy - pSize / 2, pSize, pSize);
-          ctx.strokeStyle = '#2A3649';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sx - pSize / 2, sy - pSize / 2, pSize, pSize);
-
-          // Sub-pixel RGB reali (Rosso, Verde, Blu)
-          ctx.fillStyle = '#FF1A4B';
-          ctx.beginPath();
-          ctx.arc(sx - 7, sy - 4, 3.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#12B76A';
-          ctx.beginPath();
-          ctx.arc(sx + 7, sy - 4, 3.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#0088FF';
-          ctx.beginPath();
-          ctx.arc(sx, sy + 7, 3.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Filo d'oro wire bond
-          ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
-          ctx.moveTo(sx - 7, sy - 4);
-          ctx.lineTo(sx - 12, sy - 12);
-          ctx.moveTo(sx + 7, sy - 4);
-          ctx.lineTo(sx + 12, sy - 12);
-          ctx.stroke();
-        });
-
-        ctx.restore();
-        ctx.fillStyle = '#12B76A';
-        ctx.font = 'bold 9px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`MACRO 8X (P${pitchMm})`, loupeX + loupeSize / 2, loupeY + loupeSize + 12);
-      }
-
       ctx.restore();
 
       if (isPlaying) {
@@ -519,38 +660,38 @@ export const CabinetCanvas: React.FC = () => {
         cancelAnimationFrame(animFrameIdRef.current);
       }
     };
-  }, [modulesW, modulesH, format, pitchMm, sceneMode, isPlaying, showMacroLoupe, widthM, heightM, totalPixW, totalPixH]);
+  }, [modulesW, modulesH, format, pitchMm, activeSpot, isPlaying, autoRotate, widthM, heightM, totalPixW, totalPixH]);
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden border border-[#1A2028] bg-[#04060A] p-4 flex flex-col space-y-3">
-      {/* 1. BARRA SUPERIORE: CONTROLLI COLONNE E RIGHE RIGOROSAMENTE IN ALTO */}
-      <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1A2028]">
-        {/* Info Formato e Risoluzione */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-1.5">
-            <Layers className="w-4 h-4 text-[#12B76A]" />
-            <span className="font-semibold text-xs text-white">Griglia Cabinet 2D</span>
+    <div className="w-full flex flex-col items-center space-y-2.5">
+      {/* 1. TOOLBAR SUPERIORE: CONTROLLI COLONNE E RIGHE DIRETTAMENTE A MONTE DEL DISPLAY */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-[#0A0D14] border border-[#161C26]">
+        {/* Identificativo Cabinet & Passo Selezionato */}
+        <div className="flex items-center space-x-2">
+          <div className="px-2 py-1 rounded bg-[#0D1420] border border-[#1E293B] text-[11px] font-semibold text-[#38BDF8] flex items-center space-x-1">
+            <span>Griglia Cabinet 2D</span>
           </div>
-          <span className="text-[11px] px-2 py-0.5 rounded bg-[#0D1117] text-[#9AA3AD] border border-[#1A2028]">
+          <span className="text-xs text-[#9AA3AD] hidden sm:inline">
             {format.name}
           </span>
-          <span className="text-[11px] px-2 py-0.5 rounded bg-[#0D2818] text-[#34D399] border border-[#163826] font-medium">
+          <span className="px-1.5 py-0.5 rounded bg-[#0D2818] border border-[#1B4D2E] text-[10px] font-bold text-[#34D399]">
             Passo P{pitchMm} mm
           </span>
-          <span className="text-[11px] px-2 py-0.5 rounded bg-[#10141D] text-[#E8EDF2] border border-[#1A2028] tabular-nums font-mono">
+          <span className="text-[10px] text-[#6B7280] font-mono">
             {totalPixW} × {totalPixH} px
           </span>
         </div>
 
-        {/* CONTROLLI COLONNE E RIGHE DIRETTAMENTE SOPRA AL DISPLAY */}
-        <div className="flex items-center space-x-3 text-xs text-[#E8EDF2]">
+        {/* Stepper Colonne e Righe */}
+        <div className="flex items-center space-x-3 text-xs">
           {/* Colonne */}
           <div className="flex items-center space-x-1.5 bg-[#0D1117] px-2 py-1 rounded-lg border border-[#1A2028]">
             <span className="text-[#868D97] font-medium text-[11px]">Colonne:</span>
             <button
               type="button"
               onClick={() => setModulesW(modulesW - 1)}
-              className="w-5 h-5 rounded bg-[#10141D] hover:bg-[#161F30] border border-[#1A2028] text-white font-bold flex items-center justify-center transition-colors cursor-pointer"
+              disabled={modulesW <= 1}
+              className="w-5 h-5 rounded bg-[#10141D] hover:bg-[#161F30] disabled:opacity-40 border border-[#1A2028] text-white font-bold flex items-center justify-center transition-colors cursor-pointer"
               title="Riduci colonne"
             >
               -
@@ -574,7 +715,8 @@ export const CabinetCanvas: React.FC = () => {
             <button
               type="button"
               onClick={() => setModulesH(modulesH - 1)}
-              className="w-5 h-5 rounded bg-[#10141D] hover:bg-[#161F30] border border-[#1A2028] text-white font-bold flex items-center justify-center transition-colors cursor-pointer"
+              disabled={modulesH <= 1}
+              className="w-5 h-5 rounded bg-[#10141D] hover:bg-[#161F30] disabled:opacity-40 border border-[#1A2028] text-white font-bold flex items-center justify-center transition-colors cursor-pointer"
               title="Riduci righe"
             >
               -
@@ -594,62 +736,49 @@ export const CabinetCanvas: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. TOOLBAR KINETIC DOOH & EFFETTI VISIVI */}
+      {/* 2. SELETTORE DEI CARTELLI PUBBLICITARI DOOH ("PARTELLI / CARTELLI") CON COLORI VIVACI */}
       <div className="w-full flex flex-wrap items-center justify-between gap-2 text-xs">
-        {/* Selettore Stile Scena */}
-        <div className="flex items-center space-x-1.5 bg-[#0D1117] p-0.5 rounded-lg border border-[#1A2028]">
-          <button
-            type="button"
-            onClick={() => setSceneMode('kinetic')}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center space-x-1 transition-colors cursor-pointer ${
-              sceneMode === 'kinetic'
-                ? 'bg-[#12B76A] text-white font-semibold'
-                : 'text-[#868D97] hover:text-[#E8EDF2]'
-            }`}
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>Kinetic Typo DOOH</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSceneMode('glitch')}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center space-x-1 transition-colors cursor-pointer ${
-              sceneMode === 'glitch'
-                ? 'bg-[#12B76A] text-white font-semibold'
-                : 'text-[#868D97] hover:text-[#E8EDF2]'
-            }`}
-          >
-            <RefreshCw className="w-3 h-3" />
-            <span>Cyber Glitch</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSceneMode('rgb')}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center space-x-1 transition-colors cursor-pointer ${
-              sceneMode === 'rgb'
-                ? 'bg-[#12B76A] text-white font-semibold'
-                : 'text-[#868D97] hover:text-[#E8EDF2]'
-            }`}
-          >
-            <SlidersHorizontal className="w-3 h-3" />
-            <span>Test RGB</span>
-          </button>
+        {/* Selettore Spot Commerciali */}
+        <div className="flex items-center space-x-1 bg-[#0D1117] p-1 rounded-lg border border-[#1A2028] overflow-x-auto">
+          {SPOTS.map((spot) => {
+            const Icon = spot.icon;
+            const isActive = activeSpot === spot.id;
+            return (
+              <button
+                key={spot.id}
+                type="button"
+                onClick={() => {
+                  setActiveSpot(spot.id);
+                  setAutoRotate(false); // Disattiva rotazione automatica se l'utente clicca un cartello specifico
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center space-x-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#12B76A] text-white font-semibold shadow-sm'
+                    : 'text-[#868D97] hover:text-[#E8EDF2]'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{spot.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Controlli Animazione e Lente Macro */}
+        {/* Controlli Rotazione e Playback */}
         <div className="flex items-center space-x-2">
-          {/* Lente Diodi Macro 8X */}
+          {/* Rotazione Automatica Spot */}
           <button
             type="button"
-            onClick={() => setShowMacroLoupe(!showMacroLoupe)}
+            onClick={() => setAutoRotate(!autoRotate)}
             className={`px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center space-x-1.5 border transition-colors cursor-pointer ${
-              showMacroLoupe
+              autoRotate
                 ? 'bg-[#0D2818] text-[#34D399] border-[#1B4D2E]'
                 : 'bg-[#0D1117] text-[#9AA3AD] border-[#1A2028] hover:text-white'
             }`}
+            title="Cambia cartello automaticamente ogni 5 secondi"
           >
-            <ZoomIn className="w-3 h-3 text-[#12B76A]" />
-            <span>{showMacroLoupe ? 'Lente Diodi Attiva' : 'Lente Diodi 8X'}</span>
+            <RotateCw className={`w-3 h-3 ${autoRotate ? 'animate-spin text-[#34D399]' : 'text-[#868D97]'}`} />
+            <span>{autoRotate ? 'Auto-Spot ON' : 'Rotazione Off'}</span>
           </button>
 
           {/* Play / Pausa */}
@@ -665,8 +794,8 @@ export const CabinetCanvas: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. DISPLAY LEDWALL REALE PIXELLATO CON KINETIC TYPOGRAPHY ADATTIVA */}
-      <div className="w-full flex items-center justify-center overflow-hidden rounded-lg bg-[#020406] py-1 border border-[#161C24] shadow-inner">
+      {/* 3. DISPLAY LEDWALL REALE: MATRICE A DIODI SMD DISCRETI, LOUVER MASK & BLOOM EMISSIVO */}
+      <div className="w-full flex items-center justify-center overflow-hidden rounded-lg bg-[#020406] py-1 border border-[#161C24] shadow-2xl">
         <canvas ref={canvasRef} className="block select-none" />
       </div>
 
