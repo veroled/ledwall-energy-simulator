@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
-import { CABINET_FORMATS, PIXEL_PITCH_PRESETS } from '../../config/config';
+import { CABINET_FORMATS, PIXEL_PITCH_PRESETS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
 import { stimaPotenzaDaPassoNit, getMaxNitsForPitch } from '../../core/physics';
 import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock } from 'lucide-react';
@@ -15,6 +15,8 @@ export const S2Dimensions: React.FC = () => {
     pitchMm,
     modulesW,
     modulesH,
+    tariffEurKwh,
+    operatingHoursDay,
     setSizingMode,
     setFormatId,
     setPitchMm,
@@ -24,6 +26,24 @@ export const S2Dimensions: React.FC = () => {
   } = useSimulatorStore();
 
   const { dimensions, format } = useSimulatorComputed();
+
+  // Stato APL in tempo reale dal canvas
+  const [liveApl, setLiveApl] = useState<number>(32);
+
+  // Calcolo consumi in tempo reale basati sull'APL istantaneo del canvas
+  const effectiveLiveApl = Math.max(0.05, Math.min(1, (liveApl ?? 30) / 100));
+  const pMaxWmq = CONFIG.P_MAX_DEFAULT;
+  const pStandbyWmq = CONFIG.P_STANDBY_DEFAULT;
+  const livePowerWmq = pStandbyWmq + effectiveLiveApl * (pMaxWmq - pStandbyWmq);
+  const livePowerKw = (livePowerWmq * dimensions.areaM2) / 1000;
+
+  // Corrente trifase 400V (CEI 64-8): I = P / (sqrt(3) * V * cosphi), con V = 400V, cosphi = 0.95
+  const liveCurrentAmp = livePowerKw > 0 ? (livePowerKw * 1000) / (Math.sqrt(3) * 400 * 0.95) : 0;
+
+  // Costo orario stimato con tariffa utente
+  const rateEur = tariffEurKwh || 0.28;
+  const liveHourlyCostEur = livePowerKw * rateEur;
+  const liveAnnualCostEur = livePowerKw * (operatingHoursDay || 16) * 365 * rateEur;
 
   // Stato interno per il comparatore hardware (Passi e Nit a confronto)
   const [compPitchA, setCompPitchA] = useState(3.91);
@@ -607,8 +627,8 @@ export const S2Dimensions: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Interactive 2D Canvas */}
-                  <CabinetCanvas />
+                  {/* Interactive 2D Canvas con callback APL in tempo reale */}
+                  <CabinetCanvas onLiveAplUpdate={setLiveApl} />
                 </div>
               )}
 
@@ -683,46 +703,127 @@ export const S2Dimensions: React.FC = () => {
           )}
         </div>
 
-        {/* Calculated Summary Panel (Sidebar B2B pulita) */}
-        <div className="bg-[#0D1117] p-6 rounded-xl border border-[#1A2028] shadow-sm flex flex-col justify-between space-y-5">
+        {/* Calculated Summary Panel con APL e CONSUMI IN TEMPO REALE */}
+        <div className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm flex flex-col justify-between space-y-4">
           <div className="space-y-4">
-            <div className="text-xs font-semibold text-white tracking-wider uppercase border-b border-[#1A2028] pb-2">
-              Riepilogo Parametri
+            {/* 1. SEZIONE APL IN TEMPO REALE (DIRETTAMENTE SOPRA I CONSUMI) */}
+            <div className="p-3 rounded-lg bg-[#070A0F] border border-[#1B2536] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#12B76A] animate-pulse" />
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wider">APL Istantaneo Video</span>
+                </div>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                  liveApl > 60
+                    ? 'bg-[#3E1A08] text-[#FB923C] border border-[#7C2D12]'
+                    : liveApl > 35
+                    ? 'bg-[#2E230B] text-[#FBBF24] border border-[#78350F]'
+                    : 'bg-[#0D2818] text-[#34D399] border border-[#1B4D2E]'
+                }`}>
+                  {liveApl > 60 ? 'Alto APL (Day/White)' : liveApl > 35 ? 'Medio APL' : 'Basso APL (Dark)'}
+                </span>
+              </div>
+
+              {/* Percentuale APL Grande e Barra di Progresso */}
+              <div className="flex items-baseline justify-between">
+                <span className="text-2xl font-black tabular-nums tracking-tight text-white">
+                  {liveApl.toFixed(1)} <span className="text-xs font-semibold text-[#868D97]">%</span>
+                </span>
+                <span className="text-[11px] text-[#9AA3AD] font-medium">
+                  {liveApl > 60 ? '+45% impatto termico' : liveApl < 25 ? 'Ottimizzazione -40%' : 'Consumo nominale'}
+                </span>
+              </div>
+
+              <div className="w-full h-2 rounded-full bg-[#131B2A] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-200"
+                  style={{
+                    width: `${Math.min(100, Math.max(5, liveApl))}%`,
+                    background: liveApl > 60
+                      ? 'linear-gradient(90deg, #F59E0B, #EF4444)'
+                      : liveApl > 35
+                      ? 'linear-gradient(90deg, #10B981, #F59E0B)'
+                      : 'linear-gradient(90deg, #059669, #10B981)',
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
+            {/* 2. CONSUMI IN TEMPO REALE (DIRETTAMENTE SOTTO L'APL) */}
+            <div className="p-3 rounded-lg bg-[#070A0F] border border-[#1B2536] space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5">
+                  <Zap className="w-3.5 h-3.5 text-[#F59E0B]" />
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wider">Consumo in Tempo Reale</span>
+                </div>
+                <span className="text-[10px] text-[#868D97] font-mono">CEI 64-8</span>
+              </div>
+
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="text-3xl font-black tabular-nums tracking-tight text-[#38BDF8]">
+                    {livePowerKw.toFixed(2)}
+                  </span>
+                  <span className="text-sm font-semibold text-[#9AA3AD] ml-1">kW</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] text-[#868D97]">Specifico:</div>
+                  <div className="text-xs font-semibold text-white tabular-nums">
+                    {Math.round(livePowerWmq)} W/m²
+                  </div>
+                </div>
+              </div>
+
+              {/* Griglia 3 metriche sub-energetiche */}
+              <div className="grid grid-cols-3 gap-1.5 pt-1 text-[11px]">
+                <div className="p-1.5 rounded bg-[#0D1117] border border-[#161F2E]">
+                  <div className="text-[9px] text-[#868D97] uppercase tracking-wide">Trifase 400V</div>
+                  <div className="font-semibold text-white tabular-nums mt-0.5">{liveCurrentAmp.toFixed(1)} A</div>
+                </div>
+                <div className="p-1.5 rounded bg-[#0D1117] border border-[#161F2E]">
+                  <div className="text-[9px] text-[#868D97] uppercase tracking-wide">Costo Ora</div>
+                  <div className="font-semibold text-[#34D399] tabular-nums mt-0.5">€ {liveHourlyCostEur.toFixed(2)}</div>
+                </div>
+                <div className="p-1.5 rounded bg-[#0D1117] border border-[#161F2E]">
+                  <div className="text-[9px] text-[#868D97] uppercase tracking-wide">Proiez. Anno</div>
+                  <div className="font-semibold text-white tabular-nums mt-0.5">€ {fmt(liveAnnualCostEur)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. RIEPILOGO PARAMETRI FISICI & MECCANICI */}
+            <div className="space-y-1.5 text-xs pt-1 border-t border-[#1A2028]">
+              <div className="text-[10px] font-bold text-[#868D97] uppercase tracking-wider pb-1">
+                Specifiche Schermo
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#161F30]">
                 <span className="text-[#868D97]">Superficie:</span>
-                <span className="text-white font-semibold tabular-nums">{dimensions.areaM2.toFixed(2)} m²</span>
+                <span className="text-white font-semibold tabular-nums">{dimensions.areaM2.toFixed(2)} m² ({dimensions.widthM.toFixed(1)}×{dimensions.heightM.toFixed(1)}m)</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Dimensioni:</span>
-                <span className="text-white font-semibold tabular-nums">
-                  {dimensions.widthM.toFixed(2)} × {dimensions.heightM.toFixed(2)} m
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
+              <div className="flex justify-between py-1 border-b border-[#161F30]">
                 <span className="text-[#868D97]">Totale Cabinet:</span>
                 <span className="text-[#12B76A] font-semibold tabular-nums">
-                  {dimensions.totalCabinets} cabinet ({modulesW} col × {modulesH} righe)
+                  {dimensions.totalCabinets} pz ({modulesW} col × {modulesH} righe)
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Formato Cabinet:</span>
-                <span className="text-white font-medium">Cabinet {format.name}</span>
+              <div className="flex justify-between py-1 border-b border-[#161F30]">
+                <span className="text-[#868D97]">Passo Pixel:</span>
+                <span className="text-white font-semibold tabular-nums">P{pitchMm} mm ({format.name})</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Passo Selezionato:</span>
-                <span className="text-white font-semibold tabular-nums">P{pitchMm} mm</span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Risoluzione:</span>
+              <div className="flex justify-between py-1 border-b border-[#161F30]">
+                <span className="text-[#868D97]">Risoluzione Totale:</span>
                 <span className="text-white font-semibold tabular-nums">
                   {dimensions.resolutionX} × {dimensions.resolutionY} px
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Peso stimato:</span>
+              <div className="flex justify-between py-1 border-b border-[#161F30]">
+                <span className="text-[#868D97]">Totale Diodi LED:</span>
+                <span className="text-[#38BDF8] font-bold tabular-nums">
+                  {fmt(dimensions.resolutionX * dimensions.resolutionY)} SMD
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-[#868D97]">Peso Stimato:</span>
                 <span className="text-[#E8EDF2] tabular-nums">~{dimensions.weightKg} kg</span>
               </div>
             </div>
