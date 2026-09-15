@@ -100,8 +100,8 @@ export const useSimulatorStore = create<SimulatorState>()(
 
       sizingMode: 'cabinet',
       formatId: '1000x1000',
-      modulesW: 5,
-      modulesH: 3,
+      modulesW: 6,
+      modulesH: 4,
       pitchMm: 3.9,
 
       aplSource: 'manual',
