@@ -762,9 +762,11 @@ export const S2Dimensions: React.FC = () => {
               <div className="flex items-baseline justify-between">
                 <div>
                   <span className="text-3xl font-black tabular-nums tracking-tight text-[#38BDF8]">
-                    {livePowerKw.toFixed(2)}
+                    {livePowerKw < 10 ? fmt(Math.round(livePowerKw * 1000)) : livePowerKw.toFixed(2)}
                   </span>
-                  <span className="text-sm font-semibold text-[#9AA3AD] ml-1">kW</span>
+                  <span className="text-sm font-semibold text-[#9AA3AD] ml-1">
+                    {livePowerKw < 10 ? 'W' : 'kW'}
+                  </span>
                 </div>
                 <div className="text-right">
                   <div className="text-[11px] text-[#868D97]">Specifico:</div>

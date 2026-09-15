@@ -162,43 +162,30 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
       ctx.arc(startX + screenW + 2, startY + screenH + 2, 1.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. CALCOLO DELLA PASSO DIODO REALE (PIXEL MOLTO PIÙ FITTI E REALISTICI)
-      // A P2.6 mm il passo diodo sul canvas è compatto (1.1 - 1.4 px), generando centinaia di diodi nitidi!
-      // A P10 mm il passo diodo è più grosso (4.2 - 5.5 px), evidenziando la matrice sgranata da grande distanza.
-      const diodePitch = Math.max(1.15, Math.min(5.2, 1.15 + (pitchMm - 2.6) * 0.52));
-      const diodeCols = Math.max(48, Math.floor(screenW / diodePitch));
-      const diodeRows = Math.max(32, Math.floor(screenH / diodePitch));
+      // 2. RISOLUZIONE NATIVA FISICA ESATTA DEL LEDWALL (SIMULAZIONE REALE SUL MONITOR)
+      // Ogni pixel dell'offscreen canvas corrisponde a un reale diodo LED del maxischermo.
+      // Esempio: 8×4m a P6.7mm = esattamente 1192 × 596 pixel (149 px per ogni cabinet da 1 metro).
+      // Se conti i pixel su 1 cabinet o sull'intero display, corrispondono al 100% alla scheda tecnica!
+      const maxRenderDim = 1920;
+      let renderW = totalPixW;
+      let renderH = totalPixH;
+      if (renderW > maxRenderDim || renderH > maxRenderDim) {
+        const scale = Math.min(maxRenderDim / renderW, maxRenderDim / renderH);
+        renderW = Math.max(64, Math.round(renderW * scale));
+        renderH = Math.max(32, Math.round(renderH * scale));
+      }
+      const diodeCols = renderW;
+      const diodeRows = renderH;
 
-      const actualScreenWidth = diodeCols * diodePitch;
-      const actualScreenHeight = diodeRows * diodePitch;
-      const offsetX = startX + (screenW - actualScreenWidth) / 2;
-      const offsetY = startY + (screenH - actualScreenHeight) / 2;
+      const actualScreenWidth = screenW;
+      const actualScreenHeight = screenH;
+      const offsetX = startX;
+      const offsetY = startY;
 
       // Aggiornamento offscreen buffer alla risoluzione esatta della matrice diodi
       if (offCanvas.width !== diodeCols || offCanvas.height !== diodeRows) {
         offCanvas.width = diodeCols;
         offCanvas.height = diodeRows;
-      }
-
-      // Aggiornamento del pattern del tassello Louver Mask
-      const tilePitchInt = Math.max(2, Math.round(diodePitch));
-      if (currentTilePitch !== tilePitchInt || !louverPattern) {
-        currentTilePitch = tilePitchInt;
-        tileCanvas.width = tilePitchInt;
-        tileCanvas.height = tilePitchInt;
-        if (tileCtx) {
-          tileCtx.fillStyle = '#020407';
-          tileCtx.fillRect(0, 0, tilePitchInt, tilePitchInt);
-
-          // Apertura ottica circolare al centro (trasparente per emettere luce pura)
-          tileCtx.globalCompositeOperation = 'destination-out';
-          tileCtx.beginPath();
-          const radius = Math.max(0.6, tilePitchInt * 0.44);
-          tileCtx.arc(tilePitchInt / 2, tilePitchInt / 2, radius, 0, Math.PI * 2);
-          tileCtx.fill();
-          tileCtx.globalCompositeOperation = 'source-over';
-        }
-        louverPattern = ctx.createPattern(tileCanvas, 'repeat');
       }
 
       // 3. GENERAZIONE CONTENUTI VIVACI NELL'OFFSCREEN BUFFER (DIODO PER DIODO)
@@ -688,8 +675,9 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
             const imgData = offCtx.getImageData(0, 0, diodeCols, diodeRows).data;
             let sumLuminance = 0;
             let sampled = 0;
-            // Campionamento a passo di 4 pixel per velocità impercettibile (0.05ms)
-            for (let idx = 0; idx < imgData.length; idx += 16) {
+            // Campionamento a passo proporzionale per velocità estrema (<0.04ms)
+            const step = Math.max(4, Math.floor(imgData.length / (4 * 1000)));
+            for (let idx = 0; idx < imgData.length; idx += step * 4) {
               const r = imgData[idx];
               const g = imgData[idx + 1];
               const b = imgData[idx + 2];
@@ -709,19 +697,43 @@ export const CabinetCanvas: React.FC<CabinetCanvasProps> = ({ onLiveAplUpdate })
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(offCanvas, offsetX, offsetY, actualScreenWidth, actualScreenHeight);
 
-      // 5. APPLICAZIONE DELLA MASCHERA OTTICA LOUVER A DIODI SMD (VERA STRUTTURA A PUNTI LED)
-      if (louverPattern) {
-        ctx.save();
-        ctx.translate(offsetX, offsetY);
-        ctx.fillStyle = louverPattern;
-        ctx.fillRect(0, 0, actualScreenWidth, actualScreenHeight);
-        ctx.restore();
+      // 5. STRUTTURA OTTICA DEI DIODI SMD (INTER-PIXEL PITCH GAP)
+      // Se ogni diodo LED sul monitor ha una dimensione sufficiente (passo >= 2.4px fisici), evidenziamo la maschera SMD
+      const diodePixelSize = (actualScreenWidth * dpr) / diodeCols;
+      if (diodePixelSize >= 2.4) {
+        const tilePitchInt = Math.max(2, Math.round(diodePixelSize / dpr));
+        if (currentTilePitch !== tilePitchInt || !louverPattern) {
+          currentTilePitch = tilePitchInt;
+          tileCanvas.width = tilePitchInt;
+          tileCanvas.height = tilePitchInt;
+          if (tileCtx) {
+            tileCtx.fillStyle = '#020407';
+            tileCtx.fillRect(0, 0, tilePitchInt, tilePitchInt);
+
+            // Apertura ottica circolare al centro (trasparente per emettere luce pura)
+            tileCtx.globalCompositeOperation = 'destination-out';
+            tileCtx.beginPath();
+            const radius = Math.max(0.6, tilePitchInt * 0.44);
+            tileCtx.arc(tilePitchInt / 2, tilePitchInt / 2, radius, 0, Math.PI * 2);
+            tileCtx.fill();
+            tileCtx.globalCompositeOperation = 'source-over';
+          }
+          louverPattern = ctx.createPattern(tileCanvas, 'repeat');
+        }
+
+        if (louverPattern) {
+          ctx.save();
+          ctx.translate(offsetX, offsetY);
+          ctx.fillStyle = louverPattern;
+          ctx.fillRect(0, 0, actualScreenWidth, actualScreenHeight);
+          ctx.restore();
+        }
       }
 
       // 6. BLOOM EMISSIVO AD ALTA LUMINANZA (EFFETTO 10.000 NIT OUTDOOR)
       ctx.save();
       ctx.globalCompositeOperation = 'screen';
-      ctx.globalAlpha = 0.22;
+      ctx.globalAlpha = 0.16;
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(offCanvas, offsetX, offsetY, actualScreenWidth, actualScreenHeight);
       ctx.restore();

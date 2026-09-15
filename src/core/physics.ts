@@ -87,8 +87,11 @@ export function calcolaDimensioniSchermo(
   const widthM = (modulesW * cabinetWidthMm) / 1000;
   const heightM = (modulesH * cabinetHeightMm) / 1000;
   const areaM2 = Math.round(widthM * heightM * 100) / 100;
-  const resolutionX = Math.round((widthM * 1000) / pitchMm);
-  const resolutionY = Math.round((heightM * 1000) / pitchMm);
+  // Risoluzione esatta calcolata a livello di cabinet modulare fisico
+  const cabPixW = Math.round(cabinetWidthMm / pitchMm);
+  const cabPixH = Math.round(cabinetHeightMm / pitchMm);
+  const resolutionX = modulesW * cabPixW;
+  const resolutionY = modulesH * cabPixH;
   const totalCabinets = modulesW * modulesH;
   const weightKg = Math.round(totalCabinets * cabinetWeightKg);
 
