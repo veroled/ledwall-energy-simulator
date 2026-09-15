@@ -71,17 +71,17 @@ export const LoadCurveChart: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-64 bg-white p-4 rounded-xl border border-[#E4E7EC] shadow-sm flex flex-col">
+    <div className="w-full h-64 bg-[#0D1117] p-4 rounded-xl border border-[#1A2028] shadow-sm flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
         <div className="space-y-0.5">
-          <span className="text-xs font-semibold text-[#101828] block">
+          <span className="text-xs font-semibold text-white block">
             Curva di Carico 24h (Potenza kW assorbita)
           </span>
-          <span className="text-xs text-[#667085] block">
-            <span className="text-[#F04438] font-medium">Scenario A (Non Gestito)</span>: 100% fisso · <span className="text-[#12B76A] font-medium">Scenario B (Fleet Monitor)</span>: sensore Lux VeroLED
+          <span className="text-xs text-[#9AA3AD] block">
+            <span className="text-[#F87171] font-medium">Scenario A (Non Gestito)</span>: 100% fisso · <span className="text-[#12B76A] font-medium">Scenario B (Fleet Monitor)</span>: sensore Lux VeroLED
           </span>
         </div>
-        <span className="text-xs font-medium text-[#344054] bg-[#F7F8FA] border border-[#E4E7EC] px-2 py-1 rounded-md self-start sm:self-auto tabular-nums">
+        <span className="text-xs font-medium text-[#E8EDF2] bg-[#10141D] border border-[#1A2028] px-2 py-1 rounded-md self-start sm:self-auto tabular-nums">
           Acceso: {profile.dayHours}h · Standby: {profile.nightHours}h
         </span>
       </div>
@@ -101,22 +101,23 @@ export const LoadCurveChart: React.FC = () => {
             </defs>
             <XAxis
               dataKey="time"
-              stroke="#98A2B3"
+              stroke="#868D97"
               fontSize={10}
               tickLine={false}
               interval={3}
             />
-            <YAxis stroke="#98A2B3" fontSize={10} tickLine={false} unit=" kW" />
+            <YAxis stroke="#868D97" fontSize={10} tickLine={false} unit=" kW" />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#FFFFFF',
-                borderColor: '#E4E7EC',
+                backgroundColor: '#0D1117',
+                borderColor: '#1A2028',
                 borderRadius: '8px',
                 fontSize: '11px',
                 fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 1px 3px rgba(16,24,40,0.1)',
-                color: '#101828',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                color: '#FFFFFF',
               }}
+              itemStyle={{ color: '#E8EDF2' }}
             />
             <Legend
               wrapperStyle={{ fontSize: '11px', fontFamily: 'Inter, sans-serif', paddingTop: '4px' }}

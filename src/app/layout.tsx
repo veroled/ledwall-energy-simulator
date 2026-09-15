@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" className="h-full">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen flex flex-col bg-[#FFFFFF] text-[#101828] antialiased`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen flex flex-col bg-[#07090C] text-[#E8EDF2] antialiased`}>
         {children}
       </body>
     </html>

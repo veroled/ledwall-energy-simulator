@@ -140,38 +140,38 @@ export const S7Dashboard: React.FC = () => {
       className="w-full max-w-5xl space-y-6"
     >
       {/* Header Dashboard */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#E4E7EC] pb-4 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#1A2028] pb-4 gap-4">
         <div>
           <span className="text-xs font-semibold text-[#12B76A] tracking-wider uppercase">
             Pannello di Controllo · Calcolo Realtime
           </span>
-          <h2 className="text-2xl md:text-3xl font-semibold text-[#101828]">
+          <h2 className="text-2xl md:text-3xl font-semibold text-white">
             Dashboard Energetica Istantanea
           </h2>
         </div>
-        <div className="flex items-center space-x-2 text-xs text-[#344054] bg-[#F7F8FA] px-3.5 py-1.5 rounded-full border border-[#E4E7EC]">
+        <div className="flex items-center space-x-2 text-xs text-[#9AA3AD] bg-[#10141D] px-3.5 py-1.5 rounded-full border border-[#1A2028]">
           <span className="w-2 h-2 rounded-full bg-[#12B76A]"></span>
           <span className="font-medium">Calcolo attivo in tempo reale</span>
         </div>
       </div>
 
       {/* TAVOLA COMPARATIVA ULTRA-CHIARA: PRIMA vs DOPO vs RISPARMIO */}
-      <div className="p-6 rounded-xl bg-white border border-[#E4E7EC] shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E4E7EC] pb-3">
+      <div className="p-6 rounded-xl bg-[#0D1117] border border-[#1A2028] shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1A2028] pb-3">
           <div className="flex items-center space-x-2.5">
-            <div className="p-1.5 rounded-lg bg-[#ECFDF3] text-[#027A48]">
+            <div className="p-1.5 rounded-lg bg-[#0D2818] text-[#34D399]">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm md:text-base font-semibold text-[#101828]">
+              <h3 className="text-sm md:text-base font-semibold text-white">
                 Confronto Immediato Bolletta ({dimensions.areaM2.toFixed(1)} m² · APL {aplPercent}%)
               </h3>
-              <p className="text-xs text-[#667085]">
+              <p className="text-xs text-[#9AA3AD]">
                 Confronto tra impianto non gestito e ottimizzazione Fleet Monitor VeroLED
               </p>
             </div>
           </div>
-          <div className="px-3 py-1 rounded-full bg-[#ECFDF3] border border-[#A6F4C5] text-[#027A48] text-xs font-semibold self-start sm:self-auto tabular-nums">
+          <div className="px-3 py-1 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-xs font-semibold self-start sm:self-auto tabular-nums">
             Taglio Bolletta: -{scenario.savingsPercent.toFixed(1)}%
           </div>
         </div>
@@ -179,65 +179,65 @@ export const S7Dashboard: React.FC = () => {
         {/* 3 Colonne a Confronto Diretto */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Colonna 1: Senza Gestione (Muted Red) */}
-          <div className="p-4 rounded-xl border border-[#FECDCA] bg-[#FEF3F2] space-y-3">
-            <div className="flex justify-between items-center text-xs font-semibold text-[#B42318]">
+          <div className="p-4 rounded-xl border border-[#4E1D24] bg-[#2A1215] space-y-3">
+            <div className="flex justify-between items-center text-xs font-semibold text-[#F87171]">
               <span>Senza Gestione</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-[#FEE4E2] text-[#B42318] font-medium">Tradizionale</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[#3D1418] text-[#F87171] border border-[#5A1C22] font-medium">Tradizionale</span>
             </div>
             <div>
-              <div className="text-xs text-[#667085]">Bolletta Elettrica Annua:</div>
-              <div className="text-2xl font-semibold text-[#B42318] tabular-nums">
-                {Math.round(scenario.annualCostEurA).toLocaleString('it-IT')} €<span className="text-xs text-[#667085] font-normal"> / anno</span>
+              <div className="text-xs text-[#9AA3AD]">Bolletta Elettrica Annua:</div>
+              <div className="text-2xl font-semibold text-[#F87171] tabular-nums">
+                {Math.round(scenario.annualCostEurA).toLocaleString('it-IT')} €<span className="text-xs text-[#9AA3AD] font-normal"> / anno</span>
               </div>
-              <div className="text-xs text-[#B42318] mt-0.5 tabular-nums">
+              <div className="text-xs text-[#FCA5A5] mt-0.5 tabular-nums">
                 pari a {Math.round(scenario.annualCostEurA / 12).toLocaleString('it-IT')} € al mese
               </div>
             </div>
-            <div className="pt-2 border-t border-[#FECDCA] text-xs text-[#475467] space-y-1">
+            <div className="pt-2 border-t border-[#4E1D24] text-xs text-[#E8EDF2] space-y-1">
               <div>Luminosità fissa 100% (senza sensore)</div>
               <div>Standby passivo di notte (~50 W/m²)</div>
             </div>
           </div>
 
           {/* Colonna 2: Con Fleet Monitor (Muted Green) */}
-          <div className="p-4 rounded-xl border border-[#A6F4C5] bg-[#F7FDF9] space-y-3">
-            <div className="flex justify-between items-center text-xs font-semibold text-[#027A48]">
+          <div className="p-4 rounded-xl border border-[#163826] bg-[#0D1E16] space-y-3">
+            <div className="flex justify-between items-center text-xs font-semibold text-[#34D399]">
               <span>Con Fleet Monitor</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-[#ECFDF3] text-[#027A48] border border-[#A6F4C5] font-medium">VeroLED PRO</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[#0D2818] text-[#34D399] border border-[#163826] font-medium">VeroLED PRO</span>
             </div>
             <div>
-              <div className="text-xs text-[#667085]">Nuova Bolletta con Gestione:</div>
-              <div className="text-2xl font-semibold text-[#027A48] tabular-nums">
-                {Math.round(scenario.annualCostEurB).toLocaleString('it-IT')} €<span className="text-xs text-[#667085] font-normal"> / anno</span>
+              <div className="text-xs text-[#9AA3AD]">Nuova Bolletta con Gestione:</div>
+              <div className="text-2xl font-semibold text-[#34D399] tabular-nums">
+                {Math.round(scenario.annualCostEurB).toLocaleString('it-IT')} €<span className="text-xs text-[#9AA3AD] font-normal"> / anno</span>
               </div>
-              <div className="text-xs text-[#027A48] mt-0.5 tabular-nums">
+              <div className="text-xs text-[#86EFAC] mt-0.5 tabular-nums">
                 pari a {Math.round(scenario.annualCostEurB / 12).toLocaleString('it-IT')} € al mese
               </div>
             </div>
-            <div className="pt-2 border-t border-[#A6F4C5] text-xs text-[#344054] space-y-1">
+            <div className="pt-2 border-t border-[#163826] text-xs text-[#E8EDF2] space-y-1">
               <div>Sensore Lux modulante in tempo reale</div>
               <div>Standby Zero reale a relè (0 kW)</div>
             </div>
           </div>
 
           {/* Colonna 3: Il Risparmio Diretto */}
-          <div className="p-4 rounded-xl border border-[#A6F4C5] bg-[#ECFDF3] space-y-3">
-            <div className="flex justify-between items-center text-xs font-semibold text-[#027A48]">
+          <div className="p-4 rounded-xl border border-[#12B76A] bg-[#0D2818] space-y-3">
+            <div className="flex justify-between items-center text-xs font-semibold text-[#34D399]">
               <span>Risparmio Netto</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-white text-[#027A48] border border-[#A6F4C5] font-semibold tabular-nums">-{scenario.savingsPercent.toFixed(1)}%</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[#10141D] text-[#34D399] border border-[#163826] font-semibold tabular-nums">-{scenario.savingsPercent.toFixed(1)}%</span>
             </div>
             <div>
-              <div className="text-xs text-[#344054]">Risparmio economico annuo:</div>
-              <div className="text-2xl md:text-3xl font-semibold text-[#027A48] tabular-nums">
-                +{Math.round(scenario.savingsEur).toLocaleString('it-IT')} €<span className="text-xs text-[#027A48] font-normal"> / anno</span>
+              <div className="text-xs text-[#E8EDF2]">Risparmio economico annuo:</div>
+              <div className="text-2xl md:text-3xl font-semibold text-[#12B76A] tabular-nums">
+                +{Math.round(scenario.savingsEur).toLocaleString('it-IT')} €<span className="text-xs text-[#34D399] font-normal"> / anno</span>
               </div>
-              <div className="text-xs text-[#027A48] mt-0.5 tabular-nums">
+              <div className="text-xs text-[#34D399] mt-0.5 tabular-nums">
                 risparmi +{Math.round(scenario.savingsEur / 12).toLocaleString('it-IT')} € ogni mese
               </div>
             </div>
-            <div className="pt-2 border-t border-[#A6F4C5] text-xs text-[#344054]">
-              <div className="text-[#667085] text-[10px] uppercase tracking-wide">In 5 anni di esercizio:</div>
-              <div className="text-sm font-semibold text-[#027A48] tabular-nums">
+            <div className="pt-2 border-t border-[#163826] text-xs text-[#E8EDF2]">
+              <div className="text-[#9AA3AD] text-[10px] uppercase tracking-wide">In 5 anni di esercizio:</div>
+              <div className="text-sm font-semibold text-white tabular-nums">
                 +{Math.round(scenario.savingsEur * 5).toLocaleString('it-IT')} € risparmiati
               </div>
             </div>
@@ -248,7 +248,7 @@ export const S7Dashboard: React.FC = () => {
       {/* Bento Grid Principale */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Gauge Potenza Widget */}
-        <div className="bg-white p-4 rounded-xl border border-[#E4E7EC] shadow-sm flex flex-col items-center justify-center">
+        <div className="bg-[#0D1117] p-4 rounded-xl border border-[#1A2028] shadow-sm flex flex-col items-center justify-center">
           <CircularGauge
             currentKw={instantaneousPowerKw}
             maxKw={maxNominalPowerKw}
@@ -258,69 +258,69 @@ export const S7Dashboard: React.FC = () => {
 
         {/* 4 KPI Contatori */}
         <div className="md:col-span-2 grid grid-cols-2 gap-4">
-          <div className="bg-white p-5 rounded-xl border border-[#E4E7EC] shadow-sm flex flex-col justify-between">
+          <div className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#667085] font-medium uppercase tracking-wide">Potenza Attiva Istantanea:</span>
+              <span className="text-xs text-[#868D97] font-medium uppercase tracking-wide">Potenza Attiva Istantanea:</span>
               <span className="text-[10px] text-[#12B76A] font-semibold">Luce Diurna</span>
             </div>
-            <div className="text-2xl font-semibold text-[#101828] tabular-nums mt-1">
+            <div className="text-2xl font-semibold text-white tabular-nums mt-1">
               {instantaneousPowerKw.toFixed(2)} kW
             </div>
-            <div className="text-xs text-[#667085] mt-1 flex justify-between tabular-nums">
+            <div className="text-xs text-[#9AA3AD] mt-1 flex justify-between tabular-nums">
               <span>Costo orario attivo:</span>
-              <strong className="text-[#101828] font-semibold">{profile.hourlyCostEur.toFixed(2)} €/h</strong>
+              <strong className="text-white font-semibold">{profile.hourlyCostEur.toFixed(2)} €/h</strong>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[#E4E7EC] shadow-sm flex flex-col justify-between">
+          <div className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#667085] font-medium uppercase tracking-wide">Consumo Energetico Annuo:</span>
-              <span className="text-[10px] text-[#027A48] font-semibold tabular-nums">
+              <span className="text-xs text-[#868D97] font-medium uppercase tracking-wide">Consumo Energetico Annuo:</span>
+              <span className="text-[10px] text-[#34D399] font-semibold tabular-nums">
                 -{scenario.savingsPercent.toFixed(1)}% kWh
               </span>
             </div>
             <div className="text-2xl font-semibold text-[#12B76A] tabular-nums mt-1">
               {Math.round(scenario.annualKwhB).toLocaleString('it-IT')} kWh
             </div>
-            <div className="text-xs text-[#667085] mt-1 flex justify-between tabular-nums">
+            <div className="text-xs text-[#9AA3AD] mt-1 flex justify-between tabular-nums">
               <span>Senza gestione:</span>
-              <span className="text-[#B42318] font-medium">
+              <span className="text-[#F87171] font-medium">
                 {Math.round(scenario.annualKwhA).toLocaleString('it-IT')} kWh
               </span>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[#E4E7EC] shadow-sm flex flex-col justify-between">
+          <div className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#667085] font-medium uppercase tracking-wide">Bolletta Mensile Media:</span>
-              <span className="text-[10px] text-[#027A48] font-semibold tabular-nums">
+              <span className="text-xs text-[#868D97] font-medium uppercase tracking-wide">Bolletta Mensile Media:</span>
+              <span className="text-[10px] text-[#34D399] font-semibold tabular-nums">
                 -{Math.round(scenario.savingsEur / 12).toLocaleString('it-IT')} €/mese
               </span>
             </div>
-            <div className="text-2xl font-semibold text-[#101828] tabular-nums mt-1">
+            <div className="text-2xl font-semibold text-white tabular-nums mt-1">
               {Math.round(scenario.annualCostEurB / 12).toLocaleString('it-IT')} €
             </div>
-            <div className="text-xs text-[#667085] mt-1 flex justify-between tabular-nums">
+            <div className="text-xs text-[#9AA3AD] mt-1 flex justify-between tabular-nums">
               <span>Senza gestione:</span>
-              <span className="text-[#B42318] font-medium">
+              <span className="text-[#F87171] font-medium">
                 {Math.round(scenario.annualCostEurA / 12).toLocaleString('it-IT')} €/mese
               </span>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-xl border border-[#A6F4C5] bg-[#F7FDF9] shadow-sm flex flex-col justify-between">
+          <div className="bg-[#0D1117] p-5 rounded-xl border border-[#163826] bg-[#0D1E16]/30 shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#027A48] font-semibold uppercase tracking-wide">Bolletta Annuale Totale:</span>
-              <span className="text-[10px] text-[#027A48] font-semibold tabular-nums">
+              <span className="text-xs text-[#34D399] font-semibold uppercase tracking-wide">Bolletta Annuale Totale:</span>
+              <span className="text-[10px] text-[#34D399] font-semibold tabular-nums">
                 -{Math.round(scenario.savingsEur).toLocaleString('it-IT')} €/anno
               </span>
             </div>
-            <div className="text-2xl font-semibold text-[#027A48] tabular-nums mt-1">
+            <div className="text-2xl font-semibold text-[#12B76A] tabular-nums mt-1">
               {Math.round(scenario.annualCostEurB).toLocaleString('it-IT')} €
             </div>
-            <div className="text-xs text-[#667085] mt-1 flex justify-between tabular-nums">
+            <div className="text-xs text-[#9AA3AD] mt-1 flex justify-between tabular-nums">
               <span>Senza gestione:</span>
-              <span className="text-[#B42318] font-medium">
+              <span className="text-[#F87171] font-medium">
                 {Math.round(scenario.annualCostEurA).toLocaleString('it-IT')} €/anno
               </span>
             </div>
@@ -329,13 +329,13 @@ export const S7Dashboard: React.FC = () => {
       </div>
 
       {/* SIMULATORE CONTENUTI */}
-      <div className="bg-white p-6 rounded-xl border border-[#E4E7EC] shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E4E7EC] pb-3">
-          <div className="flex items-center space-x-2 text-[#101828] font-semibold text-sm">
+      <div className="bg-[#0D1117] p-6 rounded-xl border border-[#1A2028] shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1A2028] pb-3">
+          <div className="flex items-center space-x-2 text-white font-semibold text-sm">
             <Film className="w-5 h-5 text-[#12B76A]" />
             <span>Simulatore Contenuti — Regola il Video o Foto in Tempo Reale</span>
           </div>
-          <span className="text-xs text-[#667085] flex items-center space-x-1">
+          <span className="text-xs text-[#9AA3AD] flex items-center space-x-1">
             <Sparkles className="w-3.5 h-3.5 text-[#12B76A]" />
             <span>Verifica l&apos;impatto immediato dei contenuti sulla bolletta</span>
           </span>
@@ -353,23 +353,23 @@ export const S7Dashboard: React.FC = () => {
                 onClick={() => setAplPercent(preset.apl, 'manual')}
                 className={`p-4 rounded-xl text-left border transition-colors cursor-pointer flex flex-col justify-between space-y-2.5 ${
                   isSelected
-                    ? 'border-[#12B76A] bg-[#ECFDF3]'
-                    : 'border-[#E4E7EC] bg-white hover:border-[#D0D5DD] hover:bg-[#F9FAFB]'
+                    ? 'border-[#12B76A] bg-[#0D2818]'
+                    : 'border-[#1A2028] bg-[#10141D] hover:border-[#2D3748] hover:bg-[#161F30]'
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
-                  <IconComp className={`w-4 h-4 ${isSelected ? 'text-[#027A48]' : 'text-[#667085]'}`} />
+                  <IconComp className={`w-4 h-4 ${isSelected ? 'text-[#34D399]' : 'text-[#868D97]'}`} />
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border tabular-nums ${
-                    isSelected ? 'bg-[#D1FADF] text-[#027A48] border-[#A6F4C5]' : 'bg-[#F2F4F7] text-[#475467] border-[#E4E7EC]'
+                    isSelected ? 'bg-[#0D2818] text-[#34D399] border-[#163826]' : 'bg-[#07090C] text-[#9AA3AD] border-[#1A2028]'
                   }`}>
                     APL {preset.apl}%
                   </span>
                 </div>
                 <div>
-                  <div className="font-semibold text-[#101828] text-xs leading-snug">{preset.title}</div>
-                  <div className="text-xs text-[#667085] mt-0.5">{preset.sub}</div>
+                  <div className="font-semibold text-white text-xs leading-snug">{preset.title}</div>
+                  <div className="text-xs text-[#868D97] mt-0.5">{preset.sub}</div>
                 </div>
-                <div className="text-xs text-[#667085] leading-tight pt-1 border-t border-[#F2F4F7]">
+                <div className="text-xs text-[#868D97] leading-tight pt-1 border-t border-[#1A2028]">
                   {preset.desc}
                 </div>
               </button>
@@ -378,16 +378,16 @@ export const S7Dashboard: React.FC = () => {
         </div>
 
         {/* Upload Diretto Video o Foto Spot */}
-        <div className="p-4 rounded-xl border border-dashed border-[#D0D5DD] bg-[#F7F8FA] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-4 rounded-xl border border-dashed border-[#2D3748] bg-[#10141D] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3 text-center sm:text-left">
-            <div className="w-10 h-10 rounded-lg bg-white border border-[#D0D5DD] flex items-center justify-center text-[#12B76A] flex-shrink-0">
+            <div className="w-10 h-10 rounded-lg bg-[#07090C] border border-[#1A2028] flex items-center justify-center text-[#12B76A] flex-shrink-0">
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-[#101828]">
+              <div className="text-xs font-semibold text-white">
                 Vuoi testare lo spot pubblicitario effettivo del cliente?
               </div>
-              <div className="text-xs text-[#667085]">
+              <div className="text-xs text-[#868D97]">
                 Carica file video (.mp4/.webm) o foto: campionamento 30 fotogrammi ITU-R BT.709 in locale.
               </div>
             </div>
@@ -401,7 +401,7 @@ export const S7Dashboard: React.FC = () => {
                 onChange={handleInlineMediaUpload}
                 className="hidden"
               />
-              <div className="px-3.5 py-2 rounded-lg bg-white border border-[#D0D5DD] hover:bg-[#F9FAFB] text-[#344054] text-xs font-medium transition-colors flex items-center space-x-2">
+              <div className="px-3.5 py-2 rounded-lg bg-[#07090C] border border-[#1A2028] hover:bg-[#161F30] hover:border-[#2D3748] text-[#E8EDF2] text-xs font-medium transition-colors flex items-center space-x-2">
                 {isAnalyzingVideo ? (
                   <span>Analisi in corso ({videoProgress}%)...</span>
                 ) : videoFileName ? (
@@ -411,7 +411,7 @@ export const S7Dashboard: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <Upload className="w-4 h-4 text-[#667085]" />
+                    <Upload className="w-4 h-4 text-[#9AA3AD]" />
                     <span>Carica Spot Cliente</span>
                   </>
                 )}
@@ -422,7 +422,7 @@ export const S7Dashboard: React.FC = () => {
               type="button"
               onClick={handleLoadSampleVideo}
               disabled={isAnalyzingVideo}
-              className="px-3 py-2 rounded-lg bg-white border border-[#D0D5DD] hover:bg-[#F9FAFB] text-[#344054] text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-lg bg-[#07090C] border border-[#1A2028] hover:bg-[#161F30] hover:border-[#2D3748] text-[#E8EDF2] text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer"
             >
               <Play className="w-3 h-3 text-[#12B76A]" />
               <span>file-3 (23%)</span>
@@ -432,7 +432,7 @@ export const S7Dashboard: React.FC = () => {
               type="button"
               onClick={handleLoadSampleVideo10}
               disabled={isAnalyzingVideo}
-              className="px-3 py-2 rounded-lg bg-white border border-[#D0D5DD] hover:bg-[#F9FAFB] text-[#344054] text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-lg bg-[#07090C] border border-[#1A2028] hover:bg-[#161F30] hover:border-[#2D3748] text-[#E8EDF2] text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer"
             >
               <Play className="w-3 h-3 text-[#12B76A]" />
               <span>file-10 (50%)</span>
@@ -444,8 +444,8 @@ export const S7Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-[#667085] font-medium">Regolazione fine APL (% bianco):</span>
-              <span className="text-[#101828] font-semibold tabular-nums">{aplPercent}%</span>
+              <span className="text-[#868D97] font-medium">Regolazione fine APL (% bianco):</span>
+              <span className="text-white font-semibold tabular-nums">{aplPercent}%</span>
             </div>
             <input
               type="range"
@@ -453,14 +453,14 @@ export const S7Dashboard: React.FC = () => {
               max="100"
               value={aplPercent}
               onChange={(e) => setAplPercent(parseInt(e.target.value, 10), 'manual')}
-              className="w-full b2b-slider cursor-pointer"
+              className="w-full custom-slider cursor-pointer"
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-[#667085] font-medium">Luminosità diurna di picco:</span>
-              <span className="text-[#101828] font-semibold tabular-nums">{liveLumDiurna}%</span>
+              <span className="text-[#868D97] font-medium">Luminosità diurna di picco:</span>
+              <span className="text-white font-semibold tabular-nums">{liveLumDiurna}%</span>
             </div>
             <input
               type="range"
@@ -468,7 +468,7 @@ export const S7Dashboard: React.FC = () => {
               max="100"
               value={liveLumDiurna}
               onChange={(e) => setLiveLumDiurna(parseInt(e.target.value, 10))}
-              className="w-full b2b-slider cursor-pointer"
+              className="w-full custom-slider cursor-pointer"
             />
           </div>
         </div>
@@ -478,11 +478,11 @@ export const S7Dashboard: React.FC = () => {
       <LoadCurveChart />
 
       {/* Navigation Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-white border border-[#E4E7EC] shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[#0D1117] border border-[#1A2028] shadow-sm">
         <button
           type="button"
           onClick={prevStep}
-          className="w-full sm:w-auto px-4 py-2 rounded-lg border border-[#D0D5DD] text-[#344054] hover:bg-[#F9FAFB] text-xs font-medium flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+          className="w-full sm:w-auto px-4 py-2 rounded-lg border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:bg-[#161F30] hover:border-[#2D3748] text-xs font-medium flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Rivedi Orari e Tariffa</span>

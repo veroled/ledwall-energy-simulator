@@ -21,8 +21,8 @@ export const CabinetCanvas: React.FC = () => {
     canvas.width = width;
     canvas.height = height;
 
-    // Sfondo superficie light sobrio
-    ctx.fillStyle = '#F7F8FA';
+    // Sfondo superficie dark profondo
+    ctx.fillStyle = '#04060A';
     ctx.fillRect(0, 0, width, height);
 
     // Calcolo griglia con padding
@@ -45,11 +45,11 @@ export const CabinetCanvas: React.FC = () => {
         const x = startX + c * cellW;
         const y = startY + r * cellH;
 
-        // Card cabinet bianca con bordo sottile grigio
-        ctx.fillStyle = '#FFFFFF';
+        // Card cabinet scura con bordo sottile netto
+        ctx.fillStyle = '#0D1117';
         ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
 
-        ctx.strokeStyle = '#D0D5DD';
+        ctx.strokeStyle = '#1A2028';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 1, y + 1, cellW - 2, cellH - 2);
 
@@ -67,13 +67,13 @@ export const CabinetCanvas: React.FC = () => {
     const totalMetriW = ((modulesW * format.widthMm) / 1000).toFixed(2);
     const totalMetriH = ((modulesH * format.heightMm) / 1000).toFixed(2);
 
-    ctx.fillStyle = '#475467';
+    ctx.fillStyle = '#9AA3AD';
     ctx.font = '500 11px Inter, sans-serif';
     ctx.textAlign = 'center';
 
     // Quota orizzontale superiore
     ctx.fillText(`${totalMetriW} m`, width / 2, startY - 12);
-    ctx.strokeStyle = '#D0D5DD';
+    ctx.strokeStyle = '#2D3748';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(startX, startY - 6);
@@ -89,45 +89,45 @@ export const CabinetCanvas: React.FC = () => {
   }, [modulesW, modulesH, format, pitchMm]);
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden border border-[#E4E7EC] bg-[#F7F8FA] p-3 flex flex-col items-center">
-      <div className="w-full flex items-center justify-between px-2 py-1 text-xs text-[#667085]">
+    <div className="relative w-full rounded-xl overflow-hidden border border-[#1A2028] bg-[#04060A] p-3 flex flex-col items-center">
+      <div className="w-full flex items-center justify-between px-2 py-1 text-xs text-[#9AA3AD]">
         <span className="font-medium">Griglia Cabinet 2D</span>
-        <span className="font-semibold text-[#101828]">{format.name}</span>
+        <span className="font-semibold text-white">{format.name}</span>
       </div>
       <canvas ref={canvasRef} className="w-full rounded-lg" />
-      <div className="w-full flex items-center justify-center space-x-6 pt-3 pb-1 text-xs text-[#344054]">
+      <div className="w-full flex items-center justify-center space-x-6 pt-3 pb-1 text-xs text-[#E8EDF2]">
         <div className="flex items-center space-x-2">
-          <span className="text-[#667085]">Colonne:</span>
+          <span className="text-[#868D97]">Colonne:</span>
           <button
             type="button"
             onClick={() => setModulesW(modulesW - 1)}
-            className="w-6 h-6 rounded border border-[#D0D5DD] bg-white text-[#344054] font-semibold hover:bg-[#F9FAFB] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-6 h-6 rounded border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] font-semibold hover:bg-[#161F30] hover:border-[#2D3748] flex items-center justify-center transition-colors cursor-pointer"
           >
             -
           </button>
-          <span className="font-semibold text-[#101828] tabular-nums min-w-[20px] text-center">{modulesW}</span>
+          <span className="font-semibold text-white tabular-nums min-w-[20px] text-center">{modulesW}</span>
           <button
             type="button"
             onClick={() => setModulesW(modulesW + 1)}
-            className="w-6 h-6 rounded border border-[#D0D5DD] bg-white text-[#344054] font-semibold hover:bg-[#F9FAFB] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-6 h-6 rounded border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] font-semibold hover:bg-[#161F30] hover:border-[#2D3748] flex items-center justify-center transition-colors cursor-pointer"
           >
             +
           </button>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-[#667085]">Righe:</span>
+          <span className="text-[#868D97]">Righe:</span>
           <button
             type="button"
             onClick={() => setModulesH(modulesH - 1)}
-            className="w-6 h-6 rounded border border-[#D0D5DD] bg-white text-[#344054] font-semibold hover:bg-[#F9FAFB] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-6 h-6 rounded border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] font-semibold hover:bg-[#161F30] hover:border-[#2D3748] flex items-center justify-center transition-colors cursor-pointer"
           >
             -
           </button>
-          <span className="font-semibold text-[#101828] tabular-nums min-w-[20px] text-center">{modulesH}</span>
+          <span className="font-semibold text-white tabular-nums min-w-[20px] text-center">{modulesH}</span>
           <button
             type="button"
             onClick={() => setModulesH(modulesH + 1)}
-            className="w-6 h-6 rounded border border-[#D0D5DD] bg-white text-[#344054] font-semibold hover:bg-[#F9FAFB] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-6 h-6 rounded border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] font-semibold hover:bg-[#161F30] hover:border-[#2D3748] flex items-center justify-center transition-colors cursor-pointer"
           >
             +
           </button>

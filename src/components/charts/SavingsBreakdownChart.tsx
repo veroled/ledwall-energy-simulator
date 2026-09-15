@@ -26,7 +26,7 @@ export const SavingsBreakdownChart: React.FC = () => {
     {
       name: 'Sensore Lux & APL Diurno',
       valore: Math.round(breakdown.adaptiveLuxEur),
-      colore: '#0BA5EC',
+      colore: '#22A0C2',
       desc: 'Adattamento dinamico al sole, cielo coperto e densità bianco',
     },
     {
@@ -38,9 +38,9 @@ export const SavingsBreakdownChart: React.FC = () => {
   ];
 
   return (
-    <div className="w-full bg-white p-4 rounded-xl border border-[#E4E7EC] shadow-sm space-y-3">
+    <div className="w-full bg-[#0D1117] p-4 rounded-xl border border-[#1A2028] shadow-sm space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-[#101828]">
+        <span className="text-xs font-semibold text-white">
           Origine del Risparmio Annuale ({Math.round(savingsEur).toLocaleString('it-IT')} €)
         </span>
         <span className="text-xs font-semibold text-[#12B76A]">
@@ -55,11 +55,11 @@ export const SavingsBreakdownChart: React.FC = () => {
             data={data}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
-            <XAxis type="number" stroke="#98A2B3" fontSize={10} unit=" €" />
+            <XAxis type="number" stroke="#868D97" fontSize={10} unit=" €" />
             <YAxis
               type="category"
               dataKey="name"
-              stroke="#475467"
+              stroke="#9AA3AD"
               fontSize={11}
               width={160}
               tickLine={false}
@@ -67,14 +67,15 @@ export const SavingsBreakdownChart: React.FC = () => {
             <Tooltip
               formatter={(val: any) => [`${val} € / anno`, 'Risparmio']}
               contentStyle={{
-                backgroundColor: '#FFFFFF',
-                borderColor: '#E4E7EC',
+                backgroundColor: '#0D1117',
+                borderColor: '#1A2028',
                 borderRadius: '8px',
                 fontSize: '11px',
                 fontFamily: 'Inter, sans-serif',
-                boxShadow: '0 1px 3px rgba(16,24,40,0.1)',
-                color: '#101828',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                color: '#FFFFFF',
               }}
+              itemStyle={{ color: '#E8EDF2' }}
             />
             <Bar dataKey="valore" radius={[0, 4, 4, 0]}>
               {data.map((entry, index) => (
@@ -85,13 +86,13 @@ export const SavingsBreakdownChart: React.FC = () => {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#F2F4F7] text-xs">
+      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#1A2028] text-xs">
         {data.map((item, i) => (
           <div key={i} className="flex flex-col">
-            <span className="text-[#667085] truncate">{item.name}</span>
-            <span className="font-semibold text-[#101828] tabular-nums">
+            <span className="text-[#868D97] truncate">{item.name}</span>
+            <span className="font-semibold text-white tabular-nums">
               {item.valore.toLocaleString('it-IT')} €{' '}
-              <span className="text-[#98A2B3] font-normal">
+              <span className="text-[#868D97] font-normal">
                 ({savingsEur > 0 ? ((item.valore / savingsEur) * 100).toFixed(0) : 0}%)
               </span>
             </span>

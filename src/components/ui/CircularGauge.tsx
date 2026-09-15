@@ -29,13 +29,13 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
     <div className="relative flex flex-col items-center justify-center p-4">
       <div className="relative w-44 h-44 flex items-center justify-center">
         <svg className="w-full h-full -rotate-[135deg]" viewBox="0 0 100 100">
-          {/* Background track */}
+          {/* Background track dark */}
           <circle
             cx="50"
             cy="50"
             r={radius}
             fill="transparent"
-            stroke="#E4E7EC"
+            stroke="#1A2028"
             strokeWidth="6"
             strokeDasharray={`${arcLength} ${circumference}`}
             strokeLinecap="round"
@@ -57,20 +57,20 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
 
         {/* Center Value */}
         <div className="absolute flex flex-col items-center justify-center text-center">
-          <span className="text-3xl font-semibold text-[#101828] tabular-nums tracking-tight">
+          <span className="text-3xl font-semibold text-white tabular-nums tracking-tight">
             {currentKw.toFixed(2)}
           </span>
-          <span className="text-xs font-semibold text-[#667085] tracking-wider -mt-0.5">
+          <span className="text-xs font-semibold text-[#9AA3AD] tracking-wider -mt-0.5">
             kW ATTIVI
           </span>
-          <span className="text-xs text-[#98A2B3] tabular-nums mt-0.5">
+          <span className="text-xs text-[#868D97] tabular-nums mt-0.5">
             {(ratio * 100).toFixed(0)}% del picco
           </span>
         </div>
       </div>
 
-      <div className="text-xs text-[#667085] text-center -mt-1">
-        {label}: <span className="text-[#101828] font-semibold tabular-nums">{maxKw.toFixed(2)} kW Max</span>
+      <div className="text-xs text-[#868D97] text-center -mt-1">
+        {label}: <span className="text-white font-semibold tabular-nums">{maxKw.toFixed(2)} kW Max</span>
       </div>
     </div>
   );

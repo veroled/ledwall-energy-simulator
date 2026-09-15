@@ -23,10 +23,10 @@ export const S4Standby: React.FC = () => {
         <span className="text-xs font-semibold text-[#12B76A] tracking-wider uppercase">
           Fase 4 di 9 · Elettronica di Potenza
         </span>
-        <h2 className="text-2xl md:text-3xl font-semibold text-[#101828]">
+        <h2 className="text-2xl md:text-3xl font-semibold text-white">
           Lo schermo resta alimentato anche quando è spento?
         </h2>
-        <p className="text-sm text-[#667085] max-w-2xl mx-auto">
+        <p className="text-sm text-[#9AA3AD] max-w-2xl mx-auto">
           A display oscurato via software (scheduler o media player), l&apos;elettronica interna e gli alimentatori continuano ad assorbire energia passiva.
         </p>
       </div>
@@ -37,17 +37,17 @@ export const S4Standby: React.FC = () => {
           onClick={() => setHasStandby(true)}
           className={`p-6 rounded-xl cursor-pointer border transition-colors space-y-3 shadow-sm ${
             hasStandby
-              ? 'border-[#F04438] bg-[#FEF3F2]'
-              : 'border-[#E4E7EC] bg-white hover:border-[#D0D5DD]'
+              ? 'border-[#F04438] bg-[#2A1215]'
+              : 'border-[#1A2028] bg-[#0D1117] hover:border-[#2D3748]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-[#101828] text-base">SÌ: Resta in Standby</span>
-            <span className="text-xs font-semibold text-[#B42318] bg-[#FEE4E2] px-2.5 py-0.5 rounded">
+            <span className="font-semibold text-white text-base">SÌ: Resta in Standby</span>
+            <span className="text-xs font-semibold text-[#F87171] bg-[#4E1D24] px-2.5 py-0.5 rounded">
               50 W/m² fisso
             </span>
           </div>
-          <p className="text-xs text-[#667085] leading-relaxed">
+          <p className="text-xs text-[#9AA3AD] leading-relaxed">
             Comportamento standard del 90% degli schermi LED sul mercato. Il pannello è oscurato ma le schede riceventi e gli alimentatori restano sotto tensione H24.
           </p>
         </div>
@@ -57,28 +57,28 @@ export const S4Standby: React.FC = () => {
           onClick={() => setHasStandby(false)}
           className={`p-6 rounded-xl cursor-pointer border transition-colors space-y-3 shadow-sm ${
             !hasStandby
-              ? 'border-[#12B76A] bg-[#ECFDF3]'
-              : 'border-[#E4E7EC] bg-white hover:border-[#D0D5DD]'
+              ? 'border-[#12B76A] bg-[#0D2818]'
+              : 'border-[#1A2028] bg-[#0D1117] hover:border-[#2D3748]'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-[#101828] text-base">NO: Spegnimento Relè</span>
-            <span className="text-xs font-semibold text-[#027A48] bg-[#D1FADF] px-2.5 py-0.5 rounded">
+            <span className="font-semibold text-white text-base">NO: Spegnimento Relè</span>
+            <span className="text-xs font-semibold text-[#34D399] bg-[#163826] px-2.5 py-0.5 rounded">
               0 W/m²
             </span>
           </div>
-          <p className="text-xs text-[#667085] leading-relaxed">
+          <p className="text-xs text-[#9AA3AD] leading-relaxed">
             Sezionamento totale della linea trifase/monofase con teleruttore o gestione Fleet Monitor VeroLED: azzera i consumi passivi a display spento.
           </p>
         </div>
       </div>
 
-      <div className="p-4 rounded-xl bg-[#F8F9FC] border border-[#E4E7EC] text-xs text-[#344054] flex items-start space-x-3">
-        <AlertCircle className="w-5 h-5 flex-shrink-0 text-[#667085] mt-0.5" />
+      <div className="p-4 rounded-xl bg-[#0D1117] border border-[#1A2028] text-xs text-[#9AA3AD] flex items-start space-x-3">
+        <AlertCircle className="w-5 h-5 flex-shrink-0 text-[#9AA3AD] mt-0.5" />
         <div className="leading-relaxed">
           Sul tuo schermo ({dimensions.areaM2.toFixed(1)} m²), 50 W/m² in standby per 6 ore notturne equivalgono a circa{' '}
-          <strong className="text-[#101828] font-semibold tabular-nums">{annualStandbyKwh} kWh sprecati all&apos;anno</strong> (~
-          <span className="tabular-nums font-semibold">{annualStandbyEur} €/anno</span> a schermo spento).
+          <strong className="text-white font-semibold tabular-nums">{annualStandbyKwh} kWh sprecati all&apos;anno</strong> (~
+          <span className="tabular-nums font-semibold text-white">{annualStandbyEur} €/anno</span> a schermo spento).
         </div>
       </div>
 

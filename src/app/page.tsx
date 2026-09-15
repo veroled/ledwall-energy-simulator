@@ -56,7 +56,7 @@ export default function Home() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-xs font-medium text-[#667085]">
+      <div className="min-h-screen bg-[#07090C] flex items-center justify-center text-xs font-medium text-[#9AA3AD]">
         <span>Inizializzazione simulatore...</span>
       </div>
     );
@@ -90,7 +90,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-white selection:bg-[#ECFDF3] selection:text-[#027A48]">
+    <div className="min-h-screen flex flex-col justify-between bg-[#07090C] selection:bg-[#12B76A] selection:text-[#07090C]">
       <WizardHeader />
       <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">

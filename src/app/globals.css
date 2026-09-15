@@ -3,32 +3,38 @@
 @theme {
   --color-brand: #12B76A;
   --color-brand-hover: #0E9F5D;
-  --color-brand-light: #ECFDF3;
-  --color-brand-border: #A6F4C5;
-  --color-brand-text: #027A48;
-  --color-surface: #FFFFFF;
-  --color-surface-subtle: #F7F8FA;
-  --color-border-subtle: #E4E7EC;
-  --color-border-hover: #D0D5DD;
-  --color-txt-primary: #101828;
-  --color-txt-body: #344054;
-  --color-txt-secondary: #667085;
-  --color-txt-muted: #98A2B3;
+  --color-brand-light: #0D2818;
+  --color-brand-border: #163826;
+  --color-brand-text: #34D399;
+  --color-surface: #0D1117;
+  --color-surface-subtle: #07090C;
+  --color-surface-card: #0D1117;
+  --color-border-subtle: #1A2028;
+  --color-border-hover: #2D3748;
+  --color-txt-primary: #FFFFFF;
+  --color-txt-body: #E8EDF2;
+  --color-txt-secondary: #9AA3AD;
+  --color-txt-muted: #868D97;
   --color-alert-red: #F04438;
-  --color-alert-surface: #FEF3F2;
-  --color-alert-text: #B42318;
-  --color-alert-border: #FECDCA;
+  --color-alert-surface: #2A1215;
+  --color-alert-text: #F87171;
+  --color-alert-border: #4E1D24;
 }
 
 :root {
-  --background: #FFFFFF;
-  --foreground: #101828;
+  --bg: #07090C;
+  --bg-elevated: #0D1117;
+  --bg-deep: #04060A;
+  --text: #E8EDF2;
+  --text-muted: #9AA3AD;
+  --text-subtle: #868D97;
   --brand: #12B76A;
+  --border: #1A2028;
 }
 
 body {
-  background-color: #FFFFFF;
-  color: #101828;
+  background-color: #07090C;
+  color: #E8EDF2;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -38,14 +44,34 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Slider B2B sobrio: traccia 4px, thumb 16px, zero glow */
+/* Scrollbar dark ufficiale VeroLED */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(18, 183, 106, 0.4) rgba(7, 9, 12, 0.7);
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #07090C;
+}
+::-webkit-scrollbar-thumb {
+  background: #1A2028;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #12B76A;
+}
+
+/* Slider B2B sobrio dark: traccia scura 4px, thumb solido, zero glow */
 .custom-slider {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
   border-radius: 2px;
-  background: #E4E7EC;
+  background: #1A2028;
   outline: none;
 }
 
@@ -55,14 +81,15 @@ body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #FFFFFF;
+  background: #E8EDF2;
   border: 2px solid #12B76A;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .custom-slider::-webkit-slider-thumb:hover {
+  background: #FFFFFF;
   border-color: #0E9F5D;
 }
 
@@ -70,9 +97,8 @@ body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #FFFFFF;
+  background: #E8EDF2;
   border: 2px solid #12B76A;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
 }
-
