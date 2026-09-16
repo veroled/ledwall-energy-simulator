@@ -3,7 +3,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
-import { ArrowRight, BarChart3, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, BarChart3, ShieldCheck, Zap } from 'lucide-react';
 
 export const S0Landing: React.FC = () => {
   const { setStep } = useSimulatorStore();
@@ -29,12 +30,20 @@ export const S0Landing: React.FC = () => {
       </p>
 
       <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Link
+          href="/express"
+          className="w-full sm:w-auto px-6 py-3 rounded-lg font-semibold text-white bg-[#12B76A] hover:bg-[#0E9F5D] transition-colors shadow-sm text-sm flex items-center justify-center space-x-2"
+        >
+          <Zap className="w-4 h-4" />
+          <span>Calcolo Express (1 schermata)</span>
+        </Link>
+
         <button
           type="button"
           onClick={() => setStep(1)}
-          className="w-full sm:w-auto px-6 py-3 rounded-lg font-semibold text-white bg-[#12B76A] hover:bg-[#0E9F5D] transition-colors shadow-sm text-sm flex items-center justify-center space-x-2 cursor-pointer"
+          className="w-full sm:w-auto px-5 py-3 rounded-lg font-semibold text-[#E8EDF2] bg-[#10141D] border border-[#1A2028] hover:bg-[#161F30] hover:border-[#2D3748] transition-colors text-sm flex items-center justify-center space-x-2 cursor-pointer"
         >
-          <span>Avvia Calcolo Impianto</span>
+          <span>Wizard completo (9 step)</span>
           <ArrowRight className="w-4 h-4" />
         </button>
 

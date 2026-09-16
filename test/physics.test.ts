@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica } from '../src/core/physics';
+import { calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
 
 describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', () => {
   const P_MAX = 500;
@@ -157,6 +157,45 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(consulenza.recommendedMonthlyRentalEur).toBeCloseTo(1200, -2); // ~1.200 €/mese
       expect(consulenza.total24MonthSavingsEur).toBeGreaterThan(19000); // ~19.700 € risparmiati in 24 mesi
       expect(consulenza.scientificVerdict).toContain('acuità visiva');
+    });
+  });
+
+  describe('Modalità Express · Proposta Alternativa', () => {
+    it('P2.6 a 6000 nit su 6x3m visto da 10m: propone P3.9, consuma meno e non è al limite fisico', () => {
+      const alt = suggerisciAlternativa(2.6, 6000, 18, 0.30, 18, 0.35, 5, 10);
+      expect(alt.hasAlternative).toBe(true);
+      expect(alt.kind).toBe('pitch');
+      expect(alt.recommendedPitchMm).toBe(3.91);
+      expect(alt.proposed.pitchMm).toBe(3.9);
+      expect(alt.proposed.annualCostEur).toBeLessThan(alt.current.annualCostEur);
+      expect(alt.savingsPercent).toBeGreaterThan(5);
+      expect(alt.current.hardware.isAtPhysicalLimit).toBe(true);
+      expect(alt.proposed.hardware.isAtPhysicalLimit).toBe(false);
+      expect(alt.proposed.hardware.sforzoPercent).toBeLessThan(alt.current.hardware.sforzoPercent);
+      expect(alt.fleetMonitorExtraEur).toBeGreaterThan(0);
+      expect(alt.reasons.length).toBeGreaterThanOrEqual(3);
+      expect(alt.headline).toContain('P3.9');
+    });
+
+    it('P3.9 già ottimale per 10m: nessun cambio passo, propone solo Fleet Monitor', () => {
+      const alt = suggerisciAlternativa(3.9, 5000, 18, 0.30, 18, 0.35, 5, 10);
+      expect(alt.kind).toBe('fleet');
+      expect(alt.proposed.pitchMm).toBe(3.9);
+      expect(alt.savingsEur).toBe(0);
+      expect(alt.fleetMonitorExtraPercent).toBeGreaterThanOrEqual(50);
+    });
+
+    it('P10 visto da 5m: nessuna alternativa più grossa possibile, la proposta non peggiora mai i consumi', () => {
+      const alt = suggerisciAlternativa(10, 5000, 18, 0.30, 18, 0.35, 3, 4);
+      expect(alt.proposed.pitchMm).toBe(10);
+      expect(alt.proposed.annualCostEur).toBeLessThanOrEqual(alt.current.annualCostEur);
+    });
+
+    it('Distanza lunga (40m): dal P3.9 propone il P6.7 e il risparmio è consistente', () => {
+      const alt = suggerisciAlternativa(3.9, 6000, 32, 0.30, 18, 0.35, 8, 40);
+      expect(alt.kind).toBe('pitch');
+      expect(alt.proposed.pitchMm).toBe(6.7);
+      expect(alt.savingsPercent).toBeGreaterThan(30);
     });
   });
 });

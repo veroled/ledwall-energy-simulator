@@ -28,7 +28,7 @@ export const S3AplEngine: React.FC = () => {
         const apl = await analizzaFotoApl(file);
         setAplPercent(apl, 'foto', file.name);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.warn('Errore analisi video, fallback su slider:', err);
     } finally {
       setIsProcessing(false);
@@ -39,10 +39,7 @@ export const S3AplEngine: React.FC = () => {
     setIsProcessing(true);
     setProgress(15);
     try {
-      const res = await fetch('/samples/file-3.mp4');
-      const blob = await res.blob();
-      const file = new File([blob], 'file-3.mp4', { type: 'video/mp4' });
-      const analysis = await analizzaVideoApl(file, (p) => setProgress(p));
+      const analysis = await analizzaVideoApl('/samples/file-3.mp4', (p) => setProgress(p));
       setVideoResult(analysis);
       setAplPercent(analysis.averageAplPercent, 'video', 'file-3.mp4 (Showroom SBN-MK)');
     } catch {
@@ -56,10 +53,7 @@ export const S3AplEngine: React.FC = () => {
     setIsProcessing(true);
     setProgress(15);
     try {
-      const res = await fetch('/samples/file-10.mp4');
-      const blob = await res.blob();
-      const file = new File([blob], 'file-10.mp4', { type: 'video/mp4' });
-      const analysis = await analizzaVideoApl(file, (p) => setProgress(p));
+      const analysis = await analizzaVideoApl('/samples/file-10.mp4', (p) => setProgress(p));
       setVideoResult(analysis);
       setAplPercent(analysis.averageAplPercent, 'video', 'file-10.mp4 (Kinetic Wall)');
     } catch {

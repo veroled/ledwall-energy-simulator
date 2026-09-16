@@ -665,3 +665,188 @@ export function calcolaConsulenzaOttica(
   };
 }
 
+/**
+ * Proposta di alternativa hardware per la Modalità Express:
+ * confronta la configurazione scelta dal cliente con un passo pixel più generoso
+ * che, alla distanza di visione dichiarata, resta sotto la soglia di risoluzione dell'occhio (1 arcminuto)
+ * e quindi consuma meno lavorando con chip meno stressati (prodotto migliore + bolletta più bassa).
+ */
+export interface ConfigurazioneSnapshot {
+  pitchMm: number;
+  nits: number;
+  nitsEffettivi: number; // nits realmente erogabili (cap fisico del chip)
+  hardware: HardwareComparisonResult;
+  pMaxWmq: number;
+  pMedioWmq: number; // W/m² con l'APL reale del contenuto
+  kwIstantanei: number;
+  dailyKwh: number;
+  annualKwh: number;
+  annualCostEur: number;
+  monthlyCostEur: number;
+}
+
+export interface AlternativeProposal {
+  hasAlternative: boolean;
+  kind: 'pitch' | 'fleet' | 'none';
+  lineOfSightDistM: number;
+  minResolvablePitchMm: number;
+  recommendedPitchMm: number;
+  current: ConfigurazioneSnapshot;
+  proposed: ConfigurazioneSnapshot;
+  savingsEur: number;
+  savingsPercent: number;
+  savingsKwh: number;
+  co2SavedTons: number;
+  wastedPixelsPercent: number;
+  rentalSavings24mEur: number;
+  fleetMonitorExtraEur: number; // ulteriore risparmio applicando Fleet Monitor alla proposta
+  fleetMonitorExtraPercent: number;
+  headline: string;
+  reasons: string[];
+}
+
+const PITCH_PRESETS_EXPRESS = [2.6, 2.9, 3.9, 4.8, 6.7, 8.0, 10.0];
+
+function pStandbyPerPasso(pitchMm: number): number {
+  return pitchMm >= 6.0 ? 20 : pitchMm >= 4.0 ? 40 : 50;
+}
+
+function snapshotConfigurazione(
+  pitchMm: number,
+  nits: number,
+  areaM2: number,
+  apl: number,
+  oreGiorno: number,
+  tariffaEurKwh: number
+): ConfigurazioneSnapshot {
+  const hardware = stimaPotenzaDaPassoNit(pitchMm, nits, areaM2, tariffaEurKwh, oreGiorno);
+  const pStandby = pStandbyPerPasso(pitchMm);
+  const profile = calcolaProfiloEnergetico(
+    areaM2,
+    apl,
+    1.0,
+    CONFIG.DEFAULT_NIGHT_DIMMING_PERCENT / 100,
+    oreGiorno,
+    true,
+    true,
+    tariffaEurKwh,
+    hardware.pMaxWmq,
+    pStandby
+  );
+  return {
+    pitchMm,
+    nits,
+    nitsEffettivi: Math.min(nits, hardware.maxPhysicalNits),
+    hardware,
+    pMaxWmq: hardware.pMaxWmq,
+    pMedioWmq: Math.round(profile.dayPowerWmq),
+    kwIstantanei: Math.round(((profile.dayPowerWmq * areaM2) / 1000) * 100) / 100,
+    dailyKwh: Math.round(profile.totalDailyKwh * 10) / 10,
+    annualKwh: Math.round(profile.annualKwh),
+    annualCostEur: Math.round(profile.annualCostEur),
+    monthlyCostEur: Math.round(profile.monthlyCostEur),
+  };
+}
+
+export function suggerisciAlternativa(
+  pitchMm: number,
+  nits: number,
+  areaM2: number,
+  apl: number,
+  oreGiorno: number,
+  tariffaEurKwh: number,
+  installHeightM: number = 5,
+  groundViewingDistM: number = 10
+): AlternativeProposal {
+  const optical = calcolaConsulenzaOttica(installHeightM, groundViewingDistM, pitchMm, areaM2, nits);
+  const current = snapshotConfigurazione(pitchMm, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
+
+  // Passo commerciale più generoso che resta "retina" alla distanza dichiarata
+  const candidates = PITCH_PRESETS_EXPRESS.filter(
+    (p) => p > pitchMm + 0.05 && p <= optical.recommendedPitchMm + 0.15
+  );
+  const proposedPitch = candidates.length > 0 ? Math.max(...candidates) : pitchMm;
+  const proposed = snapshotConfigurazione(proposedPitch, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
+
+  const hasPitchAlternative = proposedPitch !== pitchMm && proposed.annualCostEur < current.annualCostEur;
+  const finalProposed = hasPitchAlternative ? proposed : current;
+
+  const savingsEur = Math.max(0, current.annualCostEur - finalProposed.annualCostEur);
+  const savingsKwh = Math.max(0, current.annualKwh - finalProposed.annualKwh);
+  const savingsPercent = current.annualCostEur > 0 ? Math.round((savingsEur / current.annualCostEur) * 100) : 0;
+  const co2SavedTons = Math.round(savingsKwh * (CONFIG.CO2_FACTOR_KG_KWH / 1000) * 100) / 100;
+
+  // Fleet Monitor applicato alla configurazione proposta (o a quella attuale se non c'è alternativa)
+  const fleet = confrontaScenari(
+    areaM2,
+    apl,
+    oreGiorno,
+    tariffaEurKwh,
+    undefined,
+    finalProposed.pMaxWmq,
+    pStandbyPerPasso(finalProposed.pitchMm)
+  );
+  const fleetMonitorExtraEur = Math.round(fleet.savingsEur);
+  const fleetMonitorExtraPercent = Math.round(fleet.savingsPercent);
+
+  const D = optical.lineOfSightDistM;
+  const reasons: string[] = [];
+  let headline = '';
+  let kind: AlternativeProposal['kind'] = 'none';
+
+  if (hasPitchAlternative) {
+    kind = 'pitch';
+    headline = `Ti consigliamo il P${proposedPitch} mm: -${savingsPercent}% di consumi a parità di qualità percepita a ${D} m.`;
+    reasons.push(
+      `A ${D} m di linea di vista l'occhio fonde i pixel già dal P${optical.recommendedPitchMm} mm: il P${pitchMm} spende il ${optical.wastedPixelsPercent}% dei pixel in dettaglio non visibile.`
+    );
+    if (current.hardware.isAtPhysicalLimit && current.nitsEffettivi < nits) {
+      reasons.push(
+        `Il P${pitchMm} non arriva a ${nits.toLocaleString('it-IT')} nit (tetto fisico ${current.hardware.maxPhysicalNits.toLocaleString('it-IT')}): sotto il sole diretto il contenuto sbiadisce. Il P${proposedPitch} li eroga al ${proposed.hardware.sforzoPercent}% di sforzo.`
+      );
+    } else {
+      reasons.push(
+        `Sforzo dei chip dal ${current.hardware.sforzoPercent}% al ${proposed.hardware.sforzoPercent}%: giunzione più fredda, meno thermal droop, vita utile più lunga.`
+      );
+    }
+    reasons.push(
+      `Efficienza da ${current.hardware.efficienzaLmPerW} a ${proposed.hardware.efficienzaLmPerW} lm/W (${current.hardware.tecnologiaChip} → ${proposed.hardware.tecnologiaChip}).`
+    );
+    reasons.push(
+      `Potenza media reale con il tuo contenuto: da ${current.pMedioWmq} a ${proposed.pMedioWmq} W/m².`
+    );
+  } else if (fleetMonitorExtraEur > 0) {
+    kind = 'fleet';
+    headline = `Il P${pitchMm} mm è già il passo giusto per ${D} m: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
+    if (current.hardware.isAtPhysicalLimit && current.nitsEffettivi < nits) {
+      reasons.push(
+        `Attenzione: il P${pitchMm} eroga al massimo ${current.hardware.maxPhysicalNits.toLocaleString('it-IT')} nit, non i ${nits.toLocaleString('it-IT')} richiesti. Per quel picco serve un passo più generoso, che a ${D} m sarebbe però visibile.`
+      );
+    }
+    reasons.push('Sensore lux e dimming adattivo: luminosità diurna tarata sull\'ambiente, non fissa al 100%.');
+    reasons.push('Dimming notturno al 10% (CEI) e relè di standby a 0 W/m² a schermo spento.');
+    reasons.push(`Chip al ${current.hardware.sforzoPercent}% di sforzo: già in regime termico sano.`);
+  } else {
+    headline = `Configurazione bilanciata: il P${pitchMm} mm a ${nits.toLocaleString('it-IT')} nit è coerente con ${D} m di distanza.`;
+  }
+
+  return {
+    hasAlternative: kind !== 'none',
+    kind,
+    lineOfSightDistM: D,
+    minResolvablePitchMm: optical.minResolvablePitchMm,
+    recommendedPitchMm: optical.recommendedPitchMm,
+    current,
+    proposed: finalProposed,
+    savingsEur,
+    savingsPercent,
+    savingsKwh: Math.round(savingsKwh),
+    co2SavedTons,
+    wastedPixelsPercent: hasPitchAlternative ? optical.wastedPixelsPercent : 0,
+    rentalSavings24mEur: hasPitchAlternative ? optical.monthlyRentalSavingsEur * 24 : 0,
+    fleetMonitorExtraEur,
+    fleetMonitorExtraPercent,
+    headline,
+    reasons,
+  };
+}

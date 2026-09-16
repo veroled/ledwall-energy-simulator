@@ -69,10 +69,7 @@ export const S7Dashboard: React.FC = () => {
     setIsAnalyzingVideo(true);
     setVideoProgress(15);
     try {
-      const res = await fetch('/samples/file-3.mp4');
-      const blob = await res.blob();
-      const file = new File([blob], 'file-3.mp4', { type: 'video/mp4' });
-      const analysis = await analizzaVideoApl(file, (p) => setVideoProgress(p));
+      const analysis = await analizzaVideoApl('/samples/file-3.mp4', (p) => setVideoProgress(p));
       setAplPercent(analysis.averageAplPercent, 'video', 'file-3.mp4 (Showroom SBN-MK)');
     } catch {
       setAplPercent(23, 'video', 'file-3.mp4 (Showroom SBN-MK)');
@@ -85,10 +82,7 @@ export const S7Dashboard: React.FC = () => {
     setIsAnalyzingVideo(true);
     setVideoProgress(15);
     try {
-      const res = await fetch('/samples/file-10.mp4');
-      const blob = await res.blob();
-      const file = new File([blob], 'file-10.mp4', { type: 'video/mp4' });
-      const analysis = await analizzaVideoApl(file, (p) => setVideoProgress(p));
+      const analysis = await analizzaVideoApl('/samples/file-10.mp4', (p) => setVideoProgress(p));
       setAplPercent(analysis.averageAplPercent, 'video', 'file-10.mp4 (Kinetic Wall)');
     } catch {
       setAplPercent(50, 'video', 'file-10.mp4 (Kinetic Wall)');

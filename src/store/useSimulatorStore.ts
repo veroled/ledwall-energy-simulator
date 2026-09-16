@@ -11,11 +11,13 @@ import {
   stimaPotenzaDaPassoNit,
   calcolaPowerQuality,
   calcolaConsulenzaOttica,
+  suggerisciAlternativa,
   ScreenDimensions,
   DailyEnergyProfile,
   ScenarioResult,
   PowerQualityAnalysis,
   OpticalConsultingResult,
+  AlternativeProposal,
 } from '../core/physics';
 import { DatiSchedaTecnica } from '../core/pdf-parser';
 
@@ -279,6 +281,8 @@ export const useSimulatorStore = create<SimulatorState>()(
         modulesH: s.modulesH,
         pitchMm: s.pitchMm,
         targetOutdoorNits: s.targetOutdoorNits,
+        installHeightM: s.installHeightM,
+        groundViewingDistM: s.groundViewingDistM,
         aplPercent: s.aplPercent,
         hasStandby: s.hasStandby,
         pStandbyWmq: s.pStandbyWmq,
@@ -361,6 +365,17 @@ export function useSimulatorComputed() {
     state.targetOutdoorNits || 6000
   );
 
+  const alternative: AlternativeProposal = suggerisciAlternativa(
+    state.pitchMm,
+    state.targetOutdoorNits || 5000,
+    dimensions.areaM2,
+    state.aplPercent / 100,
+    state.operatingHoursDay,
+    state.tariffEurKwh,
+    state.installHeightM ?? 5.0,
+    state.groundViewingDistM ?? 10.0
+  );
+
   return {
     dimensions,
     profile,
@@ -371,6 +386,7 @@ export function useSimulatorComputed() {
     pMax,
     powerQuality,
     opticalConsulting,
+    alternative,
     isDiamond,
   };
 }

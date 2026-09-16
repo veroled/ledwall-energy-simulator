@@ -1,0 +1,525 @@
+'use client';
+
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
+import { PIXEL_PITCH_PRESETS } from '../../config/config';
+import { getMaxNitsForPitch, stimaPotenzaDaPassoNit } from '../../core/physics';
+import { analizzaVideoApl, analizzaFotoApl } from '../../core/apl-engine';
+import { RecommendationBanner } from './RecommendationBanner';
+import { WizardFooter } from '../wizard/WizardFooter';
+import {
+  Upload,
+  CheckCircle2,
+  Play,
+  Zap,
+  Sun,
+  Eye,
+  Monitor,
+  AlertTriangle,
+  FileText,
+  LayoutList,
+  Settings2,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+
+const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d });
+
+const subscribeNoop = () => () => {};
+const useMounted = () => useSyncExternalStore(subscribeNoop, () => true, () => false);
+
+const SIZE_PRESETS = [
+  { w: 4, h: 2 },
+  { w: 6, h: 3 },
+  { w: 8, h: 4 },
+  { w: 10, h: 5 },
+];
+
+const DISTANCE_PRESETS = [
+  { d: 5, label: '5 m · piazza' },
+  { d: 10, label: '10 m · strada' },
+  { d: 20, label: '20 m · viale' },
+  { d: 40, label: '40 m · autostrada' },
+];
+
+export const ExpressSimulator: React.FC = () => {
+  const {
+    pitchMm,
+    modulesW,
+    modulesH,
+    targetOutdoorNits,
+    groundViewingDistM,
+    aplPercent,
+    aplSource,
+    videoFileName,
+    operatingHoursDay,
+    tariffEurKwh,
+    setPitchMm,
+    setFormatId,
+    setDimensioniMetri,
+    setTargetOutdoorNits,
+    setGroundViewingDistM,
+    setAplPercent,
+    setSchedule,
+    setTariffRate,
+    setStep,
+  } = useSimulatorStore();
+
+  const { dimensions, profile, alternative, pMax } = useSimulatorComputed();
+
+  const mounted = useMounted();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [aplRange, setAplRange] = useState<{ min: number; max: number } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // La modalità express ragiona in metri interi su cabinet 1000×1000
+    setFormatId('1000x1000');
+  }, [setFormatId]);
+
+  const limit = getMaxNitsForPitch(pitchMm);
+  const nitsOverLimit = targetOutdoorNits > limit.maxNits;
+
+  const analyzeFile = async (file: File) => {
+    setIsProcessing(true);
+    setProgress(0);
+    setAplRange(null);
+    setAnalysisError(null);
+    try {
+      if (file.type.startsWith('video/')) {
+        const res = await analizzaVideoApl(file, (p) => setProgress(p));
+        setAplPercent(res.averageAplPercent, 'video', file.name);
+        setAplRange({ min: res.minAplPercent, max: res.maxAplPercent });
+      } else if (file.type.startsWith('image/')) {
+        const apl = await analizzaFotoApl(file);
+        setAplPercent(apl, 'foto', file.name);
+      }
+    } catch (err) {
+      console.warn('Analisi contenuto fallita, resta lo slider manuale:', err);
+      setAnalysisError(err instanceof Error ? err.message : 'Analisi non riuscita: imposta l\'APL manualmente.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) analyzeFile(file);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) analyzeFile(file);
+  };
+
+  const loadSample = async (name: string, label: string, fallbackApl: number) => {
+    setIsProcessing(true);
+    setProgress(0);
+    setAplRange(null);
+    setAnalysisError(null);
+    try {
+      // URL diretto: evita di scaricare il file in memoria e funziona anche dove i blob video non vengono decodificati
+      const analysis = await analizzaVideoApl(`/samples/${name}`, (p) => setProgress(p));
+      setAplPercent(analysis.averageAplPercent, 'video', label);
+      setAplRange({ min: analysis.minAplPercent, max: analysis.maxAplPercent });
+    } catch (err) {
+      console.warn('Campione non analizzabile, uso il valore misurato in precedenza:', err);
+      setAplPercent(fallbackApl, 'video', label);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const goToWizard = (step: number) => {
+    setStep(step);
+  };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#07090C] flex items-center justify-center text-xs font-medium text-[#9AA3AD]">
+        Inizializzazione simulatore...
+      </div>
+    );
+  }
+
+  const kwIstantanei = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#07090C] selection:bg-[#12B76A] selection:text-[#07090C]">
+      {/* Header express */}
+      <header className="sticky top-0 z-50 bg-[#0D1117] border-b border-[#1A2028]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-3 select-none">
+            <img src="/img/logo-veroled-white.png" alt="VEROLED" className="h-6 w-auto object-contain" />
+            <span className="text-xs text-[#9AA3AD] font-medium border-l border-[#1A2028] pl-3 hidden sm:inline-block">
+              Calcolo Express
+            </span>
+          </Link>
+          <div className="flex items-center space-x-2">
+            <span className="px-2.5 py-1 rounded-full bg-[#0D2818] border border-[#163826] text-[11px] font-medium text-[#34D399] hidden md:flex items-center space-x-1.5">
+              <Zap className="w-3 h-3" />
+              <span>Una schermata · risultati live</span>
+            </span>
+            <Link
+              href="/"
+              onClick={() => goToWizard(0)}
+              className="px-3.5 py-1.5 rounded-lg border border-[#1A2028] bg-[#10141D] text-xs font-semibold text-[#E8EDF2] hover:bg-[#161F30] hover:border-[#2D3748] transition-colors flex items-center space-x-1.5"
+            >
+              <LayoutList className="w-3.5 h-3.5 text-[#9AA3AD]" />
+              <span>Wizard completo</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+          {/* Colonna configurazione + risultati */}
+          <div className="space-y-5 min-w-0">
+            {/* 1. Schermo */}
+            <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-5">
+              <div className="flex items-center space-x-2 text-white font-semibold text-sm">
+                <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">1</span>
+                <Monitor className="w-4 h-4 text-[#12B76A]" />
+                <span>Il tuo LEDwall</span>
+              </div>
+
+              {/* Passo */}
+              <div className="space-y-2">
+                <span className="text-xs text-[#868D97] font-medium">Passo pixel</span>
+                <div className="flex flex-wrap gap-2">
+                  {PIXEL_PITCH_PRESETS.map((p) => {
+                    const est = stimaPotenzaDaPassoNit(p, targetOutdoorNits);
+                    const selected = pitchMm === p;
+                    const stress = est.sforzoPercent >= 90 ? 'text-[#F87171]' : est.sforzoPercent >= 65 ? 'text-[#FBBF24]' : 'text-[#34D399]';
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPitchMm(p)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
+                          selected
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
+                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                        }`}
+                      >
+                        <span>P{p}</span>
+                        <span className={`text-[10px] font-mono ${stress}`}>{est.sforzoPercent}%</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-[#868D97]">
+                  La percentuale è lo sforzo termico dei chip ai nit impostati. Sotto il 65% il diodo lavora fresco.
+                </p>
+              </div>
+
+              {/* Dimensioni */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <span className="text-xs text-[#868D97] font-medium">Dimensioni (base × altezza, metri)</span>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={40}
+                      step={1}
+                      value={modulesW}
+                      onChange={(e) => setDimensioniMetri(parseInt(e.target.value || '1', 10), modulesH)}
+                      className="w-full px-3 py-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-sm tabular-nums focus:border-[#12B76A] outline-none"
+                    />
+                    <span className="text-[#868D97] text-sm">×</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      step={1}
+                      value={modulesH}
+                      onChange={(e) => setDimensioniMetri(modulesW, parseInt(e.target.value || '1', 10))}
+                      className="w-full px-3 py-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-sm tabular-nums focus:border-[#12B76A] outline-none"
+                    />
+                    <span className="text-[#868D97] text-xs whitespace-nowrap">m</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SIZE_PRESETS.map((s) => {
+                      const sel = modulesW === s.w && modulesH === s.h;
+                      return (
+                        <button
+                          key={`${s.w}x${s.h}`}
+                          type="button"
+                          onClick={() => setDimensioniMetri(s.w, s.h)}
+                          className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
+                            sel ? 'bg-[#0D2818] text-[#34D399] border border-[#163826]' : 'bg-[#10141D] text-[#9AA3AD] border border-[#1A2028] hover:text-white'
+                          }`}
+                        >
+                          {s.w}×{s.h} m
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-[#868D97] tabular-nums">
+                    {n(dimensions.areaM2, 0)} m² · {dimensions.totalCabinets} cabinet · {n(dimensions.resolutionX)}×{n(dimensions.resolutionY)} px
+                  </p>
+                </div>
+
+                {/* Nit */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
+                      <Sun className="w-3.5 h-3.5 text-[#FBBF24]" />
+                      <span>Luminosità di picco</span>
+                    </span>
+                    <span className="text-sm font-semibold text-white tabular-nums">{n(targetOutdoorNits)} nit</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={2500}
+                    max={12000}
+                    step={500}
+                    value={targetOutdoorNits}
+                    onChange={(e) => setTargetOutdoorNits(parseInt(e.target.value, 10))}
+                    className="w-full custom-slider cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-[#868D97]">
+                    <span>2.500 · ombra</span>
+                    <span>5.000 · outdoor</span>
+                    <span>12.000 · sole zenitale</span>
+                  </div>
+                  {nitsOverLimit ? (
+                    <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span>Il P{pitchMm} si ferma a {n(limit.maxNits)} nit ({limit.chipType}). Per questo picco serve un passo più generoso.</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-[#868D97]">Tetto fisico del P{pitchMm}: {n(limit.maxNits)} nit · {limit.chipType}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Distanza di visione */}
+              <div className="space-y-2">
+                <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[#12B76A]" />
+                  <span>Da dove lo guardano? <span className="text-[#667085]">(serve per consigliarti il passo)</span></span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {DISTANCE_PRESETS.map((d) => {
+                    const sel = Math.abs(groundViewingDistM - d.d) < 0.5;
+                    return (
+                      <button
+                        key={d.d}
+                        type="button"
+                        onClick={() => setGroundViewingDistM(d.d)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                          sel
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
+                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                  <div className="flex items-center space-x-1.5">
+                    <input
+                      type="number"
+                      min={1}
+                      max={200}
+                      value={groundViewingDistM}
+                      onChange={(e) => setGroundViewingDistM(parseFloat(e.target.value || '1'))}
+                      className="w-20 px-2 py-1.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-xs tabular-nums focus:border-[#12B76A] outline-none"
+                    />
+                    <span className="text-[11px] text-[#868D97]">m</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 2. Contenuto */}
+            <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 text-white font-semibold text-sm">
+                <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">2</span>
+                <Play className="w-4 h-4 text-[#12B76A]" />
+                <span>Cosa trasmetti</span>
+                <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline">· il contenuto pesa più del 70% della bolletta</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-4">
+                <label
+                  className="block cursor-pointer"
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                >
+                  <input type="file" accept="video/*,image/*" onChange={handleUpload} className="hidden" />
+                  <div className={`h-full min-h-[104px] p-4 rounded-xl border border-dashed text-center transition-colors flex flex-col items-center justify-center ${
+                    dragOver ? 'border-[#12B76A] bg-[#0D2818]' : 'border-[#2D3748] bg-[#10141D] hover:bg-[#161F30]'
+                  }`}>
+                    {isProcessing ? (
+                      <div className="w-full space-y-2">
+                        <span className="text-xs font-medium text-[#12B76A] block">Analisi 30 frame · {progress}%</span>
+                        <div className="w-full h-1.5 bg-[#1A2028] rounded-full overflow-hidden">
+                          <div className="h-full bg-[#12B76A] transition-all duration-200" style={{ width: `${progress}%` }} />
+                        </div>
+                      </div>
+                    ) : videoFileName && aplSource !== 'manual' ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center space-x-2 text-xs font-medium text-[#34D399]">
+                          <CheckCircle2 className="w-4 h-4 text-[#12B76A]" />
+                          <span className="truncate max-w-[220px]">{videoFileName}</span>
+                        </div>
+                        <span className="text-[11px] text-[#9AA3AD] tabular-nums block">
+                          APL medio {n(aplPercent, 1)}%
+                          {aplRange ? ` · da ${n(aplRange.min, 0)}% a ${n(aplRange.max, 0)}%` : ''}
+                        </span>
+                        <span className="text-[11px] text-[#667085] block">Trascina un altro file per sostituirlo</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center space-x-2 text-xs font-medium text-[#E8EDF2]">
+                          <Upload className="w-4 h-4 text-[#9AA3AD]" />
+                          <span>Trascina qui il video o la foto dello spot</span>
+                        </div>
+                        <span className="text-[11px] text-[#667085] block">mp4, webm, jpg, png · analisi locale, nulla viene caricato online</span>
+                        {analysisError && (
+                          <span className="text-[11px] text-[#F87171] flex items-center justify-center space-x-1 pt-1">
+                            <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                            <span>{analysisError}</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </label>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-[#868D97] font-medium">Oppure imposta l&apos;APL</span>
+                    <span className="text-sm font-semibold text-white tabular-nums">{n(aplPercent, 0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={100}
+                    value={Math.round(aplPercent)}
+                    onChange={(e) => setAplPercent(parseInt(e.target.value, 10), 'manual')}
+                    className="w-full custom-slider cursor-pointer"
+                  />
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button type="button" onClick={() => loadSample('file-3.mp4', 'Spot showroom (campione)', 23)} disabled={isProcessing}
+                      className="py-1.5 px-2 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center justify-center space-x-1 cursor-pointer">
+                      <Play className="w-3 h-3 text-[#12B76A]" /><span>Spot scuro</span>
+                    </button>
+                    <button type="button" onClick={() => loadSample('file-10.mp4', 'Kinetic wall (campione)', 50)} disabled={isProcessing}
+                      className="py-1.5 px-2 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center justify-center space-x-1 cursor-pointer">
+                      <Play className="w-3 h-3 text-[#12B76A]" /><span>Spot chiaro</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 3. Consumi */}
+            <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-white font-semibold text-sm">
+                  <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">3</span>
+                  <Zap className="w-4 h-4 text-[#12B76A]" />
+                  <span>Quanto consuma</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="text-[11px] text-[#9AA3AD] hover:text-white flex items-center space-x-1 cursor-pointer"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  <span>{operatingHoursDay} h/giorno · {n(tariffEurKwh, 2)} €/kWh</span>
+                  {showAdvanced ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {showAdvanced && (
+                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-[#10141D] border border-[#1A2028]">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px] text-[#868D97]">
+                      <span>Ore accese al giorno</span>
+                      <span className="text-white tabular-nums">{operatingHoursDay} h</span>
+                    </div>
+                    <input type="range" min={1} max={24} value={operatingHoursDay} onChange={(e) => setSchedule(parseInt(e.target.value, 10))} className="w-full custom-slider cursor-pointer" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[11px] text-[#868D97]">
+                      <span>Tariffa energia</span>
+                      <span className="text-white tabular-nums">{n(tariffEurKwh, 2)} €/kWh</span>
+                    </div>
+                    <input type="range" min={0.10} max={0.60} step={0.01} value={tariffEurKwh} onChange={(e) => setTariffRate(parseFloat(e.target.value))} className="w-full custom-slider cursor-pointer" />
+                  </div>
+                  <p className="col-span-2 text-[11px] text-[#667085]">Di notte lo schermo scende al 10% (norma CEI). Standby elettronica 50 W/m² a schermo spento.</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
+                  <span className="text-[10px] uppercase text-[#868D97] font-medium block">Potenza in esercizio</span>
+                  <span className="text-xl font-semibold text-white tabular-nums">{kwIstantanei < 10 ? n(kwIstantanei * 1000) : n(kwIstantanei, 1)}<span className="text-xs text-[#9AA3AD] ml-1">{kwIstantanei < 10 ? 'W' : 'kW'}</span></span>
+                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.dayPowerWmq)} W/m² · picco {n(pMax)} W/m²</span>
+                </div>
+                <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
+                  <span className="text-[10px] uppercase text-[#868D97] font-medium block">Energia al giorno</span>
+                  <span className="text-xl font-semibold text-white tabular-nums">{n(profile.totalDailyKwh, 1)}<span className="text-xs text-[#9AA3AD] ml-1">kWh</span></span>
+                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.annualKwh)} kWh/anno</span>
+                </div>
+                <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
+                  <span className="text-[10px] uppercase text-[#868D97] font-medium block">Bolletta al mese</span>
+                  <span className="text-xl font-semibold text-white tabular-nums">{n(profile.monthlyCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></span>
+                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.dailyCostEur, 2)} €/giorno</span>
+                </div>
+                <div className="p-3.5 rounded-lg bg-[#0D2818] border border-[#163826]">
+                  <span className="text-[10px] uppercase text-[#34D399] font-medium block">Bolletta all&apos;anno</span>
+                  <span className="text-xl font-semibold text-white tabular-nums">{n(profile.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></span>
+                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.annualKwh * 0.305 / 1000, 2)} t CO₂/anno</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <Link
+                  href="/"
+                  onClick={() => goToWizard(9)}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 transition-colors shadow-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Scarica il report PDF</span>
+                </Link>
+                <Link
+                  href="/"
+                  onClick={() => goToWizard(7)}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] font-semibold text-xs flex items-center justify-center space-x-2 transition-colors"
+                >
+                  <LayoutList className="w-4 h-4 text-[#9AA3AD]" />
+                  <span>Approfondisci nel wizard</span>
+                </Link>
+              </div>
+            </section>
+          </div>
+
+          {/* Banner consiglio (sticky su desktop) */}
+          <div className="lg:sticky lg:top-24">
+            <RecommendationBanner
+              alternative={alternative}
+              onApply={() => setPitchMm(alternative.proposed.pitchMm)}
+            />
+          </div>
+        </div>
+      </main>
+
+      <WizardFooter />
+    </div>
+  );
+};

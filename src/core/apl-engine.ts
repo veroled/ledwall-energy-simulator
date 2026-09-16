@@ -39,10 +39,16 @@ export function calcolaImageDataApl(imageData: ImageData): number {
 }
 
 /**
- * Campiona 30 frame uniformi da un file video ed estrae la media APL
+ * Campiona 30 frame uniformi da un video ed estrae la media APL.
+ * Accetta un File (upload utente, via blob URL) oppure un URL diretto (campioni in /public).
+ * Ogni fase ha un timeout: se il browser non decodifica il video la promise viene rigettata
+ * e l'interfaccia può ripiegare sullo slider manuale invece di restare in attesa.
  */
+export const APL_METADATA_TIMEOUT_MS = 15000;
+export const APL_SEEK_TIMEOUT_MS = 6000;
+
 export async function analizzaVideoApl(
-  file: File,
+  source: File | string,
   onProgress?: (progressPct: number) => void
 ): Promise<VideoAplResult> {
   return new Promise((resolve, reject) => {
@@ -59,14 +65,52 @@ export async function analizzaVideoApl(
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    video.src = objectUrl;
+    const isFile = typeof source !== 'string';
+    const objectUrl = isFile ? URL.createObjectURL(source) : source;
+    let settled = false;
+
+    const cleanup = () => {
+      video.removeAttribute('src');
+      video.load();
+      if (isFile) URL.revokeObjectURL(objectUrl);
+    };
+    const fail = (err: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err);
+    };
+    const succeed = (result: VideoAplResult) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+
+    const metadataTimer = setTimeout(() => {
+      fail(new Error('Il browser non riesce a decodificare questo video (timeout metadata). Imposta l\'APL manualmente.'));
+    }, APL_METADATA_TIMEOUT_MS);
+
+    const seekTo = (t: number) =>
+      new Promise<void>((res, rej) => {
+        const timer = setTimeout(() => {
+          video.removeEventListener('seeked', onSeeked);
+          rej(new Error('Timeout durante il campionamento del video'));
+        }, APL_SEEK_TIMEOUT_MS);
+        const onSeeked = () => {
+          clearTimeout(timer);
+          video.removeEventListener('seeked', onSeeked);
+          res();
+        };
+        video.addEventListener('seeked', onSeeked);
+        video.currentTime = t;
+      });
 
     video.onloadedmetadata = async () => {
+      clearTimeout(metadataTimer);
       const duration = video.duration;
       if (!duration || isNaN(duration) || duration <= 0) {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Durata video non valida o non leggibile'));
+        fail(new Error('Durata video non valida o non leggibile'));
         return;
       }
 
@@ -81,15 +125,7 @@ export async function analizzaVideoApl(
       try {
         for (let i = 1; i <= numFrames; i++) {
           const seekTime = i * stepTime;
-          video.currentTime = seekTime;
-
-          await new Promise<void>((res) => {
-            const onSeeked = () => {
-              video.removeEventListener('seeked', onSeeked);
-              res();
-            };
-            video.addEventListener('seeked', onSeeked);
-          });
+          await seekTo(seekTime);
 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -105,30 +141,29 @@ export async function analizzaVideoApl(
           }
         }
 
-        URL.revokeObjectURL(objectUrl);
-
         const aplValues = samples.map((s) => s.aplPercent);
         const sum = aplValues.reduce((acc, v) => acc + v, 0);
         const averageAplPercent = Math.round((sum / aplValues.length) * 10) / 10;
         const minAplPercent = Math.min(...aplValues);
         const maxAplPercent = Math.max(...aplValues);
 
-        resolve({
+        succeed({
           averageAplPercent,
           minAplPercent,
           maxAplPercent,
           samples,
         });
       } catch (err) {
-        URL.revokeObjectURL(objectUrl);
-        reject(err);
+        fail(err instanceof Error ? err : new Error(String(err)));
       }
     };
 
-    video.onerror = (e) => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error(`Errore durante il caricamento del video: ${e}`));
+    video.onerror = () => {
+      clearTimeout(metadataTimer);
+      fail(new Error(`Errore durante il caricamento del video: ${video.error?.message ?? 'formato non supportato'}`));
     };
+
+    video.src = objectUrl;
   });
 }
 

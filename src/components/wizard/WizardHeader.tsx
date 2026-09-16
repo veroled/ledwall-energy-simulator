@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, ArrowRight, Zap } from 'lucide-react';
 
 export const WizardHeader: React.FC = () => {
   const { currentStep, prevStep, nextStep, setStep } = useSimulatorStore();
@@ -40,6 +41,13 @@ export const WizardHeader: React.FC = () => {
 
         {/* Navigation Controls (Indietro & Avanti solidi) */}
         <div className="flex items-center space-x-3">
+          <Link
+            href="/express"
+            className="px-3 py-1.5 rounded-lg border border-[#163826] bg-[#0D2818] text-xs font-semibold text-[#34D399] hover:bg-[#133D24] transition-colors flex items-center space-x-1.5"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Express</span>
+          </Link>
           {currentStep > 0 && (
             <button
               type="button"
