@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
 import { analizzaVideoApl, analizzaFotoApl, VideoAplResult } from '../../core/apl-engine';
 import { Video, Sliders, Upload, CheckCircle2, ArrowRight, Play } from 'lucide-react';
+import { asset } from '../../config/paths';
 
 export const S3AplEngine: React.FC = () => {
   const { aplPercent, videoFileName, setAplPercent, nextStep } = useSimulatorStore();
@@ -39,7 +40,7 @@ export const S3AplEngine: React.FC = () => {
     setIsProcessing(true);
     setProgress(15);
     try {
-      const analysis = await analizzaVideoApl('/samples/file-3.mp4', (p) => setProgress(p));
+      const analysis = await analizzaVideoApl(asset('/samples/file-3.mp4'), (p) => setProgress(p));
       setVideoResult(analysis);
       setAplPercent(analysis.averageAplPercent, 'video', 'file-3.mp4 (Showroom SBN-MK)');
     } catch {
@@ -53,7 +54,7 @@ export const S3AplEngine: React.FC = () => {
     setIsProcessing(true);
     setProgress(15);
     try {
-      const analysis = await analizzaVideoApl('/samples/file-10.mp4', (p) => setProgress(p));
+      const analysis = await analizzaVideoApl(asset('/samples/file-10.mp4'), (p) => setProgress(p));
       setVideoResult(analysis);
       setAplPercent(analysis.averageAplPercent, 'video', 'file-10.mp4 (Kinetic Wall)');
     } catch {

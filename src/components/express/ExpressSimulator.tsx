@@ -4,6 +4,7 @@ import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { PIXEL_PITCH_PRESETS } from '../../config/config';
+import { asset } from '../../config/paths';
 import { getMaxNitsForPitch, stimaPotenzaDaPassoNit } from '../../core/physics';
 import { analizzaVideoApl, analizzaFotoApl } from '../../core/apl-engine';
 import { RecommendationBanner } from './RecommendationBanner';
@@ -126,7 +127,7 @@ export const ExpressSimulator: React.FC = () => {
     setAnalysisError(null);
     try {
       // URL diretto: evita di scaricare il file in memoria e funziona anche dove i blob video non vengono decodificati
-      const analysis = await analizzaVideoApl(`/samples/${name}`, (p) => setProgress(p));
+      const analysis = await analizzaVideoApl(asset(`/samples/${name}`), (p) => setProgress(p));
       setAplPercent(analysis.averageAplPercent, 'video', label);
       setAplRange({ min: analysis.minAplPercent, max: analysis.maxAplPercent });
     } catch (err) {
@@ -157,7 +158,7 @@ export const ExpressSimulator: React.FC = () => {
       <header className="sticky top-0 z-50 bg-[#0D1117] border-b border-[#1A2028]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 select-none">
-            <img src="/img/logo-veroled-white.png" alt="VEROLED" className="h-6 w-auto object-contain" />
+            <img src={asset('/img/logo-veroled-white.png')} alt="VEROLED" className="h-6 w-auto object-contain" />
             <span className="text-xs text-[#9AA3AD] font-medium border-l border-[#1A2028] pl-3 hidden sm:inline-block">
               Calcolo Express
             </span>

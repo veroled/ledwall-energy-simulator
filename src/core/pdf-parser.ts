@@ -4,6 +4,7 @@
  * Regola: Mai inventare dati mancanti; i campi assenti vengono precompilati con i default
  * certificati VeroLED e marcati esplicitamente come "STIMATO".
  */
+import { asset } from '../config/paths';
 import { CONFIG } from '../config/config';
 
 export interface ParametroEstratto<T> {
@@ -34,7 +35,8 @@ export async function estraiTestoDaPdf(file: File): Promise<string> {
     
     // Configura il worker se necessario
     if (!pdfjs.GlobalWorkerOptions.workerSrc && typeof window !== 'undefined') {
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version || '4.10.38'}/pdf.worker.min.mjs`;
+      // Worker servito dallo stesso dominio: la CSP di veroledsrl.com ammette solo worker-src 'self'
+      pdfjs.GlobalWorkerOptions.workerSrc = asset('/pdf.worker.min.mjs');
     }
 
     const loadingTask = pdfjs.getDocument({ data: arrayBuffer });

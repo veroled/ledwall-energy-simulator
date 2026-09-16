@@ -6,6 +6,7 @@ import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulato
 import { CircularGauge } from '../ui/CircularGauge';
 import { LoadCurveChart } from '../charts/LoadCurveChart';
 import { analizzaVideoApl, analizzaFotoApl } from '../../core/apl-engine';
+import { asset } from '../../config/paths';
 import {
   ArrowRight,
   ArrowLeft,
@@ -69,7 +70,7 @@ export const S7Dashboard: React.FC = () => {
     setIsAnalyzingVideo(true);
     setVideoProgress(15);
     try {
-      const analysis = await analizzaVideoApl('/samples/file-3.mp4', (p) => setVideoProgress(p));
+      const analysis = await analizzaVideoApl(asset('/samples/file-3.mp4'), (p) => setVideoProgress(p));
       setAplPercent(analysis.averageAplPercent, 'video', 'file-3.mp4 (Showroom SBN-MK)');
     } catch {
       setAplPercent(23, 'video', 'file-3.mp4 (Showroom SBN-MK)');
@@ -82,7 +83,7 @@ export const S7Dashboard: React.FC = () => {
     setIsAnalyzingVideo(true);
     setVideoProgress(15);
     try {
-      const analysis = await analizzaVideoApl('/samples/file-10.mp4', (p) => setVideoProgress(p));
+      const analysis = await analizzaVideoApl(asset('/samples/file-10.mp4'), (p) => setVideoProgress(p));
       setAplPercent(analysis.averageAplPercent, 'video', 'file-10.mp4 (Kinetic Wall)');
     } catch {
       setAplPercent(50, 'video', 'file-10.mp4 (Kinetic Wall)');

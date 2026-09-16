@@ -4,6 +4,7 @@ import React from 'react';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Zap } from 'lucide-react';
+import { asset } from '../../config/paths';
 
 export const WizardHeader: React.FC = () => {
   const { currentStep, prevStep, nextStep, setStep } = useSimulatorStore();
@@ -30,7 +31,7 @@ export const WizardHeader: React.FC = () => {
           className="flex items-center space-x-3 cursor-pointer select-none group"
         >
           <img
-            src="/img/logo-veroled-white.png"
+            src={asset('/img/logo-veroled-white.png')}
             alt="VEROLED"
             className="h-6 w-auto object-contain select-none"
           />
