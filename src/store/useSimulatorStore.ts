@@ -9,9 +9,13 @@ import {
   calcolaProfiloEnergetico,
   confrontaScenari,
   stimaPotenzaDaPassoNit,
+  calcolaPowerQuality,
+  calcolaConsulenzaOttica,
   ScreenDimensions,
   DailyEnergyProfile,
   ScenarioResult,
+  PowerQualityAnalysis,
+  OpticalConsultingResult,
 } from '../core/physics';
 import { DatiSchedaTecnica } from '../core/pdf-parser';
 
@@ -27,6 +31,8 @@ export interface SimulatorState {
   modulesH: number;
   pitchMm: number;
   targetOutdoorNits: number; // Luminosità operativa outdoor di riferimento (standard 5.000 nit)
+  installHeightM: number; // Quota installazione da terra (metri)
+  groundViewingDistM: number; // Distanza osservatori su strada (metri)
 
   // S3: APL
   aplSource: 'manual' | 'video' | 'foto';
@@ -81,6 +87,8 @@ export interface SimulatorState {
   setModulesH: (h: number) => void;
   setPitchMm: (p: number) => void;
   setTargetOutdoorNits: (nits: number) => void;
+  setInstallHeightM: (h: number) => void;
+  setGroundViewingDistM: (d: number) => void;
   setDimensioniMetri: (baseM: number, altezzaM: number) => void;
   setRisoluzionePx: (resX: number, resY: number) => void;
   setAplPercent: (apl: number, source?: 'manual' | 'video' | 'foto', fileName?: string) => void;
@@ -107,6 +115,8 @@ export const useSimulatorStore = create<SimulatorState>()(
       modulesH: 3,
       pitchMm: 3.9,
       targetOutdoorNits: 5000,
+      installHeightM: 5.0,
+      groundViewingDistM: 10.0,
 
       aplSource: 'manual',
       aplPercent: CONFIG.DEFAULT_APL_PERCENT,
@@ -166,6 +176,8 @@ export const useSimulatorStore = create<SimulatorState>()(
       setPitchMm: (pitchMm) => set({ pitchMm }),
       setTargetOutdoorNits: (targetOutdoorNits) =>
         set({ targetOutdoorNits: Math.max(2500, Math.min(12000, targetOutdoorNits)) }),
+      setInstallHeightM: (installHeightM) => set({ installHeightM: Math.max(0, installHeightM) }),
+      setGroundViewingDistM: (groundViewingDistM) => set({ groundViewingDistM: Math.max(1, groundViewingDistM) }),
 
       setDimensioniMetri: (baseM, altezzaM) => {
         const s = get();
@@ -329,6 +341,26 @@ export function useSimulatorComputed() {
   const instantaneousPowerKw = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
   const maxNominalPowerKw = (pMax * dimensions.areaM2) / 1000;
 
+  const isDiamond = state.pitchMm <= 2.9;
+  const kwDiurnaA = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
+  const kwDiurnaB = kwDiurnaA * (state.fleetOptions.dimmingAdattivo ? 0.55 : 0.85);
+
+  const powerQuality: PowerQualityAnalysis = calcolaPowerQuality(
+    dimensions.totalCabinets,
+    kwDiurnaA,
+    kwDiurnaB,
+    state.operatingHoursDay,
+    isDiamond || state.fleetOptions.standbyZero
+  );
+
+  const opticalConsulting: OpticalConsultingResult = calcolaConsulenzaOttica(
+    state.installHeightM ?? 5.0,
+    state.groundViewingDistM ?? 10.0,
+    state.pitchMm,
+    dimensions.areaM2,
+    state.targetOutdoorNits || 6000
+  );
+
   return {
     dimensions,
     profile,
@@ -337,5 +369,8 @@ export function useSimulatorComputed() {
     instantaneousPowerKw,
     maxNominalPowerKw,
     pMax,
+    powerQuality,
+    opticalConsulting,
+    isDiamond,
   };
 }

@@ -451,3 +451,217 @@ export function stimaPotenzaDaPassoNit(
   };
 }
 
+export interface PowerQualityAnalysis {
+  powerFactorA: number; // es. 0.50 (sfasamento capacitivo filtri EMI a basso APL)
+  powerFactorB: number; // es. 0.98 (garantito da Phase Shedding o SVG)
+  apparentPowerKvaA: number;
+  apparentPowerKvaB: number;
+  reactiveKvarA: number;
+  reactiveKvarB: number;
+  penaleAreraEurAnnoA: number; // Delibera ARERA 232/2022/R/eel per cosfi < 0.9
+  penaleAreraEurAnnoB: number; // 0 €
+  risparmioPotenzaImpegnataEurAnno: number; // Minori kVA contrattuali impegnati
+  totaleRisparmioReteEurAnno: number;
+  totalCabinets: number;
+  totalPowerSupplies: number;
+  isDiamond: boolean;
+}
+
+/**
+ * Calcola l'analisi di Power Quality (Fattore di Potenza, Potenza Apparente, Reattiva Capacitiva e Penali ARERA)
+ * per impianti DOOH e Serie Diamond.
+ * In Scenario A (standard con PSU a singola fase tipo Mean Well UHP-200), il PF crolla a basso carico (~0.50-0.55).
+ * In Scenario B (Serie Diamond con Interleaved PFC + Phase Shedding o Grandi Formati con Quadro SVG Smart Power Guard),
+ * il PF è mantenuto stabilmente >= 0.95 - 0.99.
+ */
+export function calcolaPowerQuality(
+  totalCabinets: number,
+  kwAttiviA: number,
+  kwAttiviB: number,
+  oreGiorno: number,
+  isDiamondOrSvg: boolean = true
+): PowerQualityAnalysis {
+  const totalPowerSupplies = Math.max(1, totalCabinets * 2);
+  const oreNotte = 24 - oreGiorno;
+
+  // Carico per singolo alimentatore in Scenario A (W medi su 200W nominali)
+  const wattPerPsuA = (kwAttiviA * 1000) / totalPowerSupplies;
+  const loadPercentA = Math.max(0.05, Math.min(1.0, wattPerPsuA / 200));
+
+  // Curva di crollo PF per alimentatori switching standard (singola fase, no phase shedding)
+  let powerFactorA = 0.95;
+  if (loadPercentA < 0.20) {
+    powerFactorA = 0.50;
+  } else if (loadPercentA < 0.35) {
+    powerFactorA = 0.62;
+  } else if (loadPercentA < 0.50) {
+    powerFactorA = 0.78;
+  } else if (loadPercentA < 0.70) {
+    powerFactorA = 0.88;
+  }
+
+  // Scenario B: Con Phase Shedding (Serie Diamond) o SVG Smart Power Guard
+  const powerFactorB = isDiamondOrSvg ? 0.98 : 0.92;
+
+  // Potenza Apparente S = P / PF (kVA)
+  const apparentPowerKvaA = Math.round((kwAttiviA / powerFactorA) * 10) / 10;
+  const apparentPowerKvaB = Math.round((kwAttiviB / powerFactorB) * 10) / 10;
+
+  // Potenza Reattiva Q = sqrt(S^2 - P^2) (kvar)
+  const reactiveKvarA = Math.round(Math.sqrt(Math.max(0, Math.pow(apparentPowerKvaA, 2) - Math.pow(kwAttiviA, 2))) * 10) / 10;
+  const reactiveKvarB = Math.round(Math.sqrt(Math.max(0, Math.pow(apparentPowerKvaB, 2) - Math.pow(kwAttiviB, 2))) * 10) / 10;
+
+  // Stima penali ARERA per immissione di reattiva capacitiva (Delibera 232/2022/R/eel per cosfi < 0.95/0.90)
+  // Media sanzione per kvarh eccedente: ~0.022 €/kvarh su ore annue a basso APL/notte
+  const oreBassoCaricoAnno = (oreNotte + (oreGiorno * 0.4)) * 365;
+  const penaleAreraEurAnnoA = powerFactorA < 0.85
+    ? Math.round(reactiveKvarA * oreBassoCaricoAnno * 0.022)
+    : 0;
+  const penaleAreraEurAnnoB = 0; // Garantita zero da SVG / Phase Shedding
+
+  // Risparmio quota potenza contrattuale (kVA impegnati al contatore):
+  // Costo medio potenza impegnata in BT/MT: ~74 €/kVA/anno
+  const deltaKvaContrattuali = Math.max(0, apparentPowerKvaA - apparentPowerKvaB);
+  const risparmioPotenzaImpegnataEurAnno = Math.round(deltaKvaContrattuali * 74);
+
+  const totaleRisparmioReteEurAnno = penaleAreraEurAnnoA + risparmioPotenzaImpegnataEurAnno;
+
+  return {
+    powerFactorA,
+    powerFactorB,
+    apparentPowerKvaA,
+    apparentPowerKvaB,
+    reactiveKvarA,
+    reactiveKvarB,
+    penaleAreraEurAnnoA,
+    penaleAreraEurAnnoB,
+    risparmioPotenzaImpegnataEurAnno,
+    totaleRisparmioReteEurAnno,
+    totalCabinets,
+    totalPowerSupplies,
+    isDiamond: isDiamondOrSvg,
+  };
+}
+
+/**
+ * Risultato della Consulenza Ottica (Confronto Passo Richiesto dal Cliente vs Passo Proposto dal Sistema)
+ */
+export interface OpticalConsultingResult {
+  installHeightM: number;
+  groundViewingDistM: number;
+  lineOfSightDistM: number; // sqrt(h^2 + d^2)
+  clientPitchMm: number;
+  recommendedPitchMm: number;
+  minResolvablePitchMm: number; // Soglia 1 arcminuto occhio umano
+  isClientPitchOverkill: boolean;
+  pixelDensityClient: number; // px/m²
+  pixelDensityRecommended: number; // px/m²
+  totalPixelsClient: number;
+  totalPixelsRecommended: number;
+  wastedPixelsCount: number;
+  wastedPixelsPercent: number;
+  hardwareClient: HardwareComparisonResult;
+  hardwareRecommended: HardwareComparisonResult;
+  deltaAnnualEnergyCostEur: number;
+  clientMonthlyRentalEur: number;
+  recommendedMonthlyRentalEur: number;
+  monthlyRentalSavingsEur: number;
+  total24MonthSavingsEur: number;
+  scientificVerdict: string;
+}
+
+/**
+ * Calcola la consulenza ottica confrontando il passo pixel scelto dal cliente
+ * con quello ottimale suggerito dalla fisica della visione umana (Snellen 20/20 a 1 arcminuto)
+ * in funzione dell'altezza da terra e della distanza dell'osservatore.
+ */
+export function calcolaConsulenzaOttica(
+  installHeightM: number,
+  groundViewingDistM: number,
+  clientPitchMm: number,
+  areaM2: number = 18,
+  targetNits: number = 6000
+): OpticalConsultingResult {
+  const h = Math.max(0, installHeightM);
+  const d = Math.max(1, groundViewingDistM);
+  // Distanza ipotenusa reale linea di vista (in metri)
+  const lineOfSightDistM = Math.round(Math.sqrt(h * h + d * d) * 10) / 10;
+
+  // Risoluzione minima angolare occhio umano: 1 arcminuto = 0.000291 rad
+  // A distanza D, il limite di risoluzione per separare due diodi è: p = D * 0.291 mm
+  const minResolvablePitchMm = Math.round(lineOfSightDistM * 0.291 * 100) / 100;
+
+  // Selezione del passo commerciale consigliato (outdoor standard: 2.6, 2.9, 3.91, 4.81, 6.67, 8.0, 10.0)
+  let recommendedPitchMm = 3.91;
+  if (lineOfSightDistM < 6) {
+    recommendedPitchMm = 2.6;
+  } else if (lineOfSightDistM < 9) {
+    recommendedPitchMm = 2.9;
+  } else if (lineOfSightDistM <= 16) {
+    recommendedPitchMm = 3.91;
+  } else if (lineOfSightDistM <= 22) {
+    recommendedPitchMm = 4.81;
+  } else {
+    recommendedPitchMm = 6.67;
+  }
+
+  const isClientPitchOverkill = clientPitchMm < recommendedPitchMm;
+
+  // Densità e totale pixel
+  const pixelDensityClient = Math.round(Math.pow(1000 / clientPitchMm, 2));
+  const pixelDensityRecommended = Math.round(Math.pow(1000 / recommendedPitchMm, 2));
+  const totalPixelsClient = Math.round(pixelDensityClient * areaM2);
+  const totalPixelsRecommended = Math.round(pixelDensityRecommended * areaM2);
+
+  const wastedPixelsCount = Math.max(0, totalPixelsClient - totalPixelsRecommended);
+  const wastedPixelsPercent = totalPixelsClient > 0 ? Math.round((wastedPixelsCount / totalPixelsClient) * 100) : 0;
+
+  // Hardware estimate a targetNits (es. 6000 nit per outdoor RFP)
+  const hardwareClient = stimaPotenzaDaPassoNit(clientPitchMm, targetNits, areaM2);
+  const hardwareRecommended = stimaPotenzaDaPassoNit(recommendedPitchMm, targetNits, areaM2);
+
+  const deltaAnnualEnergyCostEur = Math.max(0, hardwareClient.annualCostEur - hardwareRecommended.annualCostEur);
+
+  // Stima noleggio operativo a 24 mesi:
+  // P2.6 / P1.95 outdoor 6000 nit richiede package miniaturizzati con alto costo di produzione (~108 €/m²/mese)
+  // P3.91 / P4.8 comporta moduli SMD1921 industriali ad alta scala (~67 €/m²/mese -> ~1.200 €/mese per 18 m²!)
+  const clientRatePerM2Month = clientPitchMm <= 2.6 ? 108 : clientPitchMm <= 3.0 ? 92 : 67;
+  const recRatePerM2Month = recommendedPitchMm <= 2.6 ? 108 : recommendedPitchMm <= 3.0 ? 92 : 67;
+
+  const clientMonthlyRentalEur = Math.round(areaM2 * clientRatePerM2Month);
+  const recommendedMonthlyRentalEur = Math.round(areaM2 * recRatePerM2Month);
+  const monthlyRentalSavingsEur = Math.max(0, clientMonthlyRentalEur - recommendedMonthlyRentalEur);
+  const total24MonthSavingsEur = (monthlyRentalSavingsEur * 24) + (deltaAnnualEnergyCostEur * 2);
+
+  let scientificVerdict = '';
+  if (isClientPitchOverkill) {
+    scientificVerdict = `A ${lineOfSightDistM} metri di linea di vista (installazione a ${h}m di quota e ${d}m di distanza suolo), l'acuità visiva umana fonde completamente i pixel già a passo P${recommendedPitchMm} mm (qualità Retina). La scelta di un P${clientPitchMm} mm comporta ${wastedPixelsPercent}% di pixel non distinguibili dall'occhio umano, spingendo i micro-diodi in saturazione termica a ${targetNits} nit (${hardwareClient.sforzoPercent}% sforzo) e raddoppiando i consumi energetici senza alcun reale beneficio visivo per l'osservatore.`;
+  } else {
+    scientificVerdict = `Il passo P${clientPitchMm} mm è perfettamente bilanciato per la distanza di visione calcolata di ${lineOfSightDistM} metri.`;
+  }
+
+  return {
+    installHeightM: h,
+    groundViewingDistM: d,
+    lineOfSightDistM,
+    clientPitchMm,
+    recommendedPitchMm,
+    minResolvablePitchMm,
+    isClientPitchOverkill,
+    pixelDensityClient,
+    pixelDensityRecommended,
+    totalPixelsClient,
+    totalPixelsRecommended,
+    wastedPixelsCount,
+    wastedPixelsPercent,
+    hardwareClient,
+    hardwareRecommended,
+    deltaAnnualEnergyCostEur,
+    clientMonthlyRentalEur,
+    recommendedMonthlyRentalEur,
+    monthlyRentalSavingsEur,
+    total24MonthSavingsEur,
+    scientificVerdict,
+  };
+}
+

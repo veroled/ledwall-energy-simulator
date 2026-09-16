@@ -5,7 +5,7 @@
  */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { ScreenDimensions, ScenarioResult, DailyEnergyProfile } from './physics';
+import { ScreenDimensions, ScenarioResult, DailyEnergyProfile, PowerQualityAnalysis, OpticalConsultingResult } from './physics';
 import { VEROLED_LOGO_PNG_BASE64 } from '../assets/logo-base64';
 
 export interface ReportData {
@@ -14,6 +14,8 @@ export interface ReportData {
   profile: DailyEnergyProfile;
   aplPercent: number;
   tariffaEurKwh: number;
+  powerQuality?: PowerQualityAnalysis;
+  opticalConsulting?: OpticalConsultingResult;
   userName?: string;
   userCompany?: string;
   userEmail?: string;
@@ -197,6 +199,18 @@ export function generaReportPdf(data: ReportData): jsPDF {
       `${(data.scenario.annualKwhB * 0.000305).toFixed(1)} ton CO2`,
       `-${data.scenario.co2SavedTons.toFixed(1)} ton CO2 abbattute`,
     ],
+    [
+      'Fattore di Potenza Rete (PF / cos phi)',
+      data.powerQuality ? `~${data.powerQuality.powerFactorA.toFixed(2)} (sfasamento)` : '~0.52 (sfasamento)',
+      data.powerQuality ? `${data.powerQuality.powerFactorB.toFixed(2)} (Interleaved/SVG)` : '0.98 (Interleaved/SVG)',
+      'PF >= 0.95 garantito h24',
+    ],
+    [
+      'Penali ARERA Reattiva (Del. 232/22)',
+      data.powerQuality && data.powerQuality.penaleAreraEurAnnoA > 0 ? `A rischio (~${formatItalianNumber(data.powerQuality.penaleAreraEurAnnoA)} €/a)` : 'A rischio (> 1.800 €/a)',
+      '0 € / anno (Completamente azzerate)',
+      'Zero penali reattiva',
+    ],
   ];
 
   autoTable(doc, {
@@ -365,13 +379,247 @@ export function generaReportPdf(data: ReportData): jsPDF {
     285
   );
 
+  const totalPages = data.opticalConsulting ? 2 : 1;
   doc.setFont('helvetica', 'normal');
   doc.text(
-    'Fleet Monitor PRO · Audit Energetico Ufficiale · Pagina 1 di 1',
+    `Fleet Monitor PRO · Audit Energetico Ufficiale · Pagina 1 di ${totalPages}`,
     pageWidth - 16,
     285,
     { align: 'right' }
   );
+
+  // Se presente la consulenza ottica (Confronto Passo Cliente vs Sistema), genera la Pagina 2
+  if (data.opticalConsulting) {
+    const opt = data.opticalConsulting;
+    doc.addPage();
+    let y2 = 18;
+
+    // Header Pagina 2
+    doc.setFillColor(7, 9, 14);
+    doc.rect(0, 0, pageWidth, 42, 'F');
+
+    doc.setDrawColor(0, 240, 255);
+    doc.setLineWidth(0.8);
+    doc.line(0, 42, pageWidth, 42);
+
+    doc.setDrawColor(16, 185, 129);
+    doc.setLineWidth(0.3);
+    doc.line(0, 42.8, pageWidth, 42.8);
+
+    doc.addImage(VEROLED_LOGO_PNG_BASE64, 'PNG', 16, 7, 48, 12.8);
+
+    doc.setTextColor(0, 240, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('ALLEGATO TECNICO · STUDIO OTTICO & ANALISI TCO 24 MESI', 16, 27);
+
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    doc.text('Criterio di Acuità Visiva Snellen (1 Arcminuto) · Valutazione Offerta RFP DOOH', 16, 33);
+
+    doc.setFillColor(15, 23, 42);
+    doc.setDrawColor(16, 185, 129);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(pageWidth - 76, 7, 60, 6.5, 1.5, 1.5, 'FD');
+
+    doc.setTextColor(16, 185, 129);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.2);
+    doc.text('CONSULENZA INGEGNERISTICA VEROLED', pageWidth - 46, 11.5, { align: 'center' });
+
+    doc.setTextColor(226, 232, 240);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text('Allegato: VERO-OPTICAL-2026', pageWidth - 16, 18.5, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Data elaborazione: ${dataString}`, pageWidth - 16, 23.5, { align: 'right' });
+    doc.text('Modello: Criterio Snellen / 1 arcmin', pageWidth - 16, 28.5, { align: 'right' });
+    doc.text('Applicazione: Locazione Operativa 24 Mesi', pageWidth - 16, 33.5, { align: 'right' });
+
+    y2 = 48;
+
+    // Sezione 1: Geometria di Installazione e Fisica della Visione
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('1. Geometria del Sito & Risoluzione Limite dell\'Occhio Umano', 16, y2);
+    y2 += 4;
+
+    const geoData = [
+      ['Quota di Installazione da Terra (h)', `${opt.installHeightM.toFixed(1)} metri`],
+      ['Distanza di Vista Osservatori al Suolo (d)', `${opt.groundViewingDistM.toFixed(1)} metri (carreggiata / marciapiede)`],
+      ['Linea di Vista Reale Ipotenusa (D)', `${opt.lineOfSightDistM.toFixed(1)} metri [D = √(h² + d²)]`],
+      ['Soglia Risoluzione Minima Occhio Umano', `${opt.minResolvablePitchMm.toFixed(2)} mm (Criterio Snellen 20/20 · 1 arcminuto = 0.000291 rad)`],
+      ['Condizione di Retina Blending', `A ${opt.lineOfSightDistM}m, l'occhio umano fonde perfettamente i pixel con passo ≥ ${opt.minResolvablePitchMm} mm`],
+      ['Passo Ottimale Proposto dal Sistema', `P${opt.recommendedPitchMm} mm (Risoluzione continua percepita, nessun pixel visibile)`],
+    ];
+
+    autoTable(doc, {
+      startY: y2,
+      head: [['Parametro Geometrico / Ottico', 'Valore Rilevato & Riscontro Scientifico']],
+      body: geoData,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [0, 240, 255],
+        fontStyle: 'bold',
+        fontSize: 8,
+        cellPadding: 1.8,
+      },
+      styles: {
+        fontSize: 7.2,
+        cellPadding: 1.5,
+        lineColor: [226, 232, 240],
+        lineWidth: 0.2,
+      },
+      columnStyles: {
+        0: { cellWidth: 80, fontStyle: 'bold', textColor: [15, 23, 42] },
+        1: { textColor: [30, 41, 59] },
+      },
+      margin: { left: 16, right: 16 },
+    });
+
+    y2 = (doc as any).lastAutoTable.finalY + 6;
+
+    // Sezione 2: Confronto Diretto Display A vs Display B
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('2. Confronto Tecnico ed Economico: Richiesto dal Cliente vs Proposto dal Sistema', 16, y2);
+    y2 += 4;
+
+    const compRows = [
+      [
+        'Passo Pixel (Pixel Pitch)',
+        `P${opt.clientPitchMm} mm (Scelto dal Cliente)`,
+        `P${opt.recommendedPitchMm} mm (Proposto dal Sistema)`,
+        opt.isClientPitchOverkill ? 'OVERKILL: Risoluzione Retina già a P3.91' : 'Passo allineato',
+      ],
+      [
+        'Densità Pixel per m²',
+        `${formatItalianNumber(opt.pixelDensityClient)} px/m²`,
+        `${formatItalianNumber(opt.pixelDensityRecommended)} px/m²`,
+        `+${opt.wastedPixelsPercent}% di pixel fisici in più in Display A`,
+      ],
+      [
+        `Totale Pixel Schermo (${data.dimensions.areaM2.toFixed(1)} m²)`,
+        `${formatItalianNumber(opt.totalPixelsClient)} pixel`,
+        `${formatItalianNumber(opt.totalPixelsRecommended)} pixel`,
+        opt.isClientPitchOverkill ? `${formatItalianNumber(opt.wastedPixelsCount)} pixel non distinguibili dall'occhio` : 'Tutti utili',
+      ],
+      [
+        'Luminosità Massima & Sforzo Termico',
+        `${formatItalianNumber(opt.hardwareClient.maxPhysicalNits)} nit (${opt.hardwareClient.sforzoPercent}% duty cycle - Tetto max)`,
+        '6.000+ nit (Diodi a riposo 71% - Tj < 70°C)',
+        'P3.91 lavora a riposo; P2.6 rischia thermal droop rapido',
+      ],
+      [
+        'Canone Noleggio Operativo Mensile',
+        `~${formatItalianNumber(opt.clientMonthlyRentalEur)} € / mese`,
+        `~${formatItalianNumber(opt.recommendedMonthlyRentalEur)} € / mese`,
+        `Risparmio: +${formatItalianNumber(opt.monthlyRentalSavingsEur)} € / mese`,
+      ],
+      [
+        'Canone Noleggio 24 Mesi (Contratto RFP)',
+        `~${formatItalianNumber(opt.clientMonthlyRentalEur * 24)} €`,
+        `~${formatItalianNumber(opt.recommendedMonthlyRentalEur * 24)} €`,
+        `Risparmio Canone: +${formatItalianNumber(opt.monthlyRentalSavingsEur * 24)} €`,
+      ],
+      [
+        'Spesa Energia Elettrica (24 Mesi)',
+        `~${formatItalianNumber(opt.hardwareClient.annualCostEur * 2)} €`,
+        `~${formatItalianNumber(opt.hardwareRecommended.annualCostEur * 2)} €`,
+        `Risparmio Energia: +${formatItalianNumber(opt.deltaAnnualEnergyCostEur * 2)} €`,
+      ],
+      [
+        'TCO COMPLESSIVO 24 MESI (Noleggio + Energia)',
+        `~${formatItalianNumber((opt.clientMonthlyRentalEur * 24) + (opt.hardwareClient.annualCostEur * 2))} €`,
+        `~${formatItalianNumber((opt.recommendedMonthlyRentalEur * 24) + (opt.hardwareRecommended.annualCostEur * 2))} €`,
+        `VANTAGGIO NETTO TOTALE: +${formatItalianNumber(opt.total24MonthSavingsEur)} €`,
+      ],
+    ];
+
+    autoTable(doc, {
+      startY: y2,
+      head: [['Parametro Confrontato', 'Display A (Cliente)', 'Display B (VeroLED)', 'Delta & Valutazione']],
+      body: compRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7.8,
+        cellPadding: 1.8,
+      },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold', textColor: [15, 23, 42] },
+        1: { cellWidth: 42, textColor: [100, 116, 139] },
+        2: { cellWidth: 42, fontStyle: 'bold', textColor: [16, 185, 129] },
+        3: { fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 6.8 },
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 1.5,
+        lineColor: [226, 232, 240],
+        lineWidth: 0.2,
+      },
+      margin: { left: 16, right: 16 },
+    });
+
+    y2 = (doc as any).lastAutoTable.finalY + 5;
+
+    // Sezione 3: Box Verdetto Tecnico & Sintesi Ingegneristica
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(16, 185, 129);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(16, y2, pageWidth - 32, 24, 1.5, 1.5, 'FD');
+
+    doc.setTextColor(16, 185, 129);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.8);
+    doc.text('3. VERDETTO INGEGNERISTICO UFFICIALE & CONSULENZA COMMERCIALE', 20, y2 + 5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.setTextColor(51, 65, 85);
+
+    const splitVerdict = doc.splitTextToSize(opt.scientificVerdict, pageWidth - 40);
+    doc.text(splitVerdict, 20, y2 + 10);
+
+    // Footer Pagina 2
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.4);
+    doc.line(16, 276, pageWidth - 16, 276);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      'Nota di riservatezza: Studio fotometrico ed economico redatto da VeroLED S.r.l. sulla base della formula di acuità visiva Snellen e della Delibera ARERA 232/2022/R/eel.',
+      16,
+      280.5
+    );
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      'VeroLED S.r.l. · Tecnologie Display LED Professionali · https://veroledsrl.com',
+      16,
+      285
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      'Fleet Monitor PRO · Allegato Perizia Ottica · Pagina 2 di 2',
+      pageWidth - 16,
+      285,
+      { align: 'right' }
+    );
+  }
 
   return doc;
 }

@@ -8,7 +8,7 @@ import { FileDown, Share2, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 
 export const S9ReportExport: React.FC = () => {
   const { lead, setLead, resetToDefaults } = useSimulatorStore();
-  const { dimensions, profile, scenario } = useSimulatorComputed();
+  const { dimensions, profile, scenario, powerQuality, opticalConsulting } = useSimulatorComputed();
   const state = useSimulatorStore();
 
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -23,6 +23,8 @@ export const S9ReportExport: React.FC = () => {
         profile,
         aplPercent: state.aplPercent,
         tariffaEurKwh: state.tariffEurKwh,
+        powerQuality,
+        opticalConsulting,
         userName: lead.name,
         userCompany: lead.company,
         userEmail: lead.email,

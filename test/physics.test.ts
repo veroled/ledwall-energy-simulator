@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit } from '../src/core/physics';
+import { calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica } from '../src/core/physics';
 
 describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', () => {
   const P_MAX = 500;
@@ -122,5 +122,41 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
     const screen8 = stimaPotenzaDaPassoNit(8.0, 12000, 32);
     expect(screen8.maxPhysicalNits).toBe(12000);
     expect(screen8.tecnologiaChip).toContain('Gold Wire');
+  });
+
+  describe('Power Quality & Fattore di Potenza (Delibera ARERA 232/2022)', () => {
+    it('Impianto 6x3m (18 cabinet, 36 alimentatori) a basso carico: PF crolla a ~0.50 in Scenario A, protetto a 0.98 in Scenario B', () => {
+      // 18 cabinet, carico attivo 1.2 kW (basso APL ~15%)
+      const pq = calcolaPowerQuality(18, 1.2, 0.7, 18, true);
+
+      // In Scenario A (singola fase UHP-200), il PF crolla
+      expect(pq.totalPowerSupplies).toBe(36);
+      expect(pq.powerFactorA).toBeLessThanOrEqual(0.60);
+      expect(pq.apparentPowerKvaA).toBeGreaterThan(pq.apparentPowerKvaB);
+
+      // In Scenario B (Smart Power Guard SVG o Serie Diamond), il PF rimane elevato
+      expect(pq.powerFactorB).toBe(0.98);
+      expect(pq.penaleAreraEurAnnoB).toBe(0);
+      expect(pq.penaleAreraEurAnnoA).toBeGreaterThan(0);
+      expect(pq.totaleRisparmioReteEurAnno).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Consulenza Ottica & Confronto Passo (Cliente vs Sistema)', () => {
+    it('Caso Barbecue S.r.l. (6x3m, quota 5m, vista 10m): P2.6 è overkill, P3.91 è ottimale con canone ~1200€/mese e oltre 20.000€ risparmiati in 24 mesi', () => {
+      const consulenza = calcolaConsulenzaOttica(5, 10, 2.6, 18, 6000);
+
+      expect(consulenza.lineOfSightDistM).toBeCloseTo(11.2, 1);
+      expect(consulenza.recommendedPitchMm).toBe(3.91);
+      expect(consulenza.isClientPitchOverkill).toBe(true);
+      expect(consulenza.wastedPixelsCount).toBeGreaterThan(1400000);
+      expect(consulenza.hardwareClient.sforzoPercent).toBe(100);
+      expect(consulenza.hardwareClient.isAtPhysicalLimit).toBe(true); // P2.6 max è 4.500 nit!
+      expect(consulenza.hardwareRecommended.sforzoPercent).toBeLessThanOrEqual(92);
+      expect(consulenza.hardwareRecommended.isAtPhysicalLimit).toBe(false); // P3.91 supporta 6.000 nit (tetto 6.500)
+      expect(consulenza.recommendedMonthlyRentalEur).toBeCloseTo(1200, -2); // ~1.200 €/mese
+      expect(consulenza.total24MonthSavingsEur).toBeGreaterThan(19000); // ~19.700 € risparmiati in 24 mesi
+      expect(consulenza.scientificVerdict).toContain('acuità visiva');
+    });
   });
 });
