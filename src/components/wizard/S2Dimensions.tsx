@@ -92,9 +92,10 @@ export const S2Dimensions: React.FC = () => {
       groundViewingDistM,
       compPitchA,
       dimensions.areaM2,
-      Math.max(effectiveNitsA, effectiveNitsB, 6000)
+      Math.max(effectiveNitsA, effectiveNitsB, 6000),
+      dimensions.heightM
     );
-  }, [installHeightM, groundViewingDistM, compPitchA, dimensions.areaM2, effectiveNitsA, effectiveNitsB]);
+  }, [installHeightM, groundViewingDistM, compPitchA, dimensions.areaM2, dimensions.heightM, effectiveNitsA, effectiveNitsB]);
 
   const applyBarbecuePreset = () => {
     setDimensioniMetri(6.0, 3.0);
@@ -257,7 +258,7 @@ export const S2Dimensions: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <div className="flex justify-between items-center text-[#868D97] mb-1">
-                      <span>Quota installazione da terra:</span>
+                      <span>Quota della base dello schermo da terra:</span>
                       <strong className="text-white font-semibold tabular-nums">{installHeightM.toFixed(1)} m</strong>
                     </div>
                     <input
@@ -313,7 +314,7 @@ export const S2Dimensions: React.FC = () => {
                     <strong className="text-sm font-semibold text-white tabular-nums">
                       {opticalConsulting.lineOfSightDistM} m
                     </strong>
-                    <span className="text-[10px] text-[#868D97] block">√(h² + d²)</span>
+                    <span className="text-[10px] text-[#868D97] block">al centro schermo · √((h + H/2)² + d²)</span>
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-center">

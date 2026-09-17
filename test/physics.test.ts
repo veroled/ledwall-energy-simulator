@@ -259,14 +259,24 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(alt.proposed.pitchMm).toBe(6.7);
     });
 
+    it('5x10 m con la base a 10 m, visto da 20 m a terra: la linea di vista si misura al centro (25 m), non alla base (22,4 m)', () => {
+      const alt = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 10, 20, 10);
+      expect(alt.centerHeightM).toBe(15);
+      expect(alt.lineOfSightDistM).toBeCloseTo(25.0, 1);
+      expect(alt.lineOfSightBaseM).toBeCloseTo(22.4, 1);
+      expect(alt.lineOfSightTopM).toBeCloseTo(28.3, 1);
+      expect(alt.kind).toBe('coarse');
+      expect(alt.proposed.pitchMm).toBe(6.7);
+    });
+
     it('5x10 m con la base a 20 m di quota: il P10 è largo visto da 10 m a terra, giusto da 30 m', () => {
-      const vicino = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 10);
-      expect(vicino.lineOfSightDistM).toBeCloseTo(22.4, 1);
+      const vicino = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 10, 10);
+      expect(vicino.lineOfSightDistM).toBeCloseTo(26.9, 1);
       expect(vicino.kind).toBe('coarse');
       expect(vicino.proposed.pitchMm).toBe(6.7);
 
-      const lontano = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 30);
-      expect(lontano.lineOfSightDistM).toBeCloseTo(36.1, 1);
+      const lontano = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 30, 10);
+      expect(lontano.lineOfSightDistM).toBeCloseTo(39.1, 1);
       expect(lontano.kind).toBe('fleet');
       expect(lontano.proposed.pitchMm).toBe(10);
     });

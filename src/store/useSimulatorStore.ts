@@ -361,7 +361,8 @@ export function useSimulatorComputed() {
     state.groundViewingDistM ?? 10.0,
     state.pitchMm,
     dimensions.areaM2,
-    state.targetOutdoorNits || 6000
+    state.targetOutdoorNits || 6000,
+    dimensions.heightM
   );
 
   const alternative: AlternativeProposal = suggerisciAlternativa(
@@ -372,7 +373,8 @@ export function useSimulatorComputed() {
     state.operatingHoursDay,
     state.tariffEurKwh,
     state.installHeightM ?? 5.0,
-    state.groundViewingDistM ?? 10.0
+    state.groundViewingDistM ?? 10.0,
+    dimensions.heightM
   );
 
   return {

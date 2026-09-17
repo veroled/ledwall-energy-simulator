@@ -450,11 +450,11 @@ export function generaReportPdf(data: ReportData): jsPDF {
     y2 += 4;
 
     const geoData = [
-      ['Quota di Installazione da Terra (h)', `${opt.installHeightM.toFixed(1)} metri`],
+      ['Quota della Base dello Schermo da Terra (h)', `${opt.installHeightM.toFixed(1)} metri · centro schermo a ${opt.centerHeightM.toFixed(1)} m (altezza schermo H = ${opt.screenHeightM.toFixed(1)} m)`],
       ['Distanza di Vista Osservatori al Suolo (d)', `${opt.groundViewingDistM.toFixed(1)} metri (carreggiata / marciapiede)`],
-      ['Linea di Vista Reale Ipotenusa (D)', `${opt.lineOfSightDistM.toFixed(1)} metri [D = √(h² + d²)]`],
+      ['Linea di Vista Reale Ipotenusa (D)', `${opt.lineOfSightDistM.toFixed(1)} metri al centro schermo [D = √((h + H/2)² + d²)] · ${opt.lineOfSightBaseM.toFixed(1)} m alla base · ${opt.lineOfSightTopM.toFixed(1)} m in cima`],
       ['Soglia Risoluzione Minima Occhio Umano', `${opt.minResolvablePitchMm.toFixed(2)} mm (Criterio Snellen 20/20 · 1 arcminuto = 0.000291 rad)`],
-      ['Condizione di Retina Blending', `A ${opt.lineOfSightDistM}m, l'occhio umano fonde perfettamente i pixel con passo ≥ ${opt.minResolvablePitchMm} mm`],
+      ['Condizione di Retina Blending', `A ${opt.lineOfSightDistM}m, l'occhio umano fonde perfettamente i pixel con passo ≤ ${opt.minResolvablePitchMm} mm`],
       ['Passo Ottimale Proposto dal Sistema', `P${opt.recommendedPitchMm} mm (Risoluzione continua percepita, nessun pixel visibile)`],
     ];
 

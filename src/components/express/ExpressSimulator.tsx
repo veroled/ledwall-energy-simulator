@@ -462,8 +462,8 @@ export const ExpressSimulator: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-[11px] text-[#868D97] tabular-nums">
-                  Schermo da {n(installHeightM, 1)} a {n(installHeightM + dimensions.heightM, 1)} m di quota · linea di vista reale{' '}
-                  <span className="text-white font-medium">{n(alternative.lineOfSightDistM, 1)} m</span> · da lì l&apos;occhio fonde i pixel fino al P{n(alternative.minResolvablePitchMm, 1)}
+                  Schermo da {n(installHeightM, 1)} a {n(installHeightM + dimensions.heightM, 1)} m di quota · linea di vista al centro{' '}
+                  <span className="text-white font-medium">{n(alternative.lineOfSightDistM, 1)} m</span> ({n(alternative.lineOfSightBaseM, 1)} m alla base, {n(alternative.lineOfSightTopM, 1)} m in cima) · da lì l&apos;occhio fonde i pixel fino al P{n(alternative.minResolvablePitchMm, 1)}
                 </p>
               </div>
             </section>

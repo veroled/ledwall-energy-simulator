@@ -569,7 +569,11 @@ export function calcolaPowerQuality(
 export interface OpticalConsultingResult {
   installHeightM: number;
   groundViewingDistM: number;
-  lineOfSightDistM: number; // sqrt(h^2 + d^2)
+  screenHeightM: number; // altezza dello schermo (0 se non nota: la quota vale per il centro)
+  centerHeightM: number; // quota del centro schermo = base + altezza / 2
+  lineOfSightDistM: number; // al centro dello schermo: sqrt((h + H/2)^2 + d^2)
+  lineOfSightBaseM: number; // al bordo basso, il punto più vicino a chi guarda
+  lineOfSightTopM: number; // al bordo alto
   clientPitchMm: number;
   recommendedPitchMm: number;
   minResolvablePitchMm: number; // Soglia 1 arcminuto occhio umano
@@ -600,12 +604,19 @@ export function calcolaConsulenzaOttica(
   groundViewingDistM: number,
   clientPitchMm: number,
   areaM2: number = 18,
-  targetNits: number = 6000
+  targetNits: number = 6000,
+  screenHeightM: number = 0
 ): OpticalConsultingResult {
   const h = Math.max(0, installHeightM);
   const d = Math.max(1, groundViewingDistM);
-  // Distanza ipotenusa reale linea di vista (in metri)
-  const lineOfSightDistM = Math.round(Math.sqrt(h * h + d * d) * 10) / 10;
+  const H = Math.max(0, screenHeightM);
+  const hyp = (quota: number) => Math.round(Math.sqrt(quota * quota + d * d) * 10) / 10;
+  // Linea di vista reale: ipotenusa fino al CENTRO dello schermo, dove cade lo sguardo.
+  // installHeightM è la quota della base: su uno schermo alto 10 m il centro sta 5 m più su.
+  const centerHeightM = h + H / 2;
+  const lineOfSightDistM = hyp(centerHeightM);
+  const lineOfSightBaseM = hyp(h);
+  const lineOfSightTopM = hyp(h + H);
 
   // Risoluzione minima angolare occhio umano: 1 arcminuto = 0.000291 rad
   // A distanza D, il limite di risoluzione per separare due diodi è: p = D * 0.291 mm
@@ -671,7 +682,11 @@ export function calcolaConsulenzaOttica(
   return {
     installHeightM: h,
     groundViewingDistM: d,
+    screenHeightM: H,
+    centerHeightM,
     lineOfSightDistM,
+    lineOfSightBaseM,
+    lineOfSightTopM,
     clientPitchMm,
     recommendedPitchMm,
     minResolvablePitchMm,
@@ -717,6 +732,9 @@ export interface AlternativeProposal {
   hasAlternative: boolean;
   kind: 'pitch' | 'coarse' | 'fleet' | 'none';
   lineOfSightDistM: number;
+  lineOfSightBaseM: number;
+  lineOfSightTopM: number;
+  centerHeightM: number;
   minResolvablePitchMm: number;
   recommendedPitchMm: number;
   current: ConfigurazioneSnapshot;
@@ -781,9 +799,10 @@ export function suggerisciAlternativa(
   oreGiorno: number,
   tariffaEurKwh: number,
   installHeightM: number = 5,
-  groundViewingDistM: number = 10
+  groundViewingDistM: number = 10,
+  screenHeightM: number = 0
 ): AlternativeProposal {
-  const optical = calcolaConsulenzaOttica(installHeightM, groundViewingDistM, pitchMm, areaM2, nits);
+  const optical = calcolaConsulenzaOttica(installHeightM, groundViewingDistM, pitchMm, areaM2, nits, screenHeightM);
   const current = snapshotConfigurazione(pitchMm, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
 
   // Passo commerciale più generoso che resta "retina" alla distanza dichiarata
@@ -893,6 +912,9 @@ export function suggerisciAlternativa(
     hasAlternative: kind !== 'none',
     kind,
     lineOfSightDistM: D,
+    lineOfSightBaseM: optical.lineOfSightBaseM,
+    lineOfSightTopM: optical.lineOfSightTopM,
+    centerHeightM: optical.centerHeightM,
     minResolvablePitchMm: optical.minResolvablePitchMm,
     recommendedPitchMm: optical.recommendedPitchMm,
     current,

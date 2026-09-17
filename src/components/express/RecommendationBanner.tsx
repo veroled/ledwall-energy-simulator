@@ -32,7 +32,7 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
         </div>
         <p className="text-sm text-white font-medium leading-snug">{alternative.headline}</p>
         <p className="text-[11px] text-[#9AA3AD] tabular-nums">
-          {num(alternative.lineOfSightDistM)} m = linea di vista con la base a {num(installHeightM)} m di quota e il pubblico a {num(groundViewingDistM)} m a terra.
+          {num(alternative.lineOfSightDistM)} m = linea di vista fino al centro dello schermo (a {num(alternative.centerHeightM)} m di quota, base a {num(installHeightM)} m) con il pubblico a {num(groundViewingDistM)} m a terra.
         </p>
       </div>
 
