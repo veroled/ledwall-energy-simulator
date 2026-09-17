@@ -36,6 +36,8 @@ export interface SimulatorState {
   modulesH: number;
   pitchMm: number;
   tier: TierId; // Selection VeroLED: il tetto di nit è della combinazione tier × passo
+  /** Calcolo Express: false = schermata semplice sul LEDwall standard; true = modalità tecnica con tutti i controlli */
+  expressTecnico: boolean;
   targetOutdoorNits: number; // Luminosità operativa outdoor di riferimento (standard 5.000 nit)
   installHeightM: number; // Quota installazione da terra (metri)
   groundViewingDistM: number; // Distanza osservatori su strada (metri)
@@ -93,6 +95,7 @@ export interface SimulatorState {
   setModulesH: (h: number) => void;
   setPitchMm: (p: number) => void;
   setTier: (tier: TierId) => void;
+  setExpressTecnico: (v: boolean) => void;
   setTargetOutdoorNits: (nits: number) => void;
   setInstallHeightM: (h: number) => void;
   setGroundViewingDistM: (d: number) => void;
@@ -121,8 +124,9 @@ export const useSimulatorStore = create<SimulatorState>()(
       modulesW: 5,
       modulesH: 3,
       pitchMm: 3.91,
-      tier: 'gold',
-      targetOutdoorNits: 5000,
+      tier: 'bronze',
+      expressTecnico: false,
+      targetOutdoorNits: 4500, // nit di listino del LEDwall standard (Bronze P3.91)
       installHeightM: 5.0,
       groundViewingDistM: 10.0,
 
@@ -183,8 +187,10 @@ export const useSimulatorStore = create<SimulatorState>()(
       setModulesH: (modulesH) => set({ modulesH: Math.max(1, modulesH) }),
       setPitchMm: (pitchMm) => set({ pitchMm }),
       setTier: (tier) => set({ tier }),
+      setExpressTecnico: (expressTecnico) => set({ expressTecnico }),
       setTargetOutdoorNits: (targetOutdoorNits) =>
-        set({ targetOutdoorNits: Math.max(2500, Math.min(12000, targetOutdoorNits)) }),
+        // fino a 20.000: è il tetto più alto a listino (Diamond P16); a 12.000 lo slider del P16 restava bloccato
+        set({ targetOutdoorNits: Math.max(2500, Math.min(20000, targetOutdoorNits)) }),
       setInstallHeightM: (installHeightM) => set({ installHeightM: Math.max(0, installHeightM) }),
       setGroundViewingDistM: (groundViewingDistM) => set({ groundViewingDistM: Math.max(1, groundViewingDistM) }),
 
@@ -252,8 +258,9 @@ export const useSimulatorStore = create<SimulatorState>()(
           modulesW: 5,
           modulesH: 3,
           pitchMm: 3.91,
-      tier: 'gold',
-          targetOutdoorNits: 5000,
+      tier: 'bronze',
+      expressTecnico: false,
+          targetOutdoorNits: 4500, // nit di listino del LEDwall standard (Bronze P3.91)
           aplSource: 'manual',
           aplPercent: CONFIG.DEFAULT_APL_PERCENT,
           hasStandby: true,
@@ -289,6 +296,7 @@ export const useSimulatorStore = create<SimulatorState>()(
         modulesH: s.modulesH,
         pitchMm: s.pitchMm,
         tier: s.tier,
+        expressTecnico: s.expressTecnico,
         targetOutdoorNits: s.targetOutdoorNits,
         installHeightM: s.installHeightM,
         groundViewingDistM: s.groundViewingDistM,
@@ -313,7 +321,7 @@ export function useSimulatorComputed() {
 
   // Calcolo potenza massima e standby reali basate sul passo pixel selezionato e luminosità target (5.000 nit)
   // Tetto di nit e sforzo dalla combinazione Selection × passo del listino (null = dato non disponibile)
-  const tier: TierId = state.tier ?? 'gold';
+  const tier: TierId = state.tier ?? 'bronze';
   const catalogo = datoCatalogo(tier, state.pitchMm);
   const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000, undefined, undefined, undefined, true, catalogo);
   const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;

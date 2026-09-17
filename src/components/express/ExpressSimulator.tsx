@@ -45,6 +45,19 @@ const SAMPLES = [
   { file: 'file-10.mp4', label: 'Kinetic wall (campione)', button: 'Spot chiaro', fallbackApl: 50 },
 ];
 
+// Il LEDwall "standard di mercato" su cui gira la schermata semplice: la Selection più diffusa in commercio,
+// al passo outdoor più comune e alla sua luminosità di listino. I nit incidono sul consumo, quindi non si
+// lasciano a caso: valgono quelli dichiarati per questa combinazione.
+const STANDARD = { tier: 'bronze' as const, pitchMm: 3.91 };
+
+const CONTENT_PRESETS = [
+  { apl: 15, label: 'Scuro', hint: 'fondi neri, scritte' },
+  { apl: 30, label: 'Misto', hint: 'spot pubblicitari' },
+  { apl: 60, label: 'Chiaro', hint: 'fondi bianchi, foto' },
+];
+
+const CONTATTI_URL = 'https://veroledsrl.com/contatti/';
+
 const BASE_HEIGHT_PRESETS = [
   { h: 0, label: '0 m · a terra' },
   { h: 3, label: '3 m · vetrina' },
@@ -64,6 +77,7 @@ export const ExpressSimulator: React.FC = () => {
   const {
     pitchMm,
     tier: storedTier,
+    expressTecnico,
     modulesW,
     modulesH,
     targetOutdoorNits,
@@ -78,6 +92,7 @@ export const ExpressSimulator: React.FC = () => {
     hasStandby,
     setPitchMm,
     setTier,
+    setExpressTecnico,
     setFormatId,
     setDimensioniMetri,
     setTargetOutdoorNits,
@@ -121,7 +136,21 @@ export const ExpressSimulator: React.FC = () => {
     setFormatId('1000x1000');
   }, [setFormatId]);
 
-  const tier = storedTier ?? 'gold';
+  const tecnico = expressTecnico === true;
+  const applicaStandard = () => {
+    const dato = datoCatalogo(STANDARD.tier, STANDARD.pitchMm);
+    setTier(STANDARD.tier);
+    setPitchMm(STANDARD.pitchMm);
+    if (dato) setTargetOutdoorNits(dato.maxNits);
+  };
+  useEffect(() => {
+    // Nella schermata semplice il calcolo gira SEMPRE sul LEDwall standard, anche se dal wizard o dalla
+    // modalità tecnica erano rimasti altri valori in memoria: altrimenti la riga "calcolato su" mentirebbe.
+    if (!tecnico) applicaStandard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tecnico]);
+
+  const tier = storedTier ?? 'bronze';
   const tierLabel = tierName(tier);
   // Tetto di nit della combinazione Selection × passo: dal listino, oppure assente (mai preso in prestito)
   const datoScelto = datoCatalogo(tier, pitchMm);
@@ -242,8 +271,19 @@ export const ExpressSimulator: React.FC = () => {
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-1 rounded-full bg-[#0D2818] border border-[#163826] text-[11px] font-medium text-[#34D399] hidden md:flex items-center space-x-1.5">
               <Zap className="w-3 h-3" />
-              <span>Una schermata · risultati live</span>
+              <span>{tecnico ? 'Modalità tecnica · tutti i parametri' : 'Due dati · risultati live'}</span>
             </span>
+            <button
+              type="button"
+              onClick={() => setExpressTecnico(!tecnico)}
+              aria-pressed={tecnico}
+              className={`px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
+                tecnico ? 'border-[#12B76A] bg-[#0D2818] text-[#34D399]' : 'border-[#1A2028] bg-[#10141D] text-[#9AA3AD] hover:text-white hover:border-[#2D3748]'
+              }`}
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{tecnico ? 'Modalità tecnica attiva' : 'Modalità tecnica'}</span>
+            </button>
             <Link
               href="/"
               onClick={() => goToWizard(0)}
@@ -265,9 +305,10 @@ export const ExpressSimulator: React.FC = () => {
               <div className="flex items-center space-x-2 text-white font-semibold text-sm">
                 <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">1</span>
                 <Monitor className="w-4 h-4 text-[#12B76A]" />
-                <span>Il tuo LEDwall</span>
+                <span>{tecnico ? 'Il tuo LEDwall' : 'Quanto è grande'}</span>
               </div>
 
+              {tecnico && (<>
               {/* Selection: il tetto di nit è del componente montato, cioè della combinazione Selection × passo */}
               <div className="space-y-2">
                 <span className="text-xs text-[#868D97] font-medium">Selection VeroLED <span className="text-[#667085]">(qualità dei chip: a parità di passo cambia il tetto di nit)</span></span>
@@ -338,8 +379,10 @@ export const ExpressSimulator: React.FC = () => {
                 </p>
               </div>
 
+              </>)}
+
               {/* Dimensioni */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className={`grid grid-cols-1 gap-4 ${tecnico ? 'sm:grid-cols-2' : ''}`}>
                 <div className="space-y-2">
                   <span className="text-xs text-[#868D97] font-medium">Dimensioni (base × altezza, metri)</span>
                   <div className="flex items-center space-x-2">
@@ -387,6 +430,7 @@ export const ExpressSimulator: React.FC = () => {
                 </div>
 
                 {/* Nit */}
+                {tecnico && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
@@ -461,8 +505,10 @@ export const ExpressSimulator: React.FC = () => {
                     <p className="text-[11px] text-[#868D97]">Tetto di listino del P{pitchMm} {tierLabel}: {n(datoScelto.maxNits)} nit · {datoScelto.chip}</p>
                   )}
                 </div>
+                )}
               </div>
 
+              {tecnico && (<>
               {/* Distanza di visione */}
               <div className="space-y-2">
                 <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
@@ -542,6 +588,7 @@ export const ExpressSimulator: React.FC = () => {
                   <span className="text-white font-medium">{n(alternative.lineOfSightDistM, 1)} m</span> ({n(alternative.lineOfSightBaseM, 1)} m alla base, {n(alternative.lineOfSightTopM, 1)} m in cima) · da lì l&apos;occhio fonde i pixel fino al P{n(alternative.minResolvablePitchMm, 1)}
                 </p>
               </div>
+              </>)}
             </section>
 
             {/* 2. Contenuto */}
@@ -603,7 +650,7 @@ export const ExpressSimulator: React.FC = () => {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-[#868D97] font-medium">Oppure imposta l&apos;APL</span>
+                    <span className="text-xs text-[#868D97] font-medium">{tecnico ? "Oppure imposta l'APL" : 'Oppure scegli quanto è luminoso'}</span>
                     <span className="text-sm font-semibold text-white tabular-nums">{n(aplPercent, 0)}%</span>
                   </div>
                   <input
@@ -618,6 +665,30 @@ export const ExpressSimulator: React.FC = () => {
                     }}
                     className="w-full custom-slider cursor-pointer"
                   />
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {CONTENT_PRESETS.map((c) => {
+                      const sel = aplSource === 'manual' && Math.round(aplPercent) === c.apl;
+                      return (
+                        <button
+                          key={c.apl}
+                          type="button"
+                          title={c.hint}
+                          onClick={() => {
+                            replaceUploadPreview(null);
+                            setAnalysis(null);
+                            setAplPercent(c.apl, 'manual');
+                          }}
+                          className={`py-1.5 px-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
+                            sel
+                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
+                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                          }`}
+                        >
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {SAMPLES.map((sm) => (
                       <button key={sm.file} type="button" onClick={() => loadSample(sm.file, sm.label, sm.fallbackApl)} disabled={isProcessing}
@@ -641,7 +712,7 @@ export const ExpressSimulator: React.FC = () => {
                     · {softwareOff
                       ? 'a schermo spento da software, tutto il giorno'
                       : aplSource === 'manual'
-                      ? `con l'APL impostato al ${n(aplPercent, 0)}%`
+                      ? tecnico ? `con l'APL impostato al ${n(aplPercent, 0)}%` : `con un contenuto luminoso al ${n(aplPercent, 0)}%`
                       : `con la media ${aplSource === 'foto' ? 'della tua foto' : 'del tuo video'} (APL ${n(aplPercent, 0)}%)`}
                   </span>
                 </div>
@@ -716,6 +787,21 @@ export const ExpressSimulator: React.FC = () => {
                 </div>
               </div>
 
+              {!tecnico && (
+                <div className="p-3 rounded-lg bg-[#10141D] border border-[#1A2028] flex flex-col sm:flex-row sm:items-center gap-3">
+                  <p className="text-[11px] text-[#9AA3AD] leading-relaxed flex-1">
+                    Calcolato su un <span className="text-white font-medium">LEDwall standard di mercato</span> (P{pitchMm} {tierLabel}) alla sua luminosità di listino, {n(targetOutdoorNits)} nit.
+                    Passo, qualità dei chip e luminosità cambiano il consumo: se vuoi scoprire quanto consuma la tua configurazione, contattaci.
+                  </p>
+                  <a
+                    href={CONTATTI_URL}
+                    className="px-4 py-2 rounded-lg border border-[#12B76A] text-[#34D399] hover:bg-[#0D2818] font-semibold text-xs whitespace-nowrap text-center transition-colors"
+                  >
+                    Contattaci
+                  </a>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 {nitsOverLimit && !softwareOff ? (
                   <span
@@ -758,17 +844,21 @@ export const ExpressSimulator: React.FC = () => {
                 aplPercent={aplPercent}
                 wattsForApl={wattsForApl}
                 softwareOff={softwareOff}
+                semplice={!tecnico}
                 fit={fit}
                 onFitChange={setFit}
                 staleFileName={!previewSource && aplSource !== 'manual' ? videoFileName : undefined}
               />
             </section>
-            <RecommendationBanner
-              alternative={alternative}
-              installHeightM={installHeightM}
-              groundViewingDistM={groundViewingDistM}
-              onApply={() => setPitchMm(alternative.proposed.pitchMm)}
-            />
+            {/* Il consiglio sul passo dipende dalla distanza di visione, che la schermata semplice non chiede */}
+            {tecnico && (
+              <RecommendationBanner
+                alternative={alternative}
+                installHeightM={installHeightM}
+                groundViewingDistM={groundViewingDistM}
+                onApply={() => setPitchMm(alternative.proposed.pitchMm)}
+              />
+            )}
           </div>
         </div>
       </main>

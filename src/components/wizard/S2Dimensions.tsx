@@ -34,7 +34,7 @@ export const S2Dimensions: React.FC = () => {
   const targetOutdoorNits = useSimulatorStore((s) => s.targetOutdoorNits) || 5000;
   const effectiveLiveApl = Math.max(0.05, Math.min(1, (liveApl ?? 30) / 100));
   // Selection VeroLED: tetto di nit e chip sono della combinazione Selection × passo del listino
-  const tier = useSimulatorStore((s) => s.tier) ?? 'gold';
+  const tier = useSimulatorStore((s) => s.tier) ?? 'bronze';
   const setTier = useSimulatorStore((s) => s.setTier);
   const tierLabel = tierName(tier);
   const righeTier = passiDelTier(tier);
