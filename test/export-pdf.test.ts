@@ -95,17 +95,19 @@ describe('Report PDF', () => {
     expect(canoneNoleggio('gold', 3.91, 8, 12)).toBeNull();
   });
 
-  it('il PDF si genera in due pagine con il dominio aziendale giusto', () => {
+  it('il PDF si genera in sette tavole con il dominio aziendale giusto', () => {
     const dimensions = calcolaDimensioniSchermo(1, 1, 1000, 1000, 6.67, 30);
     const profile = calcolaProfiloEnergetico(1, 0.3, 1, 0.1, 18, true, true, 0.35, 300, 37);
     const scenario = confrontaScenari(1, 0.3, 18, 0.35, undefined, 300, 37);
     const opticalConsulting = calcolaConsulenzaOttica(3.5, 5, 6.67, 1, 6000, 1, 'gold');
     const alternative = suggerisciAlternativa(6.67, 6000, 1, 0.3, 18, 0.35, 3.5, 5, 1, 'gold');
     const doc = generaReportPdf({ dimensions, scenario, profile, aplPercent: 30, tariffaEurKwh: 0.35, opticalConsulting, alternative });
-    expect(doc.getNumberOfPages()).toBe(2);
-    const raw = doc.output();
-    expect(raw).toContain('veroled.it');
-    expect(raw).toContain('info@veroled.it');
-    expect(raw).not.toContain('https://veroledsrl.com');
+    // copertina + 4 tavole fisse + geometria + verdetto
+    expect(doc.getNumberOfPages()).toBe(7);
+    // il piede e' in JetBrains Mono incorporato (glifi, non testo): il dominio si verifica sul sorgente
+    const sorgente = readFileSync('src/core/export-pdf.ts', 'utf8');
+    expect(sorgente).toContain('VEROLED.IT  ·  INFO@VEROLED.IT');
+    expect(sorgente).not.toContain('https://veroledsrl.com');
+    expect(doc.output().length).toBeGreaterThan(100000);
   });
 });
