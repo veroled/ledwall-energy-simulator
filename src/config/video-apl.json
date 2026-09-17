@@ -1,0 +1,144 @@
+{
+  "fonte": "scripts/prepara-video-apl.mjs",
+  "finestra": {
+    "inizioSec": 15,
+    "durataSec": 24
+  },
+  "formati": [
+    {
+      "formato": "1x4",
+      "w": 1,
+      "h": 4,
+      "chiaro": {
+        "file": "1x4_chiaro.mp4",
+        "aplPercent": 87.5,
+        "kb": 224
+      },
+      "ottimizzato": {
+        "file": "1x4_ottimizzato.mp4",
+        "aplPercent": 5,
+        "kb": 222
+      }
+    },
+    {
+      "formato": "1x3",
+      "w": 1,
+      "h": 3,
+      "chiaro": {
+        "file": "1x3_chiaro.mp4",
+        "aplPercent": 85.6,
+        "kb": 317
+      },
+      "ottimizzato": {
+        "file": "1x3_ottimizzato.mp4",
+        "aplPercent": 6.6,
+        "kb": 315
+      }
+    },
+    {
+      "formato": "1x2",
+      "w": 1,
+      "h": 2,
+      "chiaro": {
+        "file": "1x2_chiaro.mp4",
+        "aplPercent": 81.9,
+        "kb": 568
+      },
+      "ottimizzato": {
+        "file": "1x2_ottimizzato.mp4",
+        "aplPercent": 9.9,
+        "kb": 566
+      }
+    },
+    {
+      "formato": "2x3",
+      "w": 2,
+      "h": 3,
+      "chiaro": {
+        "file": "2x3_chiaro.mp4",
+        "aplPercent": 78.1,
+        "kb": 855
+      },
+      "ottimizzato": {
+        "file": "2x3_ottimizzato.mp4",
+        "aplPercent": 13.2,
+        "kb": 861
+      }
+    },
+    {
+      "formato": "1x1",
+      "w": 1,
+      "h": 1,
+      "chiaro": {
+        "file": "1x1_chiaro.mp4",
+        "aplPercent": 70.5,
+        "kb": 1534
+      },
+      "ottimizzato": {
+        "file": "1x1_ottimizzato.mp4",
+        "aplPercent": 19.9,
+        "kb": 1592
+      }
+    },
+    {
+      "formato": "3x2",
+      "w": 3,
+      "h": 2,
+      "chiaro": {
+        "file": "3x2_chiaro.mp4",
+        "aplPercent": 59.3,
+        "kb": 1596
+      },
+      "ottimizzato": {
+        "file": "3x2_ottimizzato.mp4",
+        "aplPercent": 29.7,
+        "kb": 1622
+      }
+    },
+    {
+      "formato": "2x1",
+      "w": 2,
+      "h": 1,
+      "chiaro": {
+        "file": "2x1_chiaro.mp4",
+        "aplPercent": 57.5,
+        "kb": 1316
+      },
+      "ottimizzato": {
+        "file": "2x1_ottimizzato.mp4",
+        "aplPercent": 31.4,
+        "kb": 1334
+      }
+    },
+    {
+      "formato": "3x1",
+      "w": 3,
+      "h": 1,
+      "chiaro": {
+        "file": "3x1_chiaro.mp4",
+        "aplPercent": 69.3,
+        "kb": 696
+      },
+      "ottimizzato": {
+        "file": "3x1_ottimizzato.mp4",
+        "aplPercent": 20.9,
+        "kb": 708
+      }
+    },
+    {
+      "formato": "4x1",
+      "w": 4,
+      "h": 1,
+      "chiaro": {
+        "file": "4x1_chiaro.mp4",
+        "aplPercent": 75.3,
+        "kb": 475
+      },
+      "ottimizzato": {
+        "file": "4x1_ottimizzato.mp4",
+        "aplPercent": 15.7,
+        "kb": 478
+      }
+    }
+  ]
+}

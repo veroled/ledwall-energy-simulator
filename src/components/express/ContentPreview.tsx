@@ -28,6 +28,8 @@ interface ContentPreviewProps {
   softwareOff?: boolean;
   /** Schermata semplice: niente sigle tecniche (APL) nelle etichette */
   semplice?: boolean;
+  /** Dentro uno slot del confronto: niente intestazione, la dà già lo slot */
+  compatta?: boolean;
   /** Il nome del file è noto ma il file non è più in memoria (pagina ricaricata) */
   staleFileName?: string;
 }
@@ -53,6 +55,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
   onFitChange,
   softwareOff = false,
   semplice = false,
+  compatta = false,
   staleFileName,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -103,6 +106,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
 
   return (
     <div className="space-y-2">
+      {!compatta && (
       <div className="flex items-center justify-between text-[11px]">
         <span className="text-[#868D97] font-medium flex items-center space-x-1.5">
           <MonitorPlay className="w-3.5 h-3.5 text-[#12B76A]" />
@@ -110,6 +114,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
         </span>
         <span className="text-[#667085] tabular-nums">{n(ratioW)}×{n(ratioH)} m · {resolutionLabel}</span>
       </div>
+      )}
 
       <div className="flex items-center justify-center py-1">
         <div

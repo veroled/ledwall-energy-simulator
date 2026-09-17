@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { asset } from '../../config/paths';
 import { stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico, datoCatalogo, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
-import { analizzaVideoApl, caricaFrameFoto, aplDaFrames, type FitMode } from '../../core/apl-engine';
 import { RecommendationBanner } from './RecommendationBanner';
-import { ContentPreview, type PreviewSource } from './ContentPreview';
+import { ContentSlot, type DemoVideo, type SlotInfo } from './ContentSlot';
+import VIDEO_APL from '../../config/video-apl.json';
 import { WizardFooter } from '../wizard/WizardFooter';
 import {
-  Upload,
-  CheckCircle2,
   Play,
   Zap,
   Sun,
@@ -30,6 +28,8 @@ import {
 
 const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: 'always' } as Intl.NumberFormatOptions);
 
+const fmtPotenza = (watt: number) => (watt < 10000 ? `${n(watt)} W` : `${n(watt / 1000, 1)} kW`);
+
 const subscribeNoop = () => () => {};
 const useMounted = () => useSyncExternalStore(subscribeNoop, () => true, () => false);
 
@@ -38,11 +38,6 @@ const SIZE_PRESETS = [
   { w: 6, h: 3 },
   { w: 8, h: 4 },
   { w: 10, h: 5 },
-];
-
-const SAMPLES = [
-  { file: 'file-3.mp4', label: 'Spot showroom (campione)', button: 'Spot scuro', fallbackApl: 23 },
-  { file: 'file-10.mp4', label: 'Kinetic wall (campione)', button: 'Spot chiaro', fallbackApl: 50 },
 ];
 
 // Il LEDwall "standard di mercato" su cui gira la schermata semplice: la Selection più diffusa in commercio,
@@ -83,13 +78,12 @@ export const ExpressSimulator: React.FC = () => {
     targetOutdoorNits,
     groundViewingDistM,
     installHeightM,
-    aplPercent,
-    aplSource,
-    videoFileName,
     operatingHoursDay,
     tariffEurKwh,
     liveLumDiurna,
     hasStandby,
+    hasNightDimming,
+    nightDimmingPercent,
     setPitchMm,
     setTier,
     setExpressTecnico,
@@ -104,32 +98,17 @@ export const ExpressSimulator: React.FC = () => {
     setStep,
   } = useSimulatorStore();
 
-  const { dimensions, profile: liveProfile, alternative, pMax, pStandby } = useSimulatorComputed();
+  const { dimensions, alternative, pMax, pStandby } = useSimulatorComputed();
 
   const mounted = useMounted();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [uploadPreview, setUploadPreview] = useState<PreviewSource | null>(null);
-  const [fit, setFit] = useState<FitMode>('cover');
   // Schermo nero da software: i LED sono spenti ma alimentatori, schede e ricevitori restano accesi
   const [softwareOff, setSoftwareOff] = useState(false);
-  // Frame campionati del contenuto analizzato: l'APL si ricalcola su questi a ogni cambio di formato o adattamento
-  const [analysis, setAnalysis] = useState<{ frames: HTMLCanvasElement[]; source: 'video' | 'foto'; name: string } | null>(null);
-  const uploadUrlRef = useRef<string | null>(null);
-
-  // Il file caricato resta in memoria solo per l'anteprima: si libera al cambio e all'uscita
-  const replaceUploadPreview = (next: PreviewSource | null) => {
-    if (uploadUrlRef.current) URL.revokeObjectURL(uploadUrlRef.current);
-    uploadUrlRef.current = next?.url ?? null;
-    setUploadPreview(next);
-  };
-
-  useEffect(() => () => {
-    if (uploadUrlRef.current) URL.revokeObjectURL(uploadUrlRef.current);
-  }, []);
+  // Confronto contenuti: due slot indipendenti. A è "il tuo contenuto" e alimenta report e wizard, B è il paragone.
+  const [slotA, setSlotA] = useState<SlotInfo | null>(null);
+  const [slotB, setSlotB] = useState<SlotInfo | null>(null);
+  // Solo modalità tecnica: APL uniforme scelto a mano al posto del contenuto dello slot A
+  const [manualAplA, setManualAplA] = useState<number | null>(null);
 
   useEffect(() => {
     // La modalità express ragiona in metri interi su cabinet 1000×1000
@@ -156,82 +135,18 @@ export const ExpressSimulator: React.FC = () => {
   const datoScelto = datoCatalogo(tier, pitchMm);
   const datoMancante = datoScelto === null;
   const nitsOverLimit = datoScelto !== null && targetOutdoorNits > datoScelto.maxNits;
-  const configNonValida = datoMancante || nitsOverLimit;
   // Lo slider copre tutto il catalogo: l'utente deve poter chiedere più nit di quanti la combinazione regga,
   // perché è lì che scatta il controllo. Il tetto della combinazione scelta è segnato sulla barra.
   const NIT_MIN = 2500;
   const nitSliderMax = Math.max(...TIERS.flatMap((t) => passiDelTier(t.id).map((r) => r.maxNits)));
   const tettoPos = datoScelto ? Math.max(0, Math.min(100, ((datoScelto.maxNits - NIT_MIN) / (nitSliderMax - NIT_MIN)) * 100)) : null;
 
-  const analyzeFile = async (file: File) => {
-    setIsProcessing(true);
-    setProgress(0);
-    setAnalysis(null);
-    setAnalysisError(null);
-    if (file.type.startsWith('video/') || file.type.startsWith('image/')) {
-      replaceUploadPreview({ kind: file.type.startsWith('video/') ? 'video' : 'image', url: URL.createObjectURL(file) });
-    }
-    try {
-      if (file.type.startsWith('video/')) {
-        const res = await analizzaVideoApl(file, (p) => setProgress(p));
-        setAnalysis({ frames: res.frames, source: 'video', name: file.name });
-      } else if (file.type.startsWith('image/')) {
-        const frame = await caricaFrameFoto(file);
-        setAnalysis({ frames: [frame], source: 'foto', name: file.name });
-      }
-    } catch (err) {
-      console.warn('Analisi contenuto fallita, resta lo slider manuale:', err);
-      setAnalysisError(err instanceof Error ? err.message : 'Analisi non riuscita: imposta l\'APL manualmente.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) analyzeFile(file);
-    e.target.value = '';
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) analyzeFile(file);
-  };
-
-  const loadSample = async (name: string, label: string, fallbackApl: number) => {
-    replaceUploadPreview(null);
-    // Il nome del campione va nello store subito: l'anteprima parte mentre l'analisi gira
-    setAplPercent(fallbackApl, 'video', label);
-    setIsProcessing(true);
-    setProgress(0);
-    setAnalysis(null);
-    setAnalysisError(null);
-    try {
-      // URL diretto: evita di scaricare il file in memoria e funziona anche dove i blob video non vengono decodificati
-      const res = await analizzaVideoApl(asset(`/samples/${name}`), (p) => setProgress(p));
-      setAnalysis({ frames: res.frames, source: 'video', name: label });
-    } catch (err) {
-      console.warn('Campione non analizzabile, uso il valore misurato in precedenza:', err);
-      setAplPercent(fallbackApl, 'video', label);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Stessa misura dell'anteprima: contenuto inquadrato nel rapporto del LEDwall, ritaglio o bande nere compresi
-  const framed = useMemo(
-    () => (analysis ? aplDaFrames(analysis.frames, modulesW, modulesH, fit) : null),
-    [analysis, modulesW, modulesH, fit]
-  );
-
+  // Lo slot A è il contenuto del cliente: il suo APL è quello che finisce nello store, quindi nel report e nel wizard
   useEffect(() => {
-    if (analysis && framed) setAplPercent(framed.averageAplPercent, analysis.source, analysis.name);
-  }, [analysis, framed, setAplPercent]);
-
-  const aplRange =
-    framed && analysis && analysis.frames.length > 1 ? { min: framed.minAplPercent, max: framed.maxAplPercent } : null;
+    if (!slotA) return;
+    const origine = slotA.origine === 'manual' ? 'manual' : slotA.origine === 'foto' ? 'foto' : 'video';
+    setAplPercent(slotA.aplPercent, origine, origine === 'manual' ? undefined : slotA.nome);
+  }, [slotA, setAplPercent]);
 
   const goToWizard = (step: number) => {
     setStep(step);
@@ -246,14 +161,28 @@ export const ExpressSimulator: React.FC = () => {
   }
 
   const standbyWmq = hasStandby ? pStandby : 0;
-  const profile = softwareOff
-    ? calcolaProfiloEnergetico(dimensions.areaM2, 0, 0, 0, operatingHoursDay, hasStandby, true, tariffEurKwh, pMax, pStandby)
-    : liveProfile;
-  const kwIstantanei = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
 
-  const sample = aplSource === 'video' ? SAMPLES.find((s) => s.label === videoFileName) : undefined;
-  const previewSource: PreviewSource | null =
-    uploadPreview ?? (sample ? { kind: 'video', url: asset(`/samples/${sample.file}`) } : null);
+  // Video dimostrativi: la coppia con il rapporto di forma più vicino allo schermo, così riempie il riquadro senza ritagli
+  const formatoDemo = VIDEO_APL.formati.reduce((best, f) =>
+    Math.abs(Math.log((f.w / f.h) / (modulesW / modulesH))) < Math.abs(Math.log((best.w / best.h) / (modulesW / modulesH))) ? f : best
+  );
+  const demoA: DemoVideo = { url: asset(`/videos/apl-formati/${formatoDemo.chiaro.file}`), label: 'Demo · contenuto chiaro', fallbackAplPercent: formatoDemo.chiaro.aplPercent };
+  const demoB: DemoVideo = { url: asset(`/videos/apl-formati/${formatoDemo.ottimizzato.file}`), label: 'Demo · contenuto ottimizzato', fallbackAplPercent: formatoDemo.ottimizzato.aplPercent };
+
+  // Stessa funzione per i due slot: cambia solo l'APL, la configurazione dello schermo è condivisa
+  const profiloPer = (aplPercentSlot: number) =>
+    softwareOff
+      ? calcolaProfiloEnergetico(dimensions.areaM2, 0, 0, 0, operatingHoursDay, hasStandby, true, tariffEurKwh, pMax, pStandby)
+      : calcolaProfiloEnergetico(dimensions.areaM2, aplPercentSlot / 100, liveLumDiurna / 100, nightDimmingPercent / 100, operatingHoursDay, hasStandby, hasNightDimming, tariffEurKwh, pMax, pStandby);
+  const profiloA = profiloPer(slotA?.aplPercent ?? demoA.fallbackAplPercent);
+  const profiloB = profiloPer(slotB?.aplPercent ?? demoB.fallbackAplPercent);
+  const aplA = slotA?.aplPercent ?? demoA.fallbackAplPercent;
+  const aplB = slotB?.aplPercent ?? demoB.fallbackAplPercent;
+  // Differenza A − B con il segno vero: se il cliente carica in B un contenuto più chiaro, si dice
+  const deltaAnnuoEur = Math.round(profiloA.annualCostEur) - Math.round(profiloB.annualCostEur);
+  const deltaPercento = profiloA.annualCostEur > 0 ? Math.round((Math.abs(deltaAnnuoEur) / Math.max(profiloA.annualCostEur, profiloB.annualCostEur)) * 100) : 0;
+  const resolutionLabel = `${n(dimensions.resolutionX)}×${n(dimensions.resolutionY)} px`;
+
   const wattsForApl = (apl: number) =>
     calcolaPotenzaWmq({ apl: apl / 100, lum: softwareOff ? 0 : liveLumDiurna / 100, pMax, pStandby: standbyWmq }) * dimensions.areaM2;
 
@@ -591,114 +520,83 @@ export const ExpressSimulator: React.FC = () => {
               </>)}
             </section>
 
-            {/* 2. Contenuto */}
+            {/* 2. Contenuto: due slot indipendenti a confronto sullo stesso schermo */}
             <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-4">
               <div className="flex items-center space-x-2 text-white font-semibold text-sm">
                 <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">2</span>
                 <Play className="w-4 h-4 text-[#12B76A]" />
                 <span>Cosa trasmetti</span>
-                <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline">· il contenuto pesa più del 70% della bolletta</span>
+                <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline">· stesso schermo, due contenuti: il contenuto pesa più del 70% della bolletta</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-4">
-                <label
-                  className="block cursor-pointer"
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                >
-                  <input type="file" accept="video/*,image/*" onChange={handleUpload} className="hidden" />
-                  <div className={`h-full min-h-[104px] p-4 rounded-xl border border-dashed text-center transition-colors flex flex-col items-center justify-center ${
-                    dragOver ? 'border-[#12B76A] bg-[#0D2818]' : 'border-[#2D3748] bg-[#10141D] hover:bg-[#161F30]'
-                  }`}>
-                    {isProcessing ? (
-                      <div className="w-full space-y-2">
-                        <span className="text-xs font-medium text-[#12B76A] block">Analisi 30 frame · {progress}%</span>
-                        <div className="w-full h-1.5 bg-[#1A2028] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#12B76A] transition-all duration-200" style={{ width: `${progress}%` }} />
-                        </div>
-                      </div>
-                    ) : videoFileName && aplSource !== 'manual' ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center space-x-2 text-xs font-medium text-[#34D399]">
-                          <CheckCircle2 className="w-4 h-4 text-[#12B76A]" />
-                          <span className="truncate max-w-[220px]">{videoFileName}</span>
-                        </div>
-                        <span className="text-[11px] text-[#9AA3AD] tabular-nums block">
-                          APL medio {n(aplPercent, 1)}%
-                          {aplRange ? ` · da ${n(aplRange.min, 0)}% a ${n(aplRange.max, 0)}%` : ''}
-                        </span>
-                        <span className="text-[11px] text-[#667085] block">Trascina un altro file per sostituirlo</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center space-x-2 text-xs font-medium text-[#E8EDF2]">
-                          <Upload className="w-4 h-4 text-[#9AA3AD]" />
-                          <span>Trascina qui il video o la foto dello spot</span>
-                        </div>
-                        <span className="text-[11px] text-[#667085] block">mp4, webm, jpg, png · analisi locale, nulla viene caricato online</span>
-                        {analysisError && (
-                          <span className="text-[11px] text-[#F87171] flex items-center justify-center space-x-1 pt-1">
-                            <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                            <span>{analysisError}</span>
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ContentSlot
+                  id="A"
+                  titolo={slotA && slotA.origine !== 'demo' ? 'Il tuo contenuto' : 'Contenuto chiaro · demo'}
+                  sottotitolo="questo slot va nel report"
+                  demo={demoA}
+                  ratioW={modulesW}
+                  ratioH={modulesH}
+                  resolutionLabel={resolutionLabel}
+                  wattsForApl={wattsForApl}
+                  softwareOff={softwareOff}
+                  semplice={!tecnico}
+                  manualAplPercent={tecnico ? manualAplA : null}
+                  onInfo={setSlotA}
+                />
+                <ContentSlot
+                  id="B"
+                  titolo={slotB && slotB.origine !== 'demo' ? 'Il tuo confronto' : 'Contenuto ottimizzato · demo'}
+                  sottotitolo="stesso schermo"
+                  demo={demoB}
+                  ratioW={modulesW}
+                  ratioH={modulesH}
+                  resolutionLabel={resolutionLabel}
+                  wattsForApl={wattsForApl}
+                  softwareOff={softwareOff}
+                  semplice={!tecnico}
+                  onInfo={setSlotB}
+                />
+              </div>
 
-                <div className="space-y-2">
+              {tecnico && (
+                <div className="p-3 rounded-lg bg-[#10141D] border border-[#1A2028] space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-[#868D97] font-medium">{tecnico ? "Oppure imposta l'APL" : 'Oppure scegli quanto è luminoso'}</span>
-                    <span className="text-sm font-semibold text-white tabular-nums">{n(aplPercent, 0)}%</span>
+                    <span className="text-xs text-[#868D97] font-medium">Slot A senza file: imposta l&apos;APL a mano</span>
+                    <span className="text-sm font-semibold text-white tabular-nums">{manualAplA !== null ? `${n(manualAplA)}%` : 'dal contenuto'}</span>
                   </div>
                   <input
                     type="range"
                     min={5}
                     max={100}
-                    value={Math.round(aplPercent)}
-                    onChange={(e) => {
-                      replaceUploadPreview(null);
-                      setAnalysis(null);
-                      setAplPercent(parseInt(e.target.value, 10), 'manual');
-                    }}
+                    value={manualAplA ?? Math.round(aplA)}
+                    onChange={(e) => setManualAplA(parseInt(e.target.value, 10))}
                     className="w-full custom-slider cursor-pointer"
                   />
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {CONTENT_PRESETS.map((c) => {
-                      const sel = aplSource === 'manual' && Math.round(aplPercent) === c.apl;
-                      return (
-                        <button
-                          key={c.apl}
-                          type="button"
-                          title={c.hint}
-                          onClick={() => {
-                            replaceUploadPreview(null);
-                            setAnalysis(null);
-                            setAplPercent(c.apl, 'manual');
-                          }}
-                          className={`py-1.5 px-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
-                            sel
-                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
-                          }`}
-                        >
-                          {c.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SAMPLES.map((sm) => (
-                      <button key={sm.file} type="button" onClick={() => loadSample(sm.file, sm.label, sm.fallbackApl)} disabled={isProcessing}
-                        className="py-1.5 px-2 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center justify-center space-x-1 cursor-pointer">
-                        <Play className="w-3 h-3 text-[#12B76A]" /><span>{sm.button}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CONTENT_PRESETS.map((c) => (
+                      <button
+                        key={c.apl}
+                        type="button"
+                        title={c.hint}
+                        onClick={() => setManualAplA(c.apl)}
+                        className={`py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
+                          manualAplA === c.apl
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
+                            : 'border border-[#1A2028] bg-[#0D1117] text-[#E8EDF2] hover:border-[#12B76A]'
+                        }`}
+                      >
+                        {c.label} · {c.apl}%
                       </button>
                     ))}
+                    {manualAplA !== null && (
+                      <button type="button" onClick={() => setManualAplA(null)} className="py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer border border-[#1A2028] bg-[#0D1117] text-[#9AA3AD] hover:text-white">
+                        Torna al contenuto
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </section>
 
             {/* 3. Consumi */}
@@ -709,11 +607,7 @@ export const ExpressSimulator: React.FC = () => {
                   <Zap className="w-4 h-4 text-[#12B76A]" />
                   <span>Quanto consuma</span>
                   <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline tabular-nums">
-                    · {softwareOff
-                      ? 'a schermo spento da software, tutto il giorno'
-                      : aplSource === 'manual'
-                      ? tecnico ? `con l'APL impostato al ${n(aplPercent, 0)}%` : `con un contenuto luminoso al ${n(aplPercent, 0)}%`
-                      : `con la media ${aplSource === 'foto' ? 'della tua foto' : 'del tuo video'} (APL ${n(aplPercent, 0)}%)`}
+                    · {softwareOff ? 'a schermo spento da software, tutto il giorno' : 'lo stesso schermo con i due contenuti'}
                   </span>
                 </div>
                 <button
@@ -764,27 +658,46 @@ export const ExpressSimulator: React.FC = () => {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
-                  <span className="text-[10px] uppercase text-[#868D97] font-medium block">Potenza in esercizio</span>
-                  <span className="text-xl font-semibold text-white tabular-nums">{kwIstantanei < 10 ? n(kwIstantanei * 1000) : n(kwIstantanei, 1)}<span className="text-xs text-[#9AA3AD] ml-1">{kwIstantanei < 10 ? 'W' : 'kW'}</span></span>
-                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.dayPowerWmq)} W/m² · picco {n(pMax)} W/m²</span>
+              {/* Su schermi stretti la colonna di destra finisce in fondo: la differenza si ripete qui, in evidenza */}
+              {!softwareOff && deltaAnnuoEur !== 0 && (
+                <div className="lg:hidden p-3 rounded-lg bg-[#0A1610] border border-[#163826]">
+                  <span className="text-xl font-semibold text-white tabular-nums">{n(Math.abs(deltaAnnuoEur))} €</span>
+                  <span className="text-xs text-[#9AA3AD] ml-1.5">all&apos;anno di differenza · {deltaAnnuoEur > 0 ? 'B' : 'A'} spende il {deltaPercento}% in meno</span>
                 </div>
-                <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
-                  <span className="text-[10px] uppercase text-[#868D97] font-medium block">Energia al giorno</span>
-                  <span className="text-xl font-semibold text-white tabular-nums">{n(profile.totalDailyKwh, 1)}<span className="text-xs text-[#9AA3AD] ml-1">kWh</span></span>
-                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.annualKwh)} kWh/anno</span>
-                </div>
-                <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
-                  <span className="text-[10px] uppercase text-[#868D97] font-medium block">Bolletta al mese</span>
-                  <span className="text-xl font-semibold text-white tabular-nums">{n(profile.monthlyCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></span>
-                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.dailyCostEur, 2)} €/giorno</span>
-                </div>
-                <div className={`p-3.5 rounded-lg border ${configNonValida && !softwareOff ? 'bg-[#10141D] border-[#1A2028]' : 'bg-[#0D2818] border-[#163826]'}`}>
-                  <span className={`text-[10px] uppercase font-medium block ${configNonValida && !softwareOff ? 'text-[#868D97]' : 'text-[#34D399]'}`}>Bolletta all&apos;anno</span>
-                  <span className="text-xl font-semibold text-white tabular-nums">{n(profile.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></span>
-                  <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.annualKwh * 0.305 / 1000, 2)} t CO₂/anno</span>
-                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left tabular-nums">
+                  <thead>
+                    <tr className="text-[10px] uppercase text-[#868D97]">
+                      <th className="py-2 pr-3 font-medium"></th>
+                      <th className="py-2 px-3 font-medium text-[#34D399]">A · {slotA?.origine === 'demo' || !slotA ? 'contenuto chiaro' : 'il tuo contenuto'}</th>
+                      <th className="py-2 pl-3 font-medium text-[#E8EDF2]">B · {slotB?.origine === 'demo' || !slotB ? 'contenuto ottimizzato' : 'il tuo confronto'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm text-white">
+                    {([
+                      ['Luminosità media del contenuto', `${n(aplA, 0)}%`, `${n(aplB, 0)}%`],
+                      ['Potenza in esercizio', fmtPotenza(profiloA.dayPowerWmq * dimensions.areaM2), fmtPotenza(profiloB.dayPowerWmq * dimensions.areaM2)],
+                      ['Energia al giorno', `${n(profiloA.totalDailyKwh, 1)} kWh`, `${n(profiloB.totalDailyKwh, 1)} kWh`],
+                      ['Bolletta al mese', `${n(profiloA.monthlyCostEur)} €`, `${n(profiloB.monthlyCostEur)} €`],
+                    ] as const).map(([voce, a, b]) => (
+                      <tr key={voce} className="border-t border-[#1A2028]">
+                        <td className="py-2 pr-3 text-xs text-[#9AA3AD]">{voce}</td>
+                        <td className="py-2 px-3 font-medium">{a}</td>
+                        <td className="py-2 pl-3 font-medium">{b}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t border-[#1A2028]">
+                      <td className="py-3 pr-3 text-xs text-[#9AA3AD]">Bolletta all&apos;anno</td>
+                      <td className="py-3 px-3 text-xl font-semibold">{n(profiloA.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></td>
+                      <td className="py-3 pl-3 text-xl font-semibold">{n(profiloB.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="text-[11px] text-[#868D97] pt-1 tabular-nums">
+                  Picco dello schermo {n(pMax)} W/m² · {n(profiloA.annualKwh)} kWh/anno con A, {n(profiloB.annualKwh)} con B · {n((profiloA.annualKwh * 0.305) / 1000, 2)} t CO₂/anno con A
+                </p>
               </div>
 
               {!tecnico && (
@@ -835,20 +748,41 @@ export const ExpressSimulator: React.FC = () => {
 
           {/* Anteprima live + banner consiglio (sticky su desktop) */}
           <div className="lg:sticky lg:top-24 space-y-5">
-            <section className="bg-[#0D1117] p-4 rounded-xl border border-[#1A2028] shadow-sm">
-              <ContentPreview
-                source={previewSource}
-                ratioW={modulesW}
-                ratioH={modulesH}
-                resolutionLabel={`${n(dimensions.resolutionX)}×${n(dimensions.resolutionY)} px`}
-                aplPercent={aplPercent}
-                wattsForApl={wattsForApl}
-                softwareOff={softwareOff}
-                semplice={!tecnico}
-                fit={fit}
-                onFitChange={setFit}
-                staleFileName={!previewSource && aplSource !== 'manual' ? videoFileName : undefined}
-              />
+            <section className="bg-[#0A1610] p-5 rounded-xl border border-[#163826] shadow-sm space-y-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#34D399] flex items-center space-x-2">
+                <Zap className="w-3.5 h-3.5" />
+                <span>Quanto pesa il contenuto</span>
+              </span>
+              {softwareOff ? (
+                <p className="text-sm text-[#E8EDF2]">A schermo spento da software il contenuto non conta: resta solo l&apos;elettronica.</p>
+              ) : deltaAnnuoEur === 0 ? (
+                <p className="text-sm text-[#E8EDF2]">I due contenuti costano uguale: {n(profiloA.annualCostEur)} € all&apos;anno.</p>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-3xl font-semibold text-white tabular-nums">{n(Math.abs(deltaAnnuoEur))} €</span>
+                    <span className="text-sm text-[#9AA3AD] ml-1.5">all&apos;anno di differenza</span>
+                  </div>
+                  <p className="text-xs text-[#C9D1D9] leading-relaxed">
+                    Sullo stesso schermo, il contenuto <b>{deltaAnnuoEur > 0 ? 'B' : 'A'}</b> spende il <b>{deltaPercento}% in meno</b> del contenuto <b>{deltaAnnuoEur > 0 ? 'A' : 'B'}</b>:
+                    {' '}{n(Math.min(profiloA.annualCostEur, profiloB.annualCostEur))} € contro {n(Math.max(profiloA.annualCostEur, profiloB.annualCostEur))} € di bolletta annua.
+                  </p>
+                </>
+              )}
+              <div className="space-y-1.5 pt-1">
+                {([['A', profiloA.annualCostEur, 'bg-[#34D399]'], ['B', profiloB.annualCostEur, 'bg-[#E8EDF2]']] as const).map(([id, costo, colore]) => (
+                  <div key={id} className="flex items-center space-x-2 text-[11px] text-[#9AA3AD] tabular-nums">
+                    <span className="w-3 font-semibold text-white">{id}</span>
+                    <div className="flex-1 h-2 rounded-full bg-[#1A2028] overflow-hidden">
+                      <div className={`h-full rounded-full ${colore}`} style={{ width: `${Math.max(3, (costo / Math.max(profiloA.annualCostEur, profiloB.annualCostEur, 1)) * 100)}%` }} />
+                    </div>
+                    <span className="w-16 text-right">{n(costo)} €</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-[#868D97] leading-relaxed">
+                Carica il tuo spot nello slot A o B per confrontarlo: fondi scuri e colori in risalto costano meno di fondi bianchi, a parità di schermo.
+              </p>
             </section>
             {/* Il consiglio sul passo dipende dalla distanza di visione, che la schermata semplice non chiede */}
             {tecnico && (
