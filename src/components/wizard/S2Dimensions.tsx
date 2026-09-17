@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { CABINET_FORMATS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
-import { stimaPotenzaDaPassoNit, calcolaConsulenzaOttica, standbyWmqPerPasso, datoCatalogo, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
+import { stimaPotenzaDaPassoNit, calcolaConsulenzaOttica, standbyWmqPerPasso, datoCatalogo, canoneNoleggio, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
 import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock, Sun, Eye, ThumbsUp, AlertTriangle } from 'lucide-react';
 
 export const S2Dimensions: React.FC = () => {
@@ -103,9 +103,17 @@ export const S2Dimensions: React.FC = () => {
       pitchA,
       dimensions.areaM2,
       Math.max(effectiveNitsA, effectiveNitsB, 6000),
-      dimensions.heightM
+      dimensions.heightM,
+      tier
     );
-  }, [installHeightM, groundViewingDistM, pitchA, dimensions.areaM2, dimensions.heightM, effectiveNitsA, effectiveNitsB]);
+  }, [installHeightM, groundViewingDistM, pitchA, dimensions.areaM2, dimensions.heightM, effectiveNitsA, effectiveNitsB, tier]);
+
+  // Canoni a 24 mesi dei due display a confronto, dal listino del sito (null = prezzo non a listino)
+  const canoneA = canoneNoleggio(tier, pitchA, dimensions.areaM2, 24);
+  const canoneB = canoneNoleggio(tier, pitchB, dimensions.areaM2, 24);
+  // Il riepilogo "risparmio" vale solo quando il passo del cliente è più fitto del necessario e i conti sono a favore
+  const risparmioTotale24 = opticalConsulting.total24MonthSavingsEur;
+  const mostraRisparmio = opticalConsulting.isClientPitchOverkill && risparmioTotale24 !== null && risparmioTotale24 > 0;
 
   const applyBarbecuePreset = () => {
     setDimensioniMetri(6.0, 3.0);
@@ -473,10 +481,10 @@ export const S2Dimensions: React.FC = () => {
                   {/* Canone Noleggio Operativo 24 Mesi Stimato */}
                   <div className="p-3 rounded-lg bg-[#10141D] border border-[#1A2028] text-center space-y-0.5">
                     <span className="text-[10px] text-[#868D97] uppercase tracking-wider block font-medium">
-                      Canone Locazione Stimata (24 Mesi)
+                      Canone Noleggio Operativo (24 Mesi · da listino)
                     </span>
                     <div className="text-lg font-semibold text-white tabular-nums tracking-tight">
-                      ~{fmt(opticalConsulting.clientMonthlyRentalEur)} €<span className="text-xs text-[#868D97] font-normal"> / mese</span>
+                      {canoneA ? <>{fmt(canoneA.rataMensileEur)} €<span className="text-xs text-[#868D97] font-normal"> / mese</span></> : <span className="text-sm text-[#9AA3AD]">prezzo non a listino</span>}
                     </div>
                     <span className="text-[11px] text-[#868D97] tabular-nums block">
                       Elettricità: ~{fmt(compResA.annualCostEur / 12)} € / mese ({fmt(compResA.annualCostEur)} €/anno)
@@ -644,10 +652,10 @@ export const S2Dimensions: React.FC = () => {
                   {/* Canone Noleggio Operativo 24 Mesi Stimato */}
                   <div className="p-3 rounded-lg bg-[#10141D] border border-[#163826] text-center space-y-0.5">
                     <span className="text-[10px] text-[#34D399] uppercase tracking-wider block font-semibold">
-                      Canone Locazione Stimata (24 Mesi)
+                      Canone Noleggio Operativo (24 Mesi · da listino)
                     </span>
                     <div className="text-lg font-bold text-[#12B76A] tabular-nums tracking-tight">
-                      ~{fmt(opticalConsulting.recommendedMonthlyRentalEur)} €<span className="text-xs text-[#868D97] font-normal"> / mese</span>
+                      {canoneB ? <>{fmt(canoneB.rataMensileEur)} €<span className="text-xs text-[#868D97] font-normal"> / mese</span></> : <span className="text-sm text-[#9AA3AD]">prezzo non a listino</span>}
                     </div>
                     <span className="text-[11px] text-[#12B76A] font-medium tabular-nums block">
                       Elettricità: ~{fmt(compResB.annualCostEur / 12)} € / mese ({fmt(compResB.annualCostEur)} €/anno)
@@ -677,22 +685,22 @@ export const S2Dimensions: React.FC = () => {
                     </span>
                   </div>
 
-                  {opticalConsulting.total24MonthSavingsEur > 0 && (
+                  {mostraRisparmio && (
                     <span className="text-xs px-3 py-1 rounded-full bg-[#0D2818] text-[#34D399] font-bold border border-[#163826] self-start sm:self-auto tabular-nums">
-                      Risparmio Netto Totale 24 Mesi: +{fmt(opticalConsulting.total24MonthSavingsEur)} €
+                      Risparmio Netto Totale 24 Mesi: +{fmt(risparmioTotale24 ?? 0)} €
                     </span>
                   )}
                 </div>
 
                 {/* Griglia Riepilogo Risparmio 24 Mesi */}
-                {opticalConsulting.total24MonthSavingsEur > 0 && (
+                {mostraRisparmio && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg bg-[#10141D] border border-[#163826]">
                     <div className="space-y-0.5 text-center sm:text-left">
                       <span className="text-[10px] text-[#868D97] uppercase font-medium">Risparmio Canone Noleggio</span>
                       <div className="text-base font-bold text-[#34D399] tabular-nums">
-                        +{fmt(opticalConsulting.monthlyRentalSavingsEur * 24)} €
+                        +{fmt((opticalConsulting.monthlyRentalSavingsEur ?? 0) * 24)} €
                       </div>
-                      <span className="text-[10px] text-[#868D97]">+{fmt(opticalConsulting.monthlyRentalSavingsEur)} € al mese per 24 mesi</span>
+                      <span className="text-[10px] text-[#868D97]">+{fmt(opticalConsulting.monthlyRentalSavingsEur ?? 0)} € al mese per 24 mesi</span>
                     </div>
 
                     <div className="space-y-0.5 text-center sm:text-left">
@@ -706,7 +714,7 @@ export const S2Dimensions: React.FC = () => {
                     <div className="space-y-0.5 text-center sm:text-left border-t sm:border-t-0 sm:border-l border-[#1A2028] pt-2 sm:pt-0 sm:pl-3">
                       <span className="text-[10px] text-[#12B76A] uppercase font-bold">Vantaggio Economico Totale</span>
                       <div className="text-lg font-extrabold text-[#12B76A] tabular-nums">
-                        +{fmt(opticalConsulting.total24MonthSavingsEur)} €
+                        +{fmt(risparmioTotale24 ?? 0)} €
                       </div>
                       <span className="text-[10px] text-[#868D97]">Qualità visiva identica, TCO ottimizzato</span>
                     </div>

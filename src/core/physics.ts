@@ -353,9 +353,59 @@ export interface DatoCatalogo {
   pitchMm: number;
   maxNits: number;
   chip: string;
+  /** Prezzo di listino al m² (null se il listino non lo riporta) */
+  prezzoMq: number | null;
 }
 
 const CATALOGO: DatoCatalogo[] = catalogoNit.rows as DatoCatalogo[];
+
+export interface CanoneNoleggio {
+  mesi: number;
+  imponibileEur: number; // prodotto a listino + posa, come su /noleggio-operativo
+  prodottoEur: number;
+  posaEur: number;
+  rataNoleggioEur: number;
+  assicurazioneEur: number;
+  rataMensileEur: number; // noleggio + assicurazione
+  istruttoriaEur: number; // una tantum
+}
+
+const NOLEGGIO = catalogoNit.noleggio as {
+  coefficienti: Record<string, { max: number | null; coef: number }[]>;
+  assicurazioneAnnua: number;
+  istruttoriaEur: number;
+  posaEurMq: number;
+  posaMqMinimi: number;
+};
+
+/**
+ * Canone di noleggio operativo con le STESSE regole del sito (`noleggioFin` + `posaDi`): prezzo di listino
+ * della combinazione × m² + posa, coefficiente del broker per durata e fascia di imponibile, assicurazione.
+ * Coefficienti, posa e prezzi arrivano da `npm run sync:catalogo`. Se il listino non ha il prezzo di quella
+ * combinazione ritorna null: il canone non si stima.
+ */
+export function canoneNoleggio(tier: TierId, pitchMm: number, areaM2: number, mesi: number = 24): CanoneNoleggio | null {
+  const dato = datoCatalogo(tier, pitchMm);
+  const fasce = NOLEGGIO.coefficienti[String(mesi)];
+  if (!dato || dato.prezzoMq === null || !fasce || !(areaM2 > 0)) return null;
+  const prodottoEur = Math.round(dato.prezzoMq * areaM2);
+  const posaEur = Math.round(Math.max(areaM2, NOLEGGIO.posaMqMinimi) * NOLEGGIO.posaEurMq);
+  const imponibileEur = prodottoEur + posaEur;
+  const fascia = fasce.find((f) => f.max === null || imponibileEur <= f.max);
+  if (!fascia) return null;
+  const rataNoleggioEur = Math.round((imponibileEur * fascia.coef) / 100);
+  const assicurazioneEur = Math.round((imponibileEur * NOLEGGIO.assicurazioneAnnua) / 12);
+  return {
+    mesi,
+    imponibileEur,
+    prodottoEur,
+    posaEur,
+    rataNoleggioEur,
+    assicurazioneEur,
+    rataMensileEur: rataNoleggioEur + assicurazioneEur,
+    istruttoriaEur: NOLEGGIO.istruttoriaEur,
+  };
+}
 
 /** Stesso passo nominale: 3.9 e 3.91 sono lo stesso prodotto, 2.5 e 2.6 no */
 export const stessoPasso = (a: number, b: number) => Math.abs(a - b) <= 0.035;
@@ -687,7 +737,10 @@ export interface OpticalConsultingResult {
   clientPitchMm: number;
   recommendedPitchMm: number;
   minResolvablePitchMm: number; // Soglia 1 arcminuto occhio umano
-  isClientPitchOverkill: boolean;
+  /** Quanto il passo consigliato supera la soglia teorica (1 = sulla soglia): è la tolleranza commerciale, e va dichiarata */
+  recommendedToThresholdRatio: number;
+  isClientPitchOverkill: boolean; // più fitto del necessario
+  isClientPitchTooCoarse: boolean; // più largo di quanto la distanza regga: la trama si vede
   pixelDensityClient: number; // px/m²
   pixelDensityRecommended: number; // px/m²
   totalPixelsClient: number;
@@ -696,11 +749,13 @@ export interface OpticalConsultingResult {
   wastedPixelsPercent: number;
   hardwareClient: HardwareComparisonResult;
   hardwareRecommended: HardwareComparisonResult;
+  /** Differenze A − B con il segno vero: positivo = il passo del cliente costa di più del consigliato */
   deltaAnnualEnergyCostEur: number;
-  clientMonthlyRentalEur: number;
-  recommendedMonthlyRentalEur: number;
-  monthlyRentalSavingsEur: number;
-  total24MonthSavingsEur: number;
+  /** Canoni dal listino del sito (24 mesi). null = prezzo non a listino per quella combinazione, o Selection non indicata */
+  clientMonthlyRentalEur: number | null;
+  recommendedMonthlyRentalEur: number | null;
+  monthlyRentalSavingsEur: number | null;
+  total24MonthSavingsEur: number | null;
   scientificVerdict: string;
 }
 
@@ -715,7 +770,8 @@ export function calcolaConsulenzaOttica(
   clientPitchMm: number,
   areaM2: number = 18,
   targetNits: number = 6000,
-  screenHeightM: number = 0
+  screenHeightM: number = 0,
+  tier?: TierId
 ): OpticalConsultingResult {
   const h = Math.max(0, installHeightM);
   const d = Math.max(1, groundViewingDistM);
@@ -732,10 +788,12 @@ export function calcolaConsulenzaOttica(
   // A distanza D, il limite di risoluzione per separare due diodi è: p = D * 0.291 mm
   const minResolvablePitchMm = Math.round(lineOfSightDistM * 0.291 * 100) / 100;
 
-  // Selezione del passo commerciale consigliato (outdoor standard: 2.6, 2.9, 3.91, 4.81, 6.67, 8.0, 10.0)
+  // Passo commerciale di riferimento per fascia di distanza, sui passi outdoor a listino.
+  // Alle distanze brevi supera la soglia teorica (fino a ~1,7×) perché sotto il P2.5 l'outdoor a listino
+  // non scende: è una tolleranza commerciale, esposta in recommendedToThresholdRatio e dichiarata nel report.
   let recommendedPitchMm = 3.91;
   if (lineOfSightDistM < 6) {
-    recommendedPitchMm = 2.6;
+    recommendedPitchMm = 2.5;
   } else if (lineOfSightDistM < 9) {
     recommendedPitchMm = 2.9;
   } else if (lineOfSightDistM <= 16) {
@@ -745,16 +803,19 @@ export function calcolaConsulenzaOttica(
   } else if (lineOfSightDistM < 27.5) {
     recommendedPitchMm = 6.67;
   } else if (lineOfSightDistM < 34.4) {
-    // Da 27,5 m l'occhio fonde già il P8 (8 / 0,291), da 34,4 m il P10: oltre non serve un passo più fitto
-    recommendedPitchMm = 8.0;
+    // Da 26,8 m l'occhio fonde già il P7.81, da 33,7 m il P9.81: oltre non serve un passo più fitto
+    recommendedPitchMm = 7.81;
   } else if (lineOfSightDistM < 55) {
-    recommendedPitchMm = 10.0;
+    recommendedPitchMm = 9.81;
   } else {
     // Da 55 m (16 / 0,291) l'occhio fonde anche il P16
     recommendedPitchMm = 16.0;
   }
+  const recommendedToThresholdRatio = Math.round((recommendedPitchMm / minResolvablePitchMm) * 100) / 100;
 
-  const isClientPitchOverkill = clientPitchMm < recommendedPitchMm;
+  const isClientPitchOverkill = clientPitchMm < recommendedPitchMm - 0.05;
+  // Stesso criterio del verdetto express: troppo largo solo se supera il consigliato E l'occhio separa i diodi
+  const isClientPitchTooCoarse = clientPitchMm > recommendedPitchMm + 0.15 && clientPitchMm > minResolvablePitchMm;
 
   // Densità e totale pixel
   const pixelDensityClient = Math.round(Math.pow(1000 / clientPitchMm, 2));
@@ -765,28 +826,41 @@ export function calcolaConsulenzaOttica(
   const wastedPixelsCount = Math.max(0, totalPixelsClient - totalPixelsRecommended);
   const wastedPixelsPercent = totalPixelsClient > 0 ? Math.round((wastedPixelsCount / totalPixelsClient) * 100) : 0;
 
-  // Hardware estimate a targetNits (es. 6000 nit per outdoor RFP)
-  const hardwareClient = stimaPotenzaDaPassoNit(clientPitchMm, targetNits, areaM2);
-  const hardwareRecommended = stimaPotenzaDaPassoNit(recommendedPitchMm, targetNits, areaM2);
+  // Stima hardware: con la Selection, tetto e chip sono quelli di listino della combinazione (null = non censito)
+  const stima = (p: number) =>
+    tier
+      ? stimaPotenzaDaPassoNit(p, targetNits, areaM2, undefined, undefined, true, datoCatalogo(tier, p))
+      : stimaPotenzaDaPassoNit(p, targetNits, areaM2);
+  const hardwareClient = stima(clientPitchMm);
+  const hardwareRecommended = stima(recommendedPitchMm);
 
-  const deltaAnnualEnergyCostEur = Math.max(0, hardwareClient.annualCostEur - hardwareRecommended.annualCostEur);
+  // Differenze con il segno vero: se il consigliato costa di più il report lo deve dire, non azzerarlo
+  const deltaAnnualEnergyCostEur = hardwareClient.annualCostEur - hardwareRecommended.annualCostEur;
 
-  // Stima noleggio operativo a 24 mesi:
-  // P2.6 / P1.95 outdoor 6000 nit richiede package miniaturizzati con alto costo di produzione (~108 €/m²/mese)
-  // P3.91 / P4.8 comporta moduli SMD1921 industriali ad alta scala (~67 €/m²/mese -> ~1.200 €/mese per 18 m²!)
-  const clientRatePerM2Month = clientPitchMm <= 2.6 ? 108 : clientPitchMm <= 3.0 ? 92 : 67;
-  const recRatePerM2Month = recommendedPitchMm <= 2.6 ? 108 : recommendedPitchMm <= 3.0 ? 92 : 67;
+  // Canoni a 24 mesi dal listino del sito, con le regole di /noleggio-operativo. Mai una tariffa scritta a mano.
+  const canoneCliente = tier ? canoneNoleggio(tier, clientPitchMm, areaM2, 24) : null;
+  const canoneConsigliato = tier ? canoneNoleggio(tier, recommendedPitchMm, areaM2, 24) : null;
+  const clientMonthlyRentalEur = canoneCliente ? canoneCliente.rataMensileEur : null;
+  const recommendedMonthlyRentalEur = canoneConsigliato ? canoneConsigliato.rataMensileEur : null;
+  const monthlyRentalSavingsEur =
+    clientMonthlyRentalEur !== null && recommendedMonthlyRentalEur !== null
+      ? clientMonthlyRentalEur - recommendedMonthlyRentalEur
+      : null;
+  const total24MonthSavingsEur =
+    monthlyRentalSavingsEur !== null ? monthlyRentalSavingsEur * 24 + deltaAnnualEnergyCostEur * 2 : null;
 
-  const clientMonthlyRentalEur = Math.round(areaM2 * clientRatePerM2Month);
-  const recommendedMonthlyRentalEur = Math.round(areaM2 * recRatePerM2Month);
-  const monthlyRentalSavingsEur = Math.max(0, clientMonthlyRentalEur - recommendedMonthlyRentalEur);
-  const total24MonthSavingsEur = (monthlyRentalSavingsEur * 24) + (deltaAnnualEnergyCostEur * 2);
-
+  const Dtxt = lineOfSightDistM.toLocaleString('it-IT');
+  const soglia = minResolvablePitchMm.toLocaleString('it-IT');
   let scientificVerdict = '';
   if (isClientPitchOverkill) {
-    scientificVerdict = `A ${lineOfSightDistM} metri di linea di vista (installazione a ${h}m di quota e ${d}m di distanza suolo), l'acuità visiva umana fonde completamente i pixel già a passo P${recommendedPitchMm} mm (qualità Retina). La scelta di un P${clientPitchMm} mm comporta ${wastedPixelsPercent}% di pixel non distinguibili dall'occhio umano, spingendo i micro-diodi in saturazione termica a ${targetNits} nit (${hardwareClient.sforzoPercent}% sforzo) e raddoppiando i consumi energetici senza alcun reale beneficio visivo per l'osservatore.`;
+    scientificVerdict = `A ${Dtxt} metri di linea di vista (base a ${h} m di quota, pubblico a ${d} m a terra) l'occhio separa i diodi solo sopra ${soglia} mm di passo: il passo commerciale di riferimento è il P${recommendedPitchMm} mm. Il P${clientPitchMm} mm scelto è più fitto del necessario: il ${wastedPixelsPercent}% dei suoi pixel non è distinguibile da quella distanza, con più consumo e più sforzo termico a parità di resa percepita.`;
+  } else if (isClientPitchTooCoarse) {
+    scientificVerdict = `A ${Dtxt} metri di linea di vista l'occhio separa i diodi sopra ${soglia} mm di passo. Il P${clientPitchMm} mm scelto è ${(Math.round((clientPitchMm / minResolvablePitchMm) * 10) / 10).toLocaleString('it-IT')} volte quella soglia: la trama dei pixel si vede e testi e volti risultano sgranati. Il passo commerciale di riferimento per questa distanza è il P${recommendedPitchMm} mm; il P${clientPitchMm} torna corretto da circa ${Math.round(clientPitchMm / 0.291)} metri in su.`;
   } else {
-    scientificVerdict = `Il passo P${clientPitchMm} mm è perfettamente bilanciato per la distanza di visione calcolata di ${lineOfSightDistM} metri.`;
+    scientificVerdict = `Il P${clientPitchMm} mm è coerente con la distanza di visione calcolata di ${Dtxt} metri (soglia di fusione ${soglia} mm, passo commerciale di riferimento P${recommendedPitchMm} mm).`;
+  }
+  if (recommendedToThresholdRatio > 1.05) {
+    scientificVerdict += ` Tolleranza dichiarata: il P${recommendedPitchMm} è ${recommendedToThresholdRatio.toLocaleString('it-IT')} volte la soglia teorica di 1 arcminuto; è il riferimento commerciale outdoor per questa distanza, non la fusione completa dei pixel.`;
   }
 
   return {
@@ -800,7 +874,9 @@ export function calcolaConsulenzaOttica(
     clientPitchMm,
     recommendedPitchMm,
     minResolvablePitchMm,
+    recommendedToThresholdRatio,
     isClientPitchOverkill,
+    isClientPitchTooCoarse,
     pixelDensityClient,
     pixelDensityRecommended,
     totalPixelsClient,
@@ -876,6 +952,9 @@ export interface AlternativeProposal {
   co2SavedTons: number;
   wastedPixelsPercent: number;
   rentalSavings24mEur: number;
+  /** Canone di noleggio operativo a 24 mesi (listino del sito) della scelta e della proposta; null = prezzo non a listino */
+  canoneCurrent: CanoneNoleggio | null;
+  canoneProposed: CanoneNoleggio | null;
   fleetMonitorExtraEur: number; // €/anno risparmiati applicando Fleet Monitor alla proposta
   fleetMonitorExtraPercent: number; // sulla stessa bolletta mostrata per la proposta (proposed.annualCostEur)
   fleetMonitorCostEur: number; // bolletta annua che resta con Fleet Monitor
@@ -1121,7 +1200,21 @@ export function suggerisciAlternativa(
     headline = `Configurazione bilanciata: il P${pitchMm} mm ${T} a ${nitsTxt} nit è coerente con ${Dtxt} m di distanza.`;
   }
 
+  // Se la proposta non coincide con il passo di riferimento per la distanza, si dice perché: altrimenti
+  // il report mostra due passi diversi (Sezione 1 e Sezione 2) senza spiegazione.
+  if (!stessoPasso(proposedPitch, pitchMm) && !stessoPasso(proposedPitch, optical.recommendedPitchMm)) {
+    const rif = datoCatalogo(tier, optical.recommendedPitchMm);
+    if (!rif) {
+      reasons.push(`Il passo di riferimento per la distanza è il P${optical.recommendedPitchMm}, ma in ${T} il listino non ne ha il tetto di nit: la proposta è il P${proposedPitch}, il più vicino con dati certi.`);
+    } else if (nits > rif.maxNits) {
+      reasons.push(`Il passo di riferimento per la distanza è il P${optical.recommendedPitchMm}, ma in ${T} si ferma a ${it(rif.maxNits)} nit: la proposta è il P${proposedPitch}, il più vicino che regge i ${nitsTxt} nit.`);
+    }
+  }
+
   const isPitchSaving = kind === 'pitch';
+  // Canoni a 24 mesi dal listino del sito per le due combinazioni a confronto (null = prezzo non a listino)
+  const canoneCurrent = canoneNoleggio(tier, pitchMm, areaM2, 24);
+  const canoneProposed = canoneNoleggio(tier, finalProposed.pitchMm, areaM2, 24);
   return {
     hasAlternative: kind !== 'none',
     kind,
@@ -1147,7 +1240,12 @@ export function suggerisciAlternativa(
     extraCostEur,
     co2SavedTons,
     wastedPixelsPercent: isPitchSaving ? optical.wastedPixelsPercent : 0,
-    rentalSavings24mEur: isPitchSaving ? optical.monthlyRentalSavingsEur * 24 : 0,
+    rentalSavings24mEur:
+      isPitchSaving && canoneCurrent && canoneProposed
+        ? Math.max(0, (canoneCurrent.rataMensileEur - canoneProposed.rataMensileEur) * 24)
+        : 0,
+    canoneCurrent,
+    canoneProposed,
     fleetMonitorExtraEur,
     fleetMonitorExtraPercent,
     fleetMonitorCostEur,

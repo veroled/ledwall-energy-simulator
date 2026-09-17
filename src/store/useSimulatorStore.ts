@@ -373,7 +373,8 @@ export function useSimulatorComputed() {
     state.pitchMm,
     dimensions.areaM2,
     state.targetOutdoorNits || 6000,
-    dimensions.heightM
+    dimensions.heightM,
+    tier
   );
 
   const alternative: AlternativeProposal = suggerisciAlternativa(

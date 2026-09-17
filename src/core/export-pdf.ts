@@ -5,7 +5,7 @@
  */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { ScreenDimensions, ScenarioResult, DailyEnergyProfile, PowerQualityAnalysis, OpticalConsultingResult } from './physics';
+import { ScreenDimensions, ScenarioResult, DailyEnergyProfile, PowerQualityAnalysis, OpticalConsultingResult, AlternativeProposal, tierName } from './physics';
 import { VEROLED_LOGO_PNG_BASE64 } from '../assets/logo-base64';
 
 export interface ReportData {
@@ -16,9 +16,31 @@ export interface ReportData {
   tariffaEurKwh: number;
   powerQuality?: PowerQualityAnalysis;
   opticalConsulting?: OpticalConsultingResult;
+  /** Verdetto e proposta del motore express: la pagina ottica legge da qui, così PDF e schermo non si contraddicono */
+  alternative?: AlternativeProposal;
   userName?: string;
   userCompany?: string;
   userEmail?: string;
+}
+
+/**
+ * Il font standard di jsPDF copre solo il set WinAnsi (cp1252). Un carattere fuori set — radice, minore-uguale,
+ * frecce, pedici — fa scrivere l'INTERA stringa in un'altra codifica: lettere distanziate e testo troncato.
+ */
+const WINANSI_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+export function isWinAnsi(testo: string): boolean {
+  for (const ch of testo) {
+    if (ch.charCodeAt(0) > 0xff && !WINANSI_EXTRA.includes(ch)) return false;
+  }
+  return true;
+}
+
+/** Rende stampabile un testo che arriva dal motore: i simboli fuori set diventano parole, mai glifi rotti */
+export function pdfSafe(testo: string): string {
+  const mappa: Record<string, string> = { '√': 'radice di ', '≤': 'fino a ', '≥': 'almeno ', '→': '->', '←': '<-', '₂': '2', '≈': 'circa ', '−': '-' };
+  let out = '';
+  for (const ch of testo) out += isWinAnsi(ch) ? ch : mappa[ch] ?? '?';
+  return out.replace(/ {2,}/g, ' ');
 }
 
 function formatItalianNumber(num: number): string {
@@ -77,7 +99,10 @@ export function generaReportPdf(data: ReportData): jsPDF {
   doc.setTextColor(226, 232, 240);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.text('Doc. ID: VERO-AUDIT-2026-0915', pageWidth - 16, 18.5, { align: 'right' });
+  const adesso = new Date();
+  const due = (v: number) => String(v).padStart(2, '0');
+  const docId = `VERO-AUDIT-${adesso.getFullYear()}${due(adesso.getMonth() + 1)}${due(adesso.getDate())}-${due(adesso.getHours())}${due(adesso.getMinutes())}`;
+  doc.text(`Doc. ID: ${docId}`, pageWidth - 16, 18.5, { align: 'right' });
 
   const dataString = new Date().toLocaleDateString('it-IT', {
     day: '2-digit',
@@ -185,13 +210,13 @@ export function generaReportPdf(data: ReportData): jsPDF {
       'Costo Annuo Energia Elettrica (€)',
       `${formatItalianNumber(data.scenario.annualCostEurA)} €`,
       `${formatItalianNumber(data.scenario.annualCostEurB)} €`,
-      `-${formatItalianNumber(data.scenario.savingsEur)} € / anno`,
+      `-${formatItalianNumber(data.scenario.savingsEur)} €/anno`,
     ],
     [
       'Costo Mensile Medio Elettricità (€)',
       `${formatItalianNumber(data.scenario.annualCostEurA / 12)} €`,
       `${formatItalianNumber(data.scenario.annualCostEurB / 12)} €`,
-      `-${formatItalianNumber(data.scenario.savingsEur / 12)} € / mese`,
+      `-${formatItalianNumber(data.scenario.savingsEur / 12)} €/mese`,
     ],
     [
       'Emissioni CO2 Annuali Evitate (t)',
@@ -208,7 +233,7 @@ export function generaReportPdf(data: ReportData): jsPDF {
     [
       'Penali ARERA Reattiva (Del. 232/22)',
       data.powerQuality && data.powerQuality.penaleAreraEurAnnoA > 0 ? `A rischio (~${formatItalianNumber(data.powerQuality.penaleAreraEurAnnoA)} €/a)` : 'A rischio (> 1.800 €/a)',
-      '0 € / anno (Completamente azzerate)',
+      '0 €/anno (Completamente azzerate)',
       'Zero penali reattiva',
     ],
   ];
@@ -259,7 +284,7 @@ export function generaReportPdf(data: ReportData): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.text(
-    `RISPARMIO CERTIFICATO: ${formatItalianNumber(data.scenario.savingsEur)} € / ANNO  (-${data.scenario.savingsPercent.toFixed(1)}% DI RIDUZIONE BOLLETTA)`,
+    `RISPARMIO CERTIFICATO: ${formatItalianNumber(data.scenario.savingsEur)} €/ANNO  (-${data.scenario.savingsPercent.toFixed(1)}% DI RIDUZIONE BOLLETTA)`,
     23,
     y + 6
   );
@@ -374,7 +399,7 @@ export function generaReportPdf(data: ReportData): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(100, 116, 139);
   doc.text(
-    'VeroLED S.r.l. · Tecnologie Display LED Professionali · https://veroledsrl.com',
+    'VeroLED S.r.l. · Tecnologie Display LED Professionali · veroled.it · info@veroled.it',
     16,
     285
   );
@@ -449,18 +474,38 @@ export function generaReportPdf(data: ReportData): jsPDF {
     doc.text('1. Geometria del Sito & Risoluzione Limite dell\'Occhio Umano', 16, y2);
     y2 += 4;
 
+    const alt = data.alternative;
+    const it1 = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 1 });
+    const it2 = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 2 });
+    // Simbolo davanti all'importo: nel font standard lo spazio dopo il glifo dell'euro si perde ("3.024 €in più")
+    const eur = (v: number) => `€ ${formatItalianNumber(v)}`;
+    const eurTxt = (v: number) => eur(Math.abs(v));
+    /** Differenza A − B detta in chiaro e con il verso giusto: mai un "+0" che nasconde un costo in più */
+    const deltaTxt = (aMenoB: number, unita = '') =>
+      aMenoB === 0
+        ? 'Nessuna differenza'
+        : aMenoB > 0
+        ? `Display B costa ${eurTxt(aMenoB)}${unita} in meno`
+        : `Display B costa ${eurTxt(aMenoB)}${unita} in più`;
+
+    // ⚠️ Solo caratteri del set WinAnsi: il font standard di jsPDF non ha radice, minore-uguale, pedici.
+    //    Un solo glifo fuori set fa scrivere l'intera cella in un'altra codifica: lettere distanziate e
+    //    testo troncato (è il difetto del PDF del 17/09/2026). `test/export-pdf.test.ts` lo impedisce.
+    const tolleranza =
+      opt.recommendedToThresholdRatio > 1.05
+        ? `P${opt.recommendedPitchMm} mm, ${it2(opt.recommendedToThresholdRatio)} volte la soglia (tolleranza commerciale, nota 3)`
+        : `P${opt.recommendedPitchMm} mm, entro la soglia di fusione`;
     const geoData = [
-      ['Quota della Base dello Schermo da Terra (h)', `${opt.installHeightM.toFixed(1)} metri · centro schermo a ${opt.centerHeightM.toFixed(1)} m (altezza schermo H = ${opt.screenHeightM.toFixed(1)} m)`],
-      ['Distanza di Vista Osservatori al Suolo (d)', `${opt.groundViewingDistM.toFixed(1)} metri (carreggiata / marciapiede)`],
-      ['Linea di Vista Reale Ipotenusa (D)', `${opt.lineOfSightDistM.toFixed(1)} metri al centro schermo [D = √((h + H/2)² + d²)] · ${opt.lineOfSightBaseM.toFixed(1)} m alla base · ${opt.lineOfSightTopM.toFixed(1)} m in cima`],
-      ['Soglia Risoluzione Minima Occhio Umano', `${opt.minResolvablePitchMm.toFixed(2)} mm (Criterio Snellen 20/20 · 1 arcminuto = 0.000291 rad)`],
-      ['Condizione di Retina Blending', `A ${opt.lineOfSightDistM}m, l'occhio umano fonde perfettamente i pixel con passo ≤ ${opt.minResolvablePitchMm} mm`],
-      ['Passo Ottimale Proposto dal Sistema', `P${opt.recommendedPitchMm} mm (Risoluzione continua percepita, nessun pixel visibile)`],
+      ['Quota della base dello schermo (h)', `${it1(opt.installHeightM)} m · centro schermo a ${it1(opt.centerHeightM)} m`],
+      ['Distanza del pubblico a terra (d)', `${it1(opt.groundViewingDistM)} m`],
+      ['Linea di vista reale (D, nota 1)', `${it1(opt.lineOfSightDistM)} m al centro · ${it1(opt.lineOfSightBaseM)} m alla base · ${it1(opt.lineOfSightTopM)} m in cima`],
+      ['Soglia di fusione dei pixel (nota 2)', `${it2(opt.minResolvablePitchMm)} mm`],
+      ['Passo commerciale di riferimento', tolleranza],
     ];
 
     autoTable(doc, {
       startY: y2,
-      head: [['Parametro Geometrico / Ottico', 'Valore Rilevato & Riscontro Scientifico']],
+      head: [['Parametro', 'Valore']],
       body: geoData,
       theme: 'grid',
       headStyles: {
@@ -471,124 +516,166 @@ export function generaReportPdf(data: ReportData): jsPDF {
         cellPadding: 1.8,
       },
       styles: {
-        fontSize: 7.2,
-        cellPadding: 1.5,
+        fontSize: 7.6,
+        cellPadding: 1.8,
         lineColor: [226, 232, 240],
         lineWidth: 0.2,
+        overflow: 'linebreak',
+        halign: 'left',
       },
       columnStyles: {
-        0: { cellWidth: 80, fontStyle: 'bold', textColor: [15, 23, 42] },
+        0: { cellWidth: 66, fontStyle: 'bold', textColor: [15, 23, 42] },
         1: { textColor: [30, 41, 59] },
       },
       margin: { left: 16, right: 16 },
     });
 
-    y2 = (doc as any).lastAutoTable.finalY + 6;
+    y2 = (doc as any).lastAutoTable.finalY + 2.5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.4);
+    doc.setTextColor(100, 116, 139);
+    const noteGeo = [
+      'Nota 1 · D = radice quadrata di ((h + H/2) al quadrato + d al quadrato), con H altezza dello schermo: la distanza si misura fino al centro.',
+      'Nota 2 · Criterio Snellen 20/20: 1 arcminuto = 0,000291 rad. Sopra questa soglia l\'occhio separa i singoli diodi.',
+      ...(opt.recommendedToThresholdRatio > 1.05
+        ? ['Nota 3 · Il passo di riferimento è il passo commerciale outdoor per questa fascia di distanza. Supera la soglia teorica: è una tolleranza commerciale dichiarata, non la fusione completa dei pixel.']
+        : []),
+    ];
+    for (const nota of noteGeo) {
+      const righe = doc.splitTextToSize(nota, pageWidth - 32);
+      doc.text(righe, 16, y2 + 2.5);
+      y2 += righe.length * 2.9;
+    }
+    y2 += 5;
 
-    // Sezione 2: Confronto Diretto Display A vs Display B
+    // Sezione 2: Display A (scelta del cliente) contro Display B (proposta del motore express)
     doc.setTextColor(15, 23, 42);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
-    doc.text('2. Confronto Tecnico ed Economico: Richiesto dal Cliente vs Proposto dal Sistema', 16, y2);
+    doc.text('2. Confronto: scelta del cliente e proposta VeroLED', 16, y2);
     y2 += 4;
 
-    const compRows = [
-      [
-        'Passo Pixel (Pixel Pitch)',
-        `P${opt.clientPitchMm} mm (Scelto dal Cliente)`,
-        `P${opt.recommendedPitchMm} mm (Proposto dal Sistema)`,
-        opt.isClientPitchOverkill ? 'OVERKILL: Risoluzione Retina già a P3.91' : 'Passo allineato',
-      ],
-      [
-        'Densità Pixel per m²',
-        `${formatItalianNumber(opt.pixelDensityClient)} px/m²`,
-        `${formatItalianNumber(opt.pixelDensityRecommended)} px/m²`,
-        `+${opt.wastedPixelsPercent}% di pixel fisici in più in Display A`,
-      ],
-      [
-        `Totale Pixel Schermo (${data.dimensions.areaM2.toFixed(1)} m²)`,
-        `${formatItalianNumber(opt.totalPixelsClient)} pixel`,
-        `${formatItalianNumber(opt.totalPixelsRecommended)} pixel`,
-        opt.isClientPitchOverkill ? `${formatItalianNumber(opt.wastedPixelsCount)} pixel non distinguibili dall'occhio` : 'Tutti utili',
-      ],
-      [
-        'Luminosità Massima & Sforzo Termico',
-        `${formatItalianNumber(opt.hardwareClient.maxPhysicalNits)} nit (${opt.hardwareClient.sforzoPercent}% duty cycle - Tetto max)`,
-        '6.000+ nit (Diodi a riposo 71% - Tj < 70°C)',
-        'P3.91 lavora a riposo; P2.6 rischia thermal droop rapido',
-      ],
-      [
-        'Canone Noleggio Operativo Mensile',
-        `~${formatItalianNumber(opt.clientMonthlyRentalEur)} € / mese`,
-        `~${formatItalianNumber(opt.recommendedMonthlyRentalEur)} € / mese`,
-        `Risparmio: +${formatItalianNumber(opt.monthlyRentalSavingsEur)} € / mese`,
-      ],
-      [
-        'Canone Noleggio 24 Mesi (Contratto RFP)',
-        `~${formatItalianNumber(opt.clientMonthlyRentalEur * 24)} €`,
-        `~${formatItalianNumber(opt.recommendedMonthlyRentalEur * 24)} €`,
-        `Risparmio Canone: +${formatItalianNumber(opt.monthlyRentalSavingsEur * 24)} €`,
-      ],
-      [
-        'Spesa Energia Elettrica (24 Mesi)',
-        `~${formatItalianNumber(opt.hardwareClient.annualCostEur * 2)} €`,
-        `~${formatItalianNumber(opt.hardwareRecommended.annualCostEur * 2)} €`,
-        `Risparmio Energia: +${formatItalianNumber(opt.deltaAnnualEnergyCostEur * 2)} €`,
-      ],
-      [
-        'TCO COMPLESSIVO 24 MESI (Noleggio + Energia)',
-        `~${formatItalianNumber((opt.clientMonthlyRentalEur * 24) + (opt.hardwareClient.annualCostEur * 2))} €`,
-        `~${formatItalianNumber((opt.recommendedMonthlyRentalEur * 24) + (opt.hardwareRecommended.annualCostEur * 2))} €`,
-        `VANTAGGIO NETTO TOTALE: +${formatItalianNumber(opt.total24MonthSavingsEur)} €`,
-      ],
-    ];
+    if (alt) {
+      const T = tierName(alt.tier);
+      const A = alt.current;
+      const B = alt.proposed;
+      const stessa = Math.abs(A.pitchMm - B.pitchMm) < 0.05;
+      const esito: Record<AlternativeProposal['kind'], string> = {
+        pitch: 'A è più fitto del necessario: B rende uguale e consuma meno',
+        coarse: 'A è troppo largo per la distanza: la trama si vede',
+        brightness: 'A non arriva ai nit richiesti',
+        compromise: 'Nessun passo della Selection soddisfa nit e distanza: B è il compromesso',
+        nodata: 'Tetto di nit di A non censito a listino: non validabile',
+        fleet: 'A soddisfa nit e distanza',
+        none: 'A soddisfa nit e distanza',
+      };
+      const tettoA = alt.currentMaxNits !== null ? `${formatItalianNumber(alt.currentMaxNits)} nit` : 'non censito a listino';
+      const tettoB = B.hardware.tettoNoto ? `${formatItalianNumber(B.hardware.maxPhysicalNits)} nit` : 'non censito a listino';
+      const densA = Math.round(Math.pow(1000 / A.pitchMm, 2));
+      const densB = Math.round(Math.pow(1000 / B.pitchMm, 2));
+      const densDelta =
+        densA === densB
+          ? 'Stessa densità'
+          : densA > densB
+          ? `Display A ha il ${formatItalianNumber(Math.round((densA / densB - 1) * 100))}% di pixel in più`
+          : `Display B ha il ${formatItalianNumber(Math.round((densB / densA - 1) * 100))}% di pixel in più`;
+      const cA = alt.canoneCurrent;
+      const cB = alt.canoneProposed;
+      const canoneTxt = (c: typeof cA, mesi = 1) => (c ? `${eur(c.rataMensileEur * mesi)}${mesi === 1 ? ' al mese' : ''}` : 'prezzo non a listino');
+      const energiaA24 = A.annualCostEur * 2;
+      const energiaB24 = B.annualCostEur * 2;
 
-    autoTable(doc, {
-      startY: y2,
-      head: [['Parametro Confrontato', 'Display A (Cliente)', 'Display B (VeroLED)', 'Delta & Valutazione']],
-      body: compRows,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [15, 23, 42],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 7.8,
-        cellPadding: 1.8,
-      },
-      columnStyles: {
-        0: { cellWidth: 50, fontStyle: 'bold', textColor: [15, 23, 42] },
-        1: { cellWidth: 42, textColor: [100, 116, 139] },
-        2: { cellWidth: 42, fontStyle: 'bold', textColor: [16, 185, 129] },
-        3: { fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 6.8 },
-      },
-      styles: {
-        fontSize: 7,
-        cellPadding: 1.5,
-        lineColor: [226, 232, 240],
-        lineWidth: 0.2,
-      },
-      margin: { left: 16, right: 16 },
-    });
+      const compRows: string[][] = [
+        ['Passo e Selection', `P${A.pitchMm} mm ${T}`, stessa ? 'coincide con A' : `P${B.pitchMm} mm ${T}`, esito[alt.kind]],
+        ['Densità pixel', `${formatItalianNumber(densA)} px/m²`, `${formatItalianNumber(densB)} px/m²`, densDelta],
+        ['Tetto di nit a listino', tettoA, tettoB, `Richiesti: ${formatItalianNumber(A.nits)} nit`],
+        [
+          'Sforzo dei chip (nota 4)',
+          alt.currentMaxNits !== null ? `${A.hardware.sforzoPercent}%` : 'non dichiarabile',
+          B.hardware.tettoNoto ? `${B.hardware.sforzoPercent}%` : 'non dichiarabile',
+          '',
+        ],
+        ['Canone noleggio mensile (nota 5)', canoneTxt(cA), canoneTxt(cB), cA && cB ? deltaTxt(cA.rataMensileEur - cB.rataMensileEur, ' al mese') : 'Non confrontabile'],
+        ['Canone noleggio 24 mesi', canoneTxt(cA, 24), canoneTxt(cB, 24), cA && cB ? deltaTxt((cA.rataMensileEur - cB.rataMensileEur) * 24) : 'Non confrontabile'],
+        ['Energia elettrica 24 mesi (nota 6)', eur(energiaA24), eur(energiaB24), deltaTxt(energiaA24 - energiaB24)],
+        [
+          'TOTALE 24 MESI (noleggio + energia)',
+          cA ? eur(cA.rataMensileEur * 24 + energiaA24) : 'prezzo non a listino',
+          cB ? eur(cB.rataMensileEur * 24 + energiaB24) : 'prezzo non a listino',
+          cA && cB ? deltaTxt(cA.rataMensileEur * 24 + energiaA24 - (cB.rataMensileEur * 24 + energiaB24)) : 'Non confrontabile',
+        ],
+      ];
 
-    y2 = (doc as any).lastAutoTable.finalY + 5;
+      autoTable(doc, {
+        startY: y2,
+        head: [['Voce', 'Display A · scelta del cliente', 'Display B · proposta VeroLED', 'Differenza']],
+        body: stessa ? compRows.map((r) => [r[0], r[1], r[2] === 'coincide con A' ? r[2] : '—', r[0].startsWith('Passo') || r[0].startsWith('Tetto') ? r[3] : '—']) : compRows,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 7.6,
+          cellPadding: 1.8,
+        },
+        columnStyles: {
+          0: { cellWidth: 48, fontStyle: 'bold', textColor: [15, 23, 42] },
+          1: { cellWidth: 38, textColor: [51, 65, 85] },
+          2: { cellWidth: 38, fontStyle: 'bold', textColor: [16, 185, 129] },
+          3: { fontStyle: 'bold', textColor: [15, 23, 42] },
+        },
+        styles: {
+          fontSize: 7.2,
+          cellPadding: 1.7,
+          lineColor: [226, 232, 240],
+          lineWidth: 0.2,
+          overflow: 'linebreak',
+          halign: 'left',
+        },
+        margin: { left: 16, right: 16 },
+      });
 
-    // Sezione 3: Box Verdetto Tecnico & Sintesi Ingegneristica
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(16, 185, 129);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(16, y2, pageWidth - 32, 24, 1.5, 1.5, 'FD');
+      y2 = (doc as any).lastAutoTable.finalY + 2.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.4);
+      doc.setTextColor(100, 116, 139);
+      const noteComp = [
+        'Nota 4 · Quota del tetto di nit di listino della combinazione Selection × passo usata per dare i nit richiesti.',
+        `Nota 5 · Noleggio operativo a 24 mesi con le regole di veroledsrl.com/noleggio-operativo: prezzo di listino + posa, coefficiente del broker, assicurazione all-risk. Istruttoria una tantum esclusa${cA ? ` (${eur(cA.istruttoriaEur)})` : ''}. Struttura, processore video e quadro elettrico si quotano sul sopralluogo.`,
+        `Nota 6 · Stima a ${formatItalianNumber(A.nits)} nit con il contenuto e le ore dichiarate, dimming notturno al 10%.`,
+      ];
+      for (const nota of noteComp) {
+        const righe = doc.splitTextToSize(nota, pageWidth - 32);
+        doc.text(righe, 16, y2 + 2.5);
+        y2 += righe.length * 2.9;
+      }
+      y2 += 4;
 
-    doc.setTextColor(16, 185, 129);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.8);
-    doc.text('3. VERDETTO INGEGNERISTICO UFFICIALE & CONSULENZA COMMERCIALE', 20, y2 + 5);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.8);
-    doc.setTextColor(51, 65, 85);
-
-    const splitVerdict = doc.splitTextToSize(opt.scientificVerdict, pageWidth - 40);
-    doc.text(splitVerdict, 20, y2 + 10);
+      // Sezione 3: verdetto, lo stesso testo che il cliente legge nel Calcolo Express
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.2);
+      const corpo = [alt.headline, ...alt.reasons.map((r) => `- ${r}`)].map(pdfSafe).flatMap((t) => doc.splitTextToSize(t, pageWidth - 40) as string[]);
+      const altezzaBox = 9 + corpo.length * 3.2;
+      const positivo = alt.currentIsValid;
+      doc.setFillColor(248, 250, 252);
+      if (positivo) doc.setDrawColor(16, 185, 129); else doc.setDrawColor(217, 119, 6);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(16, y2, pageWidth - 32, altezzaBox, 1.5, 1.5, 'FD');
+      if (positivo) doc.setTextColor(16, 185, 129); else doc.setTextColor(180, 83, 9);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.8);
+      doc.text('3. VERDETTO', 20, y2 + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.2);
+      doc.setTextColor(51, 65, 85);
+      doc.text(corpo, 20, y2 + 9.5);
+    } else {
+      const splitVerdict = doc.splitTextToSize(pdfSafe(opt.scientificVerdict), pageWidth - 40);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.2);
+      doc.setTextColor(51, 65, 85);
+      doc.text(splitVerdict, 16, y2 + 3);
+    }
 
     // Footer Pagina 2
     doc.setDrawColor(226, 232, 240);
@@ -607,7 +694,7 @@ export function generaReportPdf(data: ReportData): jsPDF {
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(100, 116, 139);
     doc.text(
-      'VeroLED S.r.l. · Tecnologie Display LED Professionali · https://veroledsrl.com',
+      'VeroLED S.r.l. · Tecnologie Display LED Professionali · veroled.it · info@veroled.it',
       16,
       285
     );

@@ -28,6 +28,7 @@ export const S9ReportExport: React.FC = () => {
         tariffaEurKwh: state.tariffEurKwh,
         powerQuality,
         opticalConsulting,
+        alternative,
         userName: lead.name,
         userCompany: lead.company,
         userEmail: lead.email,

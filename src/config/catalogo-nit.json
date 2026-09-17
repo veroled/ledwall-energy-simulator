@@ -5,379 +5,523 @@
       "tier": "diamond",
       "pitchMm": 2.5,
       "maxNits": 5500,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 10584.58
     },
     {
       "tier": "diamond",
       "pitchMm": 2.9,
       "maxNits": 5500,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 9645.52
     },
     {
       "tier": "diamond",
       "pitchMm": 3.91,
       "maxNits": 9000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 8000
     },
     {
       "tier": "diamond",
       "pitchMm": 4.81,
       "maxNits": 9000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 7027.06
     },
     {
       "tier": "diamond",
       "pitchMm": 5.81,
       "maxNits": 9000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 6243.47
     },
     {
       "tier": "diamond",
       "pitchMm": 6.67,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 5726.64
     },
     {
       "tier": "diamond",
       "pitchMm": 7.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 5188.08
     },
     {
       "tier": "diamond",
       "pitchMm": 8.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 4811.2
     },
     {
       "tier": "diamond",
       "pitchMm": 9.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 4498.06
     },
     {
       "tier": "diamond",
       "pitchMm": 10.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 4232.89
     },
     {
       "tier": "diamond",
       "pitchMm": 11.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 4004.84
     },
     {
       "tier": "diamond",
       "pitchMm": 12.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 3806.18
     },
     {
       "tier": "diamond",
       "pitchMm": 16,
       "maxNits": 20000,
-      "chip": "Nichia o Cree"
+      "chip": "Nichia o Cree",
+      "prezzoMq": 2929.69
     },
     {
       "tier": "platinum",
       "pitchMm": 2.5,
       "maxNits": 6300,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 8467.66
     },
     {
       "tier": "platinum",
       "pitchMm": 2.9,
       "maxNits": 6500,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 7716.42
     },
     {
       "tier": "platinum",
       "pitchMm": 3,
       "maxNits": 6500,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 7554.39
     },
     {
       "tier": "platinum",
       "pitchMm": 3.91,
       "maxNits": 6800,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 6400
     },
     {
       "tier": "platinum",
       "pitchMm": 4.81,
       "maxNits": 7000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 5621.65
     },
     {
       "tier": "platinum",
       "pitchMm": 5.81,
       "maxNits": 7000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 4994.78
     },
     {
       "tier": "platinum",
       "pitchMm": 6.67,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 4581.31
     },
     {
       "tier": "platinum",
       "pitchMm": 7.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 4150.46
     },
     {
       "tier": "platinum",
       "pitchMm": 8.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 3848.96
     },
     {
       "tier": "platinum",
       "pitchMm": 9.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 3598.45
     },
     {
       "tier": "platinum",
       "pitchMm": 10.81,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 3386.31
     },
     {
       "tier": "platinum",
       "pitchMm": 11.81,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 3203.87
     },
     {
       "tier": "platinum",
       "pitchMm": 12.81,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 3044.95
     },
     {
       "tier": "platinum",
       "pitchMm": 16,
       "maxNits": 10000,
-      "chip": "NationStar o KingLight Gold Copper"
+      "chip": "NationStar o KingLight Gold Copper",
+      "prezzoMq": 2343.75
     },
     {
       "tier": "gold",
       "pitchMm": 2.5,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 6774.13
     },
     {
       "tier": "gold",
       "pitchMm": 2.9,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 6173.13
     },
     {
       "tier": "gold",
       "pitchMm": 3,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 6043.51
     },
     {
       "tier": "gold",
       "pitchMm": 3.91,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 5120
     },
     {
       "tier": "gold",
       "pitchMm": 4.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 4497.32
     },
     {
       "tier": "gold",
       "pitchMm": 5.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 3995.82
     },
     {
       "tier": "gold",
       "pitchMm": 6.67,
       "maxNits": 7000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 3665.05
     },
     {
       "tier": "gold",
       "pitchMm": 7.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 3320.37
     },
     {
       "tier": "gold",
       "pitchMm": 8.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 3079.17
     },
     {
       "tier": "gold",
       "pitchMm": 9.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 2878.76
     },
     {
       "tier": "gold",
       "pitchMm": 10.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 2709.05
     },
     {
       "tier": "gold",
       "pitchMm": 11.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 2563.1
     },
     {
       "tier": "gold",
       "pitchMm": 12.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 2435.96
     },
     {
       "tier": "gold",
       "pitchMm": 16,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire",
+      "prezzoMq": 1875
     },
     {
       "tier": "silver",
       "pitchMm": 3.91,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 4352
     },
     {
       "tier": "silver",
       "pitchMm": 6.67,
       "maxNits": 7000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 3115.29
     },
     {
       "tier": "bronze",
       "pitchMm": 2.5,
       "maxNits": 4000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 5419.3
     },
     {
       "tier": "bronze",
       "pitchMm": 2.9,
       "maxNits": 4000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 4938.51
     },
     {
       "tier": "bronze",
       "pitchMm": 3,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 4834.81
     },
     {
       "tier": "bronze",
       "pitchMm": 3.91,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 4096
     },
     {
       "tier": "bronze",
       "pitchMm": 4.81,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 3597.86
     },
     {
       "tier": "bronze",
       "pitchMm": 5.81,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 3196.66
     },
     {
       "tier": "bronze",
       "pitchMm": 6.67,
       "maxNits": 4500,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 2932.04
     },
     {
       "tier": "bronze",
       "pitchMm": 7.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 2656.3
     },
     {
       "tier": "bronze",
       "pitchMm": 8.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 2463.33
     },
     {
       "tier": "bronze",
       "pitchMm": 9.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 2303.01
     },
     {
       "tier": "bronze",
       "pitchMm": 10.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 2167.24
     },
     {
       "tier": "bronze",
       "pitchMm": 11.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 2050.48
     },
     {
       "tier": "bronze",
       "pitchMm": 12.81,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 1948.77
     },
     {
       "tier": "bronze",
       "pitchMm": 16,
       "maxNits": 6000,
-      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire",
+      "prezzoMq": 1500
     },
     {
       "tier": "essential",
       "pitchMm": 2.5,
       "maxNits": 4000,
-      "chip": "Other Brand Copper Wire"
+      "chip": "Other Brand Copper Wire",
+      "prezzoMq": 4877.37
     },
     {
       "tier": "essential",
       "pitchMm": 2.9,
       "maxNits": 4000,
-      "chip": "Other Brand Copper Wire"
+      "chip": "Other Brand Copper Wire",
+      "prezzoMq": 4444.66
     },
     {
       "tier": "essential",
       "pitchMm": 3,
       "maxNits": 4000,
-      "chip": "Other Brand Copper Wire"
+      "chip": "Other Brand Copper Wire",
+      "prezzoMq": 4351.33
     },
     {
       "tier": "essential",
       "pitchMm": 3.91,
       "maxNits": 4500,
-      "chip": "Other Brand Copper Wire"
+      "chip": "Other Brand Copper Wire",
+      "prezzoMq": 3686.4
     },
     {
       "tier": "essential",
       "pitchMm": 4.81,
       "maxNits": 4500,
-      "chip": "Other Brand Copper Wire"
+      "chip": "Other Brand Copper Wire",
+      "prezzoMq": 3238.07
     },
     {
       "tier": "essential",
       "pitchMm": 6.67,
       "maxNits": 5000,
-      "chip": "Other Brand Copper Wire"
+      "chip": "Other Brand Copper Wire",
+      "prezzoMq": 2638.84
     }
-  ]
+  ],
+  "noleggio": {
+    "fonte": "veroledsrl.com · ledwall-pricing.ts (NOL_COEF, assicurazione, istruttoria) + listino-installazione.ts (posa)",
+    "coefficienti": {
+      "24": [
+        {
+          "max": 2200,
+          "coef": 5.161
+        },
+        {
+          "max": 8999,
+          "coef": 5.15
+        },
+        {
+          "max": 24999,
+          "coef": 5.144
+        },
+        {
+          "max": null,
+          "coef": 5.125
+        }
+      ],
+      "36": [
+        {
+          "max": 2200,
+          "coef": 3.548
+        },
+        {
+          "max": 8999,
+          "coef": 3.516
+        },
+        {
+          "max": 24999,
+          "coef": 3.511
+        },
+        {
+          "max": null,
+          "coef": 3.506
+        }
+      ],
+      "48": [
+        {
+          "max": 2200,
+          "coef": 2.763
+        },
+        {
+          "max": 8999,
+          "coef": 2.729
+        },
+        {
+          "max": 24999,
+          "coef": 2.727
+        },
+        {
+          "max": null,
+          "coef": 2.703
+        }
+      ],
+      "60": [
+        {
+          "max": 2200,
+          "coef": 2.29
+        },
+        {
+          "max": 8999,
+          "coef": 2.251
+        },
+        {
+          "max": 24999,
+          "coef": 2.248
+        },
+        {
+          "max": null,
+          "coef": 2.227
+        }
+      ]
+    },
+    "assicurazioneAnnua": 0.0174,
+    "istruttoriaEur": 75,
+    "posaEurMq": 80,
+    "posaMqMinimi": 12
+  }
 }
