@@ -17,6 +17,7 @@ import {
   Zap,
   Sun,
   Eye,
+  ArrowUpFromLine,
   Monitor,
   AlertTriangle,
   FileText,
@@ -43,6 +44,14 @@ const SAMPLES = [
   { file: 'file-10.mp4', label: 'Kinetic wall (campione)', button: 'Spot chiaro', fallbackApl: 50 },
 ];
 
+const BASE_HEIGHT_PRESETS = [
+  { h: 0, label: '0 m · a terra' },
+  { h: 3, label: '3 m · vetrina' },
+  { h: 5, label: '5 m · palo' },
+  { h: 10, label: '10 m · facciata' },
+  { h: 20, label: '20 m · tetto' },
+];
+
 const DISTANCE_PRESETS = [
   { d: 5, label: '5 m · piazza' },
   { d: 10, label: '10 m · strada' },
@@ -57,6 +66,7 @@ export const ExpressSimulator: React.FC = () => {
     modulesH,
     targetOutdoorNits,
     groundViewingDistM,
+    installHeightM,
     aplPercent,
     aplSource,
     videoFileName,
@@ -69,6 +79,7 @@ export const ExpressSimulator: React.FC = () => {
     setDimensioniMetri,
     setTargetOutdoorNits,
     setGroundViewingDistM,
+    setInstallHeightM,
     setAplPercent,
     setSchedule,
     setTariffRate,
@@ -354,7 +365,7 @@ export const ExpressSimulator: React.FC = () => {
               <div className="space-y-2">
                 <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
                   <Eye className="w-3.5 h-3.5 text-[#12B76A]" />
-                  <span>Da dove lo guardano? <span className="text-[#667085]">(serve per consigliarti il passo)</span></span>
+                  <span>Da dove lo guardano? <span className="text-[#667085]">(distanza a terra dal piede dello schermo)</span></span>
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {DISTANCE_PRESETS.map((d) => {
@@ -386,6 +397,48 @@ export const ExpressSimulator: React.FC = () => {
                     <span className="text-[11px] text-[#868D97]">m</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Quota della base: con la distanza a terra dà la linea di vista reale */}
+              <div className="space-y-2">
+                <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
+                  <ArrowUpFromLine className="w-3.5 h-3.5 text-[#12B76A]" />
+                  <span>A che altezza è la base dello schermo?</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {BASE_HEIGHT_PRESETS.map((b) => {
+                    const sel = Math.abs(installHeightM - b.h) < 0.25;
+                    return (
+                      <button
+                        key={b.h}
+                        type="button"
+                        onClick={() => setInstallHeightM(b.h)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                          sel
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
+                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                        }`}
+                      >
+                        {b.label}
+                      </button>
+                    );
+                  })}
+                  <div className="flex items-center space-x-1.5">
+                    <input
+                      type="number"
+                      min={0}
+                      max={150}
+                      value={installHeightM}
+                      onChange={(e) => setInstallHeightM(parseFloat(e.target.value || '0'))}
+                      className="w-20 px-2 py-1.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-xs tabular-nums focus:border-[#12B76A] outline-none"
+                    />
+                    <span className="text-[11px] text-[#868D97]">m</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-[#868D97] tabular-nums">
+                  Schermo da {n(installHeightM, 1)} a {n(installHeightM + dimensions.heightM, 1)} m di quota · linea di vista reale{' '}
+                  <span className="text-white font-medium">{n(alternative.lineOfSightDistM, 1)} m</span> · da lì l&apos;occhio fonde i pixel fino al P{n(alternative.minResolvablePitchMm, 1)}
+                </p>
               </div>
             </section>
 
@@ -580,6 +633,8 @@ export const ExpressSimulator: React.FC = () => {
             </section>
             <RecommendationBanner
               alternative={alternative}
+              installHeightM={installHeightM}
+              groundViewingDistM={groundViewingDistM}
               onApply={() => setPitchMm(alternative.proposed.pitchMm)}
             />
           </div>

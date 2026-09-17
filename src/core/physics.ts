@@ -601,8 +601,13 @@ export function calcolaConsulenzaOttica(
     recommendedPitchMm = 3.91;
   } else if (lineOfSightDistM <= 22) {
     recommendedPitchMm = 4.81;
-  } else {
+  } else if (lineOfSightDistM < 27.5) {
     recommendedPitchMm = 6.67;
+  } else if (lineOfSightDistM < 34.4) {
+    // Da 27,5 m l'occhio fonde già il P8 (8 / 0,291), da 34,4 m il P10: oltre non serve un passo più fitto
+    recommendedPitchMm = 8.0;
+  } else {
+    recommendedPitchMm = 10.0;
   }
 
   const isClientPitchOverkill = clientPitchMm < recommendedPitchMm;
@@ -804,15 +809,16 @@ export function suggerisciAlternativa(
   const fleetMonitorExtraPercent = Math.round(fleet.savingsPercent);
 
   const D = optical.lineOfSightDistM;
+  const Dtxt = D.toLocaleString('it-IT');
   const reasons: string[] = [];
   let headline = '';
   let kind: AlternativeProposal['kind'] = 'none';
 
   if (hasPitchAlternative) {
     kind = 'pitch';
-    headline = `Ti consigliamo il P${proposedPitch} mm: -${savingsPercent}% di consumi a parità di qualità percepita a ${D} m.`;
+    headline = `Ti consigliamo il P${proposedPitch} mm: -${savingsPercent}% di consumi a parità di qualità percepita a ${Dtxt} m.`;
     reasons.push(
-      `A ${D} m di linea di vista l'occhio fonde i pixel già dal P${optical.recommendedPitchMm} mm: il P${pitchMm} spende il ${optical.wastedPixelsPercent}% dei pixel in dettaglio non visibile.`
+      `A ${Dtxt} m di linea di vista l'occhio fonde i pixel già dal P${optical.recommendedPitchMm} mm: il P${pitchMm} spende il ${optical.wastedPixelsPercent}% dei pixel in dettaglio non visibile.`
     );
     if (current.hardware.isAtPhysicalLimit && current.nitsEffettivi < nits) {
       reasons.push(
@@ -832,9 +838,9 @@ export function suggerisciAlternativa(
   } else if (isTooCoarse) {
     kind = 'coarse';
     const pixelRatio = Math.round(Math.pow(pitchMm / finerPitch, 2) * 10) / 10;
-    headline = `A ${D} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena serve il P${finerPitch} mm.`;
+    headline = `A ${Dtxt} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena serve il P${finerPitch} mm.`;
     reasons.push(
-      `A ${D} m l'occhio distingue i singoli diodi sopra i ${optical.minResolvablePitchMm.toLocaleString('it-IT')} mm di passo (1 arcminuto): con il P${pitchMm} testi e volti risultano sgranati.`
+      `A ${Dtxt} m l'occhio distingue i singoli diodi sopra i ${optical.minResolvablePitchMm.toLocaleString('it-IT')} mm di passo (1 arcminuto): con il P${pitchMm} testi e volti risultano sgranati.`
     );
     reasons.push(
       `Il P${finerPitch} porta ${pixelRatio.toLocaleString('it-IT')}× più pixel sulla stessa superficie: il contenuto resta leggibile da dove lo guardano davvero.`
@@ -851,17 +857,17 @@ export function suggerisciAlternativa(
     }
   } else if (fleetMonitorExtraEur > 0) {
     kind = 'fleet';
-    headline = `Il P${pitchMm} mm è già il passo giusto per ${D} m: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
+    headline = `Il P${pitchMm} mm è già il passo giusto per ${Dtxt} m: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
     if (current.hardware.isAtPhysicalLimit && current.nitsEffettivi < nits) {
       reasons.push(
-        `Attenzione: il P${pitchMm} eroga al massimo ${current.hardware.maxPhysicalNits.toLocaleString('it-IT')} nit, non i ${nits.toLocaleString('it-IT')} richiesti. Per quel picco serve un passo più generoso, che a ${D} m sarebbe però visibile.`
+        `Attenzione: il P${pitchMm} eroga al massimo ${current.hardware.maxPhysicalNits.toLocaleString('it-IT')} nit, non i ${nits.toLocaleString('it-IT')} richiesti. Per quel picco serve un passo più generoso, che a ${Dtxt} m sarebbe però visibile.`
       );
     }
     reasons.push('Sensore lux e dimming adattivo: luminosità diurna tarata sull\'ambiente, non fissa al 100%.');
     reasons.push('Dimming notturno al 10% (CEI) e relè di standby a 0 W/m² a schermo spento.');
     reasons.push(`Chip al ${current.hardware.sforzoPercent}% di sforzo: già in regime termico sano.`);
   } else {
-    headline = `Configurazione bilanciata: il P${pitchMm} mm a ${nits.toLocaleString('it-IT')} nit è coerente con ${D} m di distanza.`;
+    headline = `Configurazione bilanciata: il P${pitchMm} mm a ${nits.toLocaleString('it-IT')} nit è coerente con ${Dtxt} m di distanza.`;
   }
 
   return {

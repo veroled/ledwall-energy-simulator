@@ -6,12 +6,16 @@ import { Sparkles, ShieldCheck, ArrowRight, Leaf, Gauge, CheckCircle2, AlertTria
 
 interface Props {
   alternative: AlternativeProposal;
+  /** Da dove nasce la linea di vista citata nel titolo */
+  installHeightM: number;
+  groundViewingDistM: number;
   onApply: () => void;
 }
 
+const num = (v: number) => v.toLocaleString('it-IT', { maximumFractionDigits: 1 });
 const eur = (v: number) => `${Math.round(v).toLocaleString('it-IT')} €`;
 
-export const RecommendationBanner: React.FC<Props> = ({ alternative, onApply }) => {
+export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeightM, groundViewingDistM, onApply }) => {
   const { kind, current, proposed } = alternative;
   const isPitch = kind === 'pitch';
   const isFleet = kind === 'fleet';
@@ -27,6 +31,9 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, onApply }) 
           <span>{isPitch ? 'Alternativa consigliata' : isCoarse ? 'Passo troppo largo' : isFleet ? 'Il passo è giusto' : 'Configurazione bilanciata'}</span>
         </div>
         <p className="text-sm text-white font-medium leading-snug">{alternative.headline}</p>
+        <p className="text-[11px] text-[#9AA3AD] tabular-nums">
+          {num(alternative.lineOfSightDistM)} m = linea di vista con la base a {num(installHeightM)} m di quota e il pubblico a {num(groundViewingDistM)} m a terra.
+        </p>
       </div>
 
       {hasProposal && (

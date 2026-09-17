@@ -207,11 +207,29 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(alt.proposed.pitchMm).toBe(10);
     });
 
-    it('Distanza lunga (40m): dal P3.9 propone il P6.7 e il risparmio è consistente', () => {
+    it('Distanza lunga (40m): da 40,8 m l\'occhio fonde anche il P10, dal P3.9 propone il P10', () => {
       const alt = suggerisciAlternativa(3.9, 6000, 32, 0.30, 18, 0.35, 8, 40);
       expect(alt.kind).toBe('pitch');
-      expect(alt.proposed.pitchMm).toBe(6.7);
+      expect(alt.proposed.pitchMm).toBe(10);
       expect(alt.savingsPercent).toBeGreaterThan(30);
+    });
+
+    it('Distanza media (25m): dal P3.9 propone il P6.7', () => {
+      const alt = suggerisciAlternativa(3.9, 6000, 32, 0.30, 18, 0.35, 5, 24.5);
+      expect(alt.lineOfSightDistM).toBeCloseTo(25, 0);
+      expect(alt.proposed.pitchMm).toBe(6.7);
+    });
+
+    it('5x10 m con la base a 20 m di quota: il P10 è largo visto da 10 m a terra, giusto da 30 m', () => {
+      const vicino = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 10);
+      expect(vicino.lineOfSightDistM).toBeCloseTo(22.4, 1);
+      expect(vicino.kind).toBe('coarse');
+      expect(vicino.proposed.pitchMm).toBe(6.7);
+
+      const lontano = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 30);
+      expect(lontano.lineOfSightDistM).toBeCloseTo(36.1, 1);
+      expect(lontano.kind).toBe('fleet');
+      expect(lontano.proposed.pitchMm).toBe(10);
     });
   });
 });
