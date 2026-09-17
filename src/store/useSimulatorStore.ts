@@ -317,7 +317,7 @@ export function useSimulatorComputed() {
   const catalogo = datoCatalogo(tier, state.pitchMm);
   const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000, undefined, undefined, undefined, true, catalogo);
   const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
-  const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(state.pitchMm);
+  const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(state.pitchMm, tier);
 
   const dimensions: ScreenDimensions = calcolaDimensioniSchermo(
     state.modulesW,

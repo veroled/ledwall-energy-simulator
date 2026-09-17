@@ -289,12 +289,18 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
   });
 
   describe('Spento da software e Aegis Hink Premium P16', () => {
-    it('assorbimento a schermo nero: 50 W/m² al P2.9, 25 W/m² al P10, 3 W/m² al P16', () => {
+    it('assorbimento a schermo nero: 50 W/m² al P2.9, 25 W/m² dal P10 in su; 3 W/m² solo Aegis Hink (Diamond P16)', () => {
       expect(standbyWmqPerPasso(2.6)).toBe(50);
       expect(standbyWmqPerPasso(2.9)).toBe(50);
       expect(standbyWmqPerPasso(10)).toBe(25);
-      expect(standbyWmqPerPasso(16)).toBe(3);
-      const medi = [3.9, 4.8, 6.7, 8].map(standbyWmqPerPasso);
+      // il dato di targa vale per la sola combinazione Diamond P16, non per il P16 delle altre Selection
+      expect(standbyWmqPerPasso(16, 'diamond')).toBe(3);
+      expect(standbyWmqPerPasso(16)).toBe(25);
+      for (const t of ['platinum', 'gold', 'silver', 'bronze', 'essential'] as TierId[]) {
+        expect(standbyWmqPerPasso(16, t), t).toBe(25);
+      }
+      expect(standbyWmqPerPasso(10.81, 'diamond')).toBe(25);
+      const medi = [3.9, 4.8, 6.7, 8].map((p) => standbyWmqPerPasso(p));
       expect(medi).toEqual([...medi].sort((x, y) => y - x));
       expect(medi[0]).toBeLessThan(50);
       expect(medi[3]).toBeGreaterThan(25);
@@ -307,16 +313,21 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(p.totalDailyKwh).toBeCloseTo((50 * 50 * 24) / 1000, 5);
     });
 
-    it('P16: arriva a 20.000 nit, lavora a riposo a 5.000 e resta coerente con i 100 W/m² medi di scheda', () => {
-      const a5000 = stimaPotenzaDaPassoNit(16, 5000);
-      expect(a5000.maxPhysicalNits).toBe(20000);
-      expect(a5000.isAtPhysicalLimit).toBe(false);
-      expect(a5000.sforzoPercent).toBeLessThan(30);
-      expect(a5000.pMaxWmq).toBeLessThan(stimaPotenzaDaPassoNit(10, 5000).pMaxWmq);
-      // Scheda prodotto: 100 W/m² medi. Il modello li dà a ~10.000 nit con APL 30%
-      const a10000 = stimaPotenzaDaPassoNit(16, 10000);
-      expect(a10000.pMedioWmq).toBeGreaterThan(80);
-      expect(a10000.pMedioWmq).toBeLessThan(120);
+    it('Aegis Hink Premium (Diamond P16): 300 W/m² massimi a 20.000 nit, dato di targa', () => {
+      const dato = datoCatalogo('diamond', 16);
+      expect(dato?.maxNits).toBe(20000);
+      const pieno = stimaPotenzaDaPassoNit(16, 20000, 32, 0.35, 18, true, dato);
+      expect(pieno.pMaxWmq).toBe(300);
+      expect(pieno.sforzoPercent).toBe(100);
+      // a luminosità ridotta scala la sola parte LED: 12 W/m² di logica + 288 × 5.000/20.000
+      const a5000 = stimaPotenzaDaPassoNit(16, 5000, 32, 0.35, 18, true, dato);
+      expect(a5000.pMaxWmq).toBe(84);
+      expect(a5000.sforzoPercent).toBe(25);
+      // coerente con la scheda prodotto (~100 W/m² medi): a 20.000 nit con APL 30% → 3 + 0,30 × 300
+      expect(calcolaPotenzaWmq({ apl: 0.30, lum: 1, pMax: pieno.pMaxWmq, pStandby: 3 })).toBeCloseTo(93, 0);
+      // il P16 delle altre Selection NON eredita il dato di targa
+      const gold = stimaPotenzaDaPassoNit(16, 9000, 32, 0.35, 18, true, datoCatalogo('gold', 16));
+      expect(gold.pMaxWmq).not.toBe(300);
     });
 
     it('da 60 m di linea di vista il passo giusto è il P16, se la Selection ci arriva ai nit richiesti', () => {

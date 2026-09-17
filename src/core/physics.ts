@@ -292,12 +292,36 @@ export function confrontaScenari(
 }
 
 /**
- * Assorbimento a schermo spento da software (nero, elettronica alimentata), in W/m².
- * Dati di targa VeroLED: 50 W/m² per il P2.9, 25 W/m² per il P10, interpolati sul passo;
- * l'Aegis Hink Premium P16 scende a 3 W/m² grazie allo stand-by dei cabinet.
+ * Dati di targa di un prodotto specifico, comunicati da VeroLED: valgono SOLO per quella combinazione
+ * Selection × passo e non si estendono alle altre Selection dello stesso passo.
  */
-export function standbyWmqPerPasso(pitchMm: number): number {
-  if (pitchMm >= 15) return 3;
+export interface DatoDiTarga {
+  tier: 'diamond' | 'platinum' | 'gold' | 'silver' | 'bronze' | 'essential';
+  pitchMm: number;
+  prodotto: string;
+  standbyWmq: number; // W/m² a schermo spento da software
+  pMaxWmq: number; // W/m² a bianco pieno alla luminosità massima della combinazione
+}
+
+export const DATI_DI_TARGA: DatoDiTarga[] = [
+  // Aegis Hink Premium (dato VeroLED, 17/09/2026): 3 W/m² in standby, 300 W/m² massimi a 20.000 nit
+  { tier: 'diamond', pitchMm: 16, prodotto: 'Aegis Hink Premium', standbyWmq: 3, pMaxWmq: 300 },
+];
+
+export function datoDiTarga(tier: DatoDiTarga['tier'] | undefined | null, pitchMm: number): DatoDiTarga | null {
+  if (!tier) return null;
+  return DATI_DI_TARGA.find((d) => d.tier === tier && Math.abs(d.pitchMm - pitchMm) <= 0.035) ?? null;
+}
+
+/**
+ * Assorbimento a schermo spento da software (nero, elettronica alimentata), in W/m².
+ * Dati VeroLED: 50 W/m² per il P2.9, 25 W/m² per il P10, interpolati sul passo e fermi a 25 oltre.
+ * Se la combinazione Selection × passo ha un dato di targa (Aegis Hink Premium: 3 W/m²) vale quello,
+ * e solo per quella combinazione: un P16 di un'altra Selection resta a 25 W/m².
+ */
+export function standbyWmqPerPasso(pitchMm: number, tier?: DatoDiTarga['tier'] | null): number {
+  const targa = datoDiTarga(tier, pitchMm);
+  if (targa) return targa.standbyWmq;
   if (pitchMm <= 2.9) return 50;
   if (pitchMm >= 10) return 25;
   return Math.round(50 - ((pitchMm - 2.9) * 25) / 7.1);
@@ -511,9 +535,14 @@ export function stimaPotenzaDaPassoNit(
     pLedWmq *= 0.78;
   }
 
-  const pMaxWmq = Math.round(pLogicWmq + pLedWmq);
+  // Con un dato di targa il picco è quello dichiarato alla luminosità massima della combinazione,
+  // scalato sui nit richiesti per la sola parte LED (la logica non dipende dalla luminosità)
+  const targa = catalogo ? datoDiTarga(catalogo.tier, pitchMm) : null;
+  const pMaxWmq = targa && catalogo
+    ? Math.round(pLogicWmq + Math.max(0, targa.pMaxWmq - pLogicWmq) * (effectiveNits / catalogo.maxNits))
+    : Math.round(pLogicWmq + pLedWmq);
   // Potenza standby base scalata sul passo
-  const pStandbyBase = standbyWmqPerPasso(pitchMm);
+  const pStandbyBase = standbyWmqPerPasso(pitchMm, catalogo?.tier);
   // Potenza media con APL al 30%
   const pMedioWmq = Math.round(pStandbyBase + 0.30 * (pMaxWmq - pStandbyBase));
 
@@ -849,7 +878,7 @@ function snapshotConfigurazione(
   catalogo: DatoCatalogo | null
 ): ConfigurazioneSnapshot {
   const hardware = stimaPotenzaDaPassoNit(pitchMm, nits, areaM2, tariffaEurKwh, oreGiorno, true, catalogo);
-  const pStandby = standbyWmqPerPasso(pitchMm);
+  const pStandby = standbyWmqPerPasso(pitchMm, catalogo?.tier);
   const profile = calcolaProfiloEnergetico(
     areaM2,
     apl,
@@ -971,7 +1000,7 @@ export function suggerisciAlternativa(
     tariffaEurKwh,
     undefined,
     finalProposed.pMaxWmq,
-    standbyWmqPerPasso(finalProposed.pitchMm)
+    standbyWmqPerPasso(finalProposed.pitchMm, tier)
   );
   // Il risparmio si misura sulla bolletta che l'utente vede per quella configurazione (già con dimming
   // notturno CEI), non sullo scenario "non gestito" di confrontaScenari: altrimenti percentuale e importi

@@ -40,7 +40,7 @@ export const S2Dimensions: React.FC = () => {
   const righeTier = passiDelTier(tier);
   const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, targetOutdoorNits, undefined, undefined, undefined, true, datoCatalogo(tier, pitchMm));
   const pMaxWmq = useSimulatorStore.getState().datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
-  const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(pitchMm);
+  const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(pitchMm, tier);
   const livePowerWmq = pStandbyWmq + effectiveLiveApl * (pMaxWmq - pStandbyWmq);
   const livePowerKw = (livePowerWmq * dimensions.areaM2) / 1000;
 
