@@ -24,6 +24,8 @@ interface ContentPreviewProps {
   /** Adattamento del contenuto allo schermo, condiviso con l'analisi APL */
   fit: FitMode;
   onFitChange: (fit: FitMode) => void;
+  /** Schermo nero da software: resta solo l'assorbimento dell'elettronica */
+  softwareOff?: boolean;
   /** Il nome del file è noto ma il file non è più in memoria (pagina ricaricata) */
   staleFileName?: string;
 }
@@ -47,6 +49,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
   wattsForApl,
   fit,
   onFitChange,
+  softwareOff = false,
   staleFileName,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -157,6 +160,11 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
               </span>
             </div>
           )}
+          {softwareOff && (
+            <div className="absolute inset-0 bg-black flex items-center justify-center text-center px-2">
+              <span className="text-[10px] leading-tight font-medium text-[#667085]">Spento da software</span>
+            </div>
+          )}
           {/* Giunzioni dei cabinet da 1 m: danno la scala, sul muro vero non si vedono */}
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.10]"
@@ -172,12 +180,12 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <span className="text-[10px] uppercase text-[#868D97] font-medium flex items-center space-x-1.5">
-            {isLive && playing && <span className="w-1.5 h-1.5 rounded-full bg-[#12B76A] animate-pulse" />}
-            <span>{isLive ? 'Adesso sullo schermo' : 'APL impostato'}</span>
+            {isLive && playing && !softwareOff && <span className="w-1.5 h-1.5 rounded-full bg-[#12B76A] animate-pulse" />}
+            <span>{softwareOff ? 'Solo elettronica' : isLive ? 'Adesso sullo schermo' : 'APL impostato'}</span>
           </span>
           <span className="text-sm font-semibold text-white tabular-nums block">
             {formatWatts(wattsForApl(shownApl))}
-            <span className="text-[11px] text-[#9AA3AD] font-normal ml-1.5">APL {n(shownApl, 0)}%</span>
+            <span className="text-[11px] text-[#9AA3AD] font-normal ml-1.5">{softwareOff ? 'LED spenti' : `APL ${n(shownApl, 0)}%`}</span>
           </span>
         </div>
 

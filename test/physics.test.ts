@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
+import { standbyWmqPerPasso, calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
 
 describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', () => {
   const P_MAX = 500;
@@ -157,6 +157,45 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(consulenza.recommendedMonthlyRentalEur).toBeCloseTo(1200, -2); // ~1.200 €/mese
       expect(consulenza.total24MonthSavingsEur).toBeGreaterThan(19000); // ~19.700 € risparmiati in 24 mesi
       expect(consulenza.scientificVerdict).toContain('acuità visiva');
+    });
+  });
+
+  describe('Spento da software e Aegis Hink Premium P16', () => {
+    it('assorbimento a schermo nero: 50 W/m² al P2.9, 25 W/m² al P10, 3 W/m² al P16', () => {
+      expect(standbyWmqPerPasso(2.6)).toBe(50);
+      expect(standbyWmqPerPasso(2.9)).toBe(50);
+      expect(standbyWmqPerPasso(10)).toBe(25);
+      expect(standbyWmqPerPasso(16)).toBe(3);
+      const medi = [3.9, 4.8, 6.7, 8].map(standbyWmqPerPasso);
+      expect(medi).toEqual([...medi].sort((x, y) => y - x));
+      expect(medi[0]).toBeLessThan(50);
+      expect(medi[3]).toBeGreaterThan(25);
+    });
+
+    it('spento da software consuma solo l\'elettronica, giorno e notte', () => {
+      const p = calcolaProfiloEnergetico(50, 0, 0, 0, 18, true, true, 0.35, 361, 50);
+      expect(p.dayPowerWmq).toBe(50);
+      expect(p.nightPowerWmq).toBe(50);
+      expect(p.totalDailyKwh).toBeCloseTo((50 * 50 * 24) / 1000, 5);
+    });
+
+    it('P16: arriva a 20.000 nit, lavora a riposo a 5.000 e resta coerente con i 100 W/m² medi di scheda', () => {
+      const a5000 = stimaPotenzaDaPassoNit(16, 5000);
+      expect(a5000.maxPhysicalNits).toBe(20000);
+      expect(a5000.isAtPhysicalLimit).toBe(false);
+      expect(a5000.sforzoPercent).toBeLessThan(30);
+      expect(a5000.pMaxWmq).toBeLessThan(stimaPotenzaDaPassoNit(10, 5000).pMaxWmq);
+      // Scheda prodotto: 100 W/m² medi. Il modello li dà a ~10.000 nit con APL 30%
+      const a10000 = stimaPotenzaDaPassoNit(16, 10000);
+      expect(a10000.pMedioWmq).toBeGreaterThan(80);
+      expect(a10000.pMedioWmq).toBeLessThan(120);
+    });
+
+    it('da 60 m di linea di vista il passo giusto è il P16', () => {
+      const alt = suggerisciAlternativa(10, 8000, 96, 0.30, 18, 0.35, 20, 57);
+      expect(alt.recommendedPitchMm).toBe(16);
+      expect(alt.kind).toBe('pitch');
+      expect(alt.proposed.pitchMm).toBe(16);
     });
   });
 

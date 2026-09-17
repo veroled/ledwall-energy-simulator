@@ -12,6 +12,7 @@ import {
   calcolaPowerQuality,
   calcolaConsulenzaOttica,
   suggerisciAlternativa,
+  standbyWmqPerPasso,
   ScreenDimensions,
   DailyEnergyProfile,
   ScenarioResult,
@@ -305,9 +306,7 @@ export function useSimulatorComputed() {
   // Calcolo potenza massima e standby reali basate sul passo pixel selezionato e luminosità target (5.000 nit)
   const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000);
   const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
-  const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? (
-    state.pitchMm >= 6.0 ? 20 : state.pitchMm >= 4.0 ? 40 : 50
-  );
+  const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(state.pitchMm);
 
   const dimensions: ScreenDimensions = calcolaDimensioniSchermo(
     state.modulesW,

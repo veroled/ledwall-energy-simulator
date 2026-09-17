@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { CABINET_FORMATS, PIXEL_PITCH_PRESETS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
-import { stimaPotenzaDaPassoNit, getMaxNitsForPitch, calcolaConsulenzaOttica } from '../../core/physics';
+import { stimaPotenzaDaPassoNit, getMaxNitsForPitch, calcolaConsulenzaOttica, standbyWmqPerPasso } from '../../core/physics';
 import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock, Sun, Eye, ThumbsUp, AlertTriangle } from 'lucide-react';
 
 export const S2Dimensions: React.FC = () => {
@@ -35,9 +35,7 @@ export const S2Dimensions: React.FC = () => {
   const effectiveLiveApl = Math.max(0.05, Math.min(1, (liveApl ?? 30) / 100));
   const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, targetOutdoorNits);
   const pMaxWmq = useSimulatorStore.getState().datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
-  const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? (
-    pitchMm >= 6.0 ? 20 : pitchMm >= 4.0 ? 40 : 50
-  );
+  const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(pitchMm);
   const livePowerWmq = pStandbyWmq + effectiveLiveApl * (pMaxWmq - pStandbyWmq);
   const livePowerKw = (livePowerWmq * dimensions.areaM2) / 1000;
 

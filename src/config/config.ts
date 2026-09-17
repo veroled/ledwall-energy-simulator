@@ -17,7 +17,7 @@ export const CABINET_FORMATS: CabinetFormat[] = [
   { id: '1000x1500', name: '1000 × 1500 mm (Large Format)', widthMm: 1000, heightMm: 1500, weightKg: 45 },
 ];
 
-export const PIXEL_PITCH_PRESETS: number[] = [2.6, 2.9, 3.9, 4.8, 6.7, 8.0, 10.0];
+export const PIXEL_PITCH_PRESETS: number[] = [2.6, 2.9, 3.9, 4.8, 6.7, 8.0, 10.0, 16.0];
 
 export const CONFIG = {
   // Parametri fisici di default per display outdoor di massima qualità

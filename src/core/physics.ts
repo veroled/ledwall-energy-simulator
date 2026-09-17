@@ -290,6 +290,18 @@ export function confrontaScenari(
   };
 }
 
+/**
+ * Assorbimento a schermo spento da software (nero, elettronica alimentata), in W/m².
+ * Dati di targa VeroLED: 50 W/m² per il P2.9, 25 W/m² per il P10, interpolati sul passo;
+ * l'Aegis Hink Premium P16 scende a 3 W/m² grazie allo stand-by dei cabinet.
+ */
+export function standbyWmqPerPasso(pitchMm: number): number {
+  if (pitchMm >= 15) return 3;
+  if (pitchMm <= 2.9) return 50;
+  if (pitchMm >= 10) return 25;
+  return Math.round(50 - ((pitchMm - 2.9) * 25) / 7.1);
+}
+
 export interface PitchPhysicalLimit {
   maxNits: number;
   chipType: string;
@@ -337,6 +349,13 @@ export function getMaxNitsForPitch(pitchMm: number): PitchPhysicalLimit {
       limitReason: 'Chip generoso con legatura Gold Wire 99.99%: supporta fino a 12.000 nit continui senza degrado termico.'
     };
   }
+  if (pitchMm >= 15) {
+    return {
+      maxNits: 20000,
+      chipType: '5744 GoldWire (Aegis Hink Premium)',
+      limitReason: 'Chip 5744 a filo d\'oro con dissipazione passiva in alluminio: oltre 20.000 nit reali per mega installazioni a pieno sole.'
+    };
+  }
   return {
     maxNits: 12000,
     chipType: 'SMD2727 / SMD3535 Catodo Comune Gold Wire',
@@ -382,7 +401,7 @@ export function stimaPotenzaDaPassoNit(
 
   // Calcolo dello Sforzo del chip (duty cycle % per raggiungere i nit target)
   // Per i passi grandi (P10) il massimale di progetto su chip generosi SMD3535/DIP è 15.000 nit
-  const nominalCeiling = pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : limit.maxNits;
+  const nominalCeiling = pitchMm >= 15 ? 22000 : pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : limit.maxNits;
   const sforzoPercent = Math.min(100, Math.max(15, Math.round((nits / nominalCeiling) * 100)));
 
   const pixelM2 = Math.round((1000 / pitchMm) * (1000 / pitchMm));
@@ -396,7 +415,8 @@ export function stimaPotenzaDaPassoNit(
     pitchMm <= 3.91 ? 85 :
     pitchMm <= 4.81 ? 60 :
     pitchMm <= 6.67 ? 38 :
-    pitchMm <= 8.0 ? 28 : 22
+    pitchMm <= 8.0 ? 28 :
+    pitchMm < 15 ? 22 : 12
   );
 
   // Efficienza fotometrica (lm/W) in funzione dello SFORZO e del Thermal Droop
@@ -427,7 +447,7 @@ export function stimaPotenzaDaPassoNit(
 
   const pMaxWmq = Math.round(pLogicWmq + pLedWmq);
   // Potenza standby base scalata sul passo
-  const pStandbyBase = pitchMm >= 6.0 ? 20 : pitchMm >= 4.0 ? 40 : 50;
+  const pStandbyBase = standbyWmqPerPasso(pitchMm);
   // Potenza media con APL al 30%
   const pMedioWmq = Math.round(pStandbyBase + 0.30 * (pMaxWmq - pStandbyBase));
 
@@ -606,8 +626,11 @@ export function calcolaConsulenzaOttica(
   } else if (lineOfSightDistM < 34.4) {
     // Da 27,5 m l'occhio fonde già il P8 (8 / 0,291), da 34,4 m il P10: oltre non serve un passo più fitto
     recommendedPitchMm = 8.0;
-  } else {
+  } else if (lineOfSightDistM < 55) {
     recommendedPitchMm = 10.0;
+  } else {
+    // Da 55 m (16 / 0,291) l'occhio fonde anche il P16
+    recommendedPitchMm = 16.0;
   }
 
   const isClientPitchOverkill = clientPitchMm < recommendedPitchMm;
@@ -711,11 +734,7 @@ export interface AlternativeProposal {
   reasons: string[];
 }
 
-const PITCH_PRESETS_EXPRESS = [2.6, 2.9, 3.9, 4.8, 6.7, 8.0, 10.0];
-
-function pStandbyPerPasso(pitchMm: number): number {
-  return pitchMm >= 6.0 ? 20 : pitchMm >= 4.0 ? 40 : 50;
-}
+const PITCH_PRESETS_EXPRESS = [2.6, 2.9, 3.9, 4.8, 6.7, 8.0, 10.0, 16.0];
 
 function snapshotConfigurazione(
   pitchMm: number,
@@ -726,7 +745,7 @@ function snapshotConfigurazione(
   tariffaEurKwh: number
 ): ConfigurazioneSnapshot {
   const hardware = stimaPotenzaDaPassoNit(pitchMm, nits, areaM2, tariffaEurKwh, oreGiorno);
-  const pStandby = pStandbyPerPasso(pitchMm);
+  const pStandby = standbyWmqPerPasso(pitchMm);
   const profile = calcolaProfiloEnergetico(
     areaM2,
     apl,
@@ -803,7 +822,7 @@ export function suggerisciAlternativa(
     tariffaEurKwh,
     undefined,
     finalProposed.pMaxWmq,
-    pStandbyPerPasso(finalProposed.pitchMm)
+    standbyWmqPerPasso(finalProposed.pitchMm)
   );
   const fleetMonitorExtraEur = Math.round(fleet.savingsEur);
   const fleetMonitorExtraPercent = Math.round(fleet.savingsPercent);

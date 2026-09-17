@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { PIXEL_PITCH_PRESETS } from '../../config/config';
 import { asset } from '../../config/paths';
-import { getMaxNitsForPitch, stimaPotenzaDaPassoNit, calcolaPotenzaWmq } from '../../core/physics';
+import { getMaxNitsForPitch, stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico } from '../../core/physics';
 import { analizzaVideoApl, caricaFrameFoto, aplDaFrames, type FitMode } from '../../core/apl-engine';
 import { RecommendationBanner } from './RecommendationBanner';
 import { ContentPreview, type PreviewSource } from './ContentPreview';
@@ -17,6 +17,7 @@ import {
   Zap,
   Sun,
   Eye,
+  Power,
   ArrowUpFromLine,
   Monitor,
   AlertTriangle,
@@ -86,7 +87,7 @@ export const ExpressSimulator: React.FC = () => {
     setStep,
   } = useSimulatorStore();
 
-  const { dimensions, profile, alternative, pMax, pStandby } = useSimulatorComputed();
+  const { dimensions, profile: liveProfile, alternative, pMax, pStandby } = useSimulatorComputed();
 
   const mounted = useMounted();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -96,6 +97,8 @@ export const ExpressSimulator: React.FC = () => {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [uploadPreview, setUploadPreview] = useState<PreviewSource | null>(null);
   const [fit, setFit] = useState<FitMode>('cover');
+  // Schermo nero da software: i LED sono spenti ma alimentatori, schede e ricevitori restano accesi
+  const [softwareOff, setSoftwareOff] = useState(false);
   // Frame campionati del contenuto analizzato: l'APL si ricalcola su questi a ogni cambio di formato o adattamento
   const [analysis, setAnalysis] = useState<{ frames: HTMLCanvasElement[]; source: 'video' | 'foto'; name: string } | null>(null);
   const uploadUrlRef = useRef<string | null>(null);
@@ -117,6 +120,7 @@ export const ExpressSimulator: React.FC = () => {
   }, [setFormatId]);
 
   const limit = getMaxNitsForPitch(pitchMm);
+  const nitSliderMax = Math.max(12000, limit.maxNits);
   const nitsOverLimit = targetOutdoorNits > limit.maxNits;
 
   const analyzeFile = async (file: File) => {
@@ -201,13 +205,17 @@ export const ExpressSimulator: React.FC = () => {
     );
   }
 
+  const standbyWmq = hasStandby ? pStandby : 0;
+  const profile = softwareOff
+    ? calcolaProfiloEnergetico(dimensions.areaM2, 0, 0, 0, operatingHoursDay, hasStandby, true, tariffEurKwh, pMax, pStandby)
+    : liveProfile;
   const kwIstantanei = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
 
   const sample = aplSource === 'video' ? SAMPLES.find((s) => s.label === videoFileName) : undefined;
   const previewSource: PreviewSource | null =
     uploadPreview ?? (sample ? { kind: 'video', url: asset(`/samples/${sample.file}`) } : null);
   const wattsForApl = (apl: number) =>
-    calcolaPotenzaWmq({ apl: apl / 100, lum: liveLumDiurna / 100, pMax, pStandby: hasStandby ? pStandby : 0 }) * dimensions.areaM2;
+    calcolaPotenzaWmq({ apl: apl / 100, lum: softwareOff ? 0 : liveLumDiurna / 100, pMax, pStandby: standbyWmq }) * dimensions.areaM2;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#07090C] selection:bg-[#12B76A] selection:text-[#07090C]">
@@ -334,23 +342,41 @@ export const ExpressSimulator: React.FC = () => {
                       <Sun className="w-3.5 h-3.5 text-[#FBBF24]" />
                       <span>Luminosità di picco</span>
                     </span>
-                    <span className="text-sm font-semibold text-white tabular-nums">{n(targetOutdoorNits)} nit</span>
+                    <span className="text-sm font-semibold text-white tabular-nums">{softwareOff ? '0 nit · spento' : `${n(targetOutdoorNits)} nit`}</span>
                   </div>
                   <input
                     type="range"
                     min={2500}
-                    max={12000}
+                    max={nitSliderMax}
                     step={500}
-                    value={targetOutdoorNits}
+                    value={Math.min(targetOutdoorNits, nitSliderMax)}
+                    disabled={softwareOff}
                     onChange={(e) => setTargetOutdoorNits(parseInt(e.target.value, 10))}
-                    className="w-full custom-slider cursor-pointer"
+                    className={`w-full custom-slider ${softwareOff ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                   />
                   <div className="flex justify-between text-[10px] text-[#868D97]">
                     <span>2.500 · ombra</span>
                     <span>5.000 · outdoor</span>
-                    <span>12.000 · sole zenitale</span>
+                    <span>{nitSliderMax > 12000 ? `${n(nitSliderMax)} · pieno sole` : '12.000 · sole zenitale'}</span>
                   </div>
-                  {nitsOverLimit ? (
+                  <button
+                    type="button"
+                    onClick={() => setSoftwareOff((v) => !v)}
+                    aria-pressed={softwareOff}
+                    className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-center space-x-1.5 ${
+                      softwareOff
+                        ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
+                        : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                    }`}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                    <span>Spento da software · {n(standbyWmq)} W/m²</span>
+                  </button>
+                  {softwareOff ? (
+                    <p className="text-[11px] text-[#868D97]">
+                      Schermo nero ma alimentato: il P{pitchMm} assorbe {n(standbyWmq)} W/m² di sola elettronica, 24 ore su 24. Si azzera solo staccando la linea con un relè.
+                    </p>
+                  ) : nitsOverLimit ? (
                     <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                       <span>Il P{pitchMm} si ferma a {n(limit.maxNits)} nit ({limit.chipType}). Per questo picco serve un passo più generoso.</span>
@@ -536,7 +562,9 @@ export const ExpressSimulator: React.FC = () => {
                   <Zap className="w-4 h-4 text-[#12B76A]" />
                   <span>Quanto consuma</span>
                   <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline tabular-nums">
-                    · {aplSource === 'manual'
+                    · {softwareOff
+                      ? 'a schermo spento da software, tutto il giorno'
+                      : aplSource === 'manual'
                       ? `con l'APL impostato al ${n(aplPercent, 0)}%`
                       : `con la media ${aplSource === 'foto' ? 'della tua foto' : 'del tuo video'} (APL ${n(aplPercent, 0)}%)`}
                   </span>
@@ -568,7 +596,7 @@ export const ExpressSimulator: React.FC = () => {
                     </div>
                     <input type="range" min={0.10} max={0.60} step={0.01} value={tariffEurKwh} onChange={(e) => setTariffRate(parseFloat(e.target.value))} className="w-full custom-slider cursor-pointer" />
                   </div>
-                  <p className="col-span-2 text-[11px] text-[#667085]">Di notte lo schermo scende al 10% (norma CEI). Standby elettronica 50 W/m² a schermo spento.</p>
+                  <p className="col-span-2 text-[11px] text-[#667085]">Di notte lo schermo scende al 10% (norma CEI). Spento da software il P{pitchMm} assorbe comunque {n(standbyWmq)} W/m².</p>
                 </div>
               )}
 
@@ -626,6 +654,7 @@ export const ExpressSimulator: React.FC = () => {
                 resolutionLabel={`${n(dimensions.resolutionX)}×${n(dimensions.resolutionY)} px`}
                 aplPercent={aplPercent}
                 wattsForApl={wattsForApl}
+                softwareOff={softwareOff}
                 fit={fit}
                 onFitChange={setFit}
                 staleFileName={!previewSource && aplSource !== 'manual' ? videoFileName : undefined}
