@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AlternativeProposal } from '../../core/physics';
-import { Sparkles, ShieldCheck, ArrowRight, Leaf, Gauge, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ShieldCheck, ArrowRight, Leaf, Gauge, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface Props {
   alternative: AlternativeProposal;
@@ -15,22 +15,25 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, onApply }) 
   const { kind, current, proposed } = alternative;
   const isPitch = kind === 'pitch';
   const isFleet = kind === 'fleet';
+  // Passo più largo di quanto la distanza regga: si propone un passo più fitto, che consuma di più
+  const isCoarse = kind === 'coarse';
+  const hasProposal = isPitch || isCoarse;
 
   return (
-    <aside className="rounded-xl border border-[#163826] bg-[#0A1610] shadow-md overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b border-[#163826] space-y-2">
-        <div className="flex items-center space-x-2 text-[11px] font-semibold text-[#34D399] uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5 text-[#12B76A]" />
-          <span>{isPitch ? 'Alternativa consigliata' : isFleet ? 'Il passo è giusto' : 'Configurazione bilanciata'}</span>
+    <aside className={`rounded-xl border shadow-md overflow-hidden ${isCoarse ? 'border-[#4A3510] bg-[#161006]' : 'border-[#163826] bg-[#0A1610]'}`}>
+      <div className={`px-5 pt-5 pb-4 border-b space-y-2 ${isCoarse ? 'border-[#4A3510]' : 'border-[#163826]'}`}>
+        <div className={`flex items-center space-x-2 text-[11px] font-semibold uppercase tracking-wider ${isCoarse ? 'text-[#FBBF24]' : 'text-[#34D399]'}`}>
+          {isCoarse ? <AlertTriangle className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5 text-[#12B76A]" />}
+          <span>{isPitch ? 'Alternativa consigliata' : isCoarse ? 'Passo troppo largo' : isFleet ? 'Il passo è giusto' : 'Configurazione bilanciata'}</span>
         </div>
         <p className="text-sm text-white font-medium leading-snug">{alternative.headline}</p>
       </div>
 
-      {isPitch && (
-        <div className="px-5 py-4 grid grid-cols-2 gap-3 border-b border-[#163826]">
+      {hasProposal && (
+        <div className={`px-5 py-4 grid grid-cols-2 gap-3 border-b ${isCoarse ? 'border-[#4A3510]' : 'border-[#163826]'}`}>
           <div className="p-3 rounded-lg bg-[#0D1117] border border-[#1A2028]">
             <span className="text-[10px] uppercase text-[#868D97] font-medium block">La tua scelta</span>
-            <span className="text-lg font-semibold text-[#F87171] tabular-nums">P{current.pitchMm} mm</span>
+            <span className={`text-lg font-semibold tabular-nums ${isCoarse ? 'text-[#FBBF24]' : 'text-[#F87171]'}`}>P{current.pitchMm} mm</span>
             <span className="text-[11px] text-[#9AA3AD] block tabular-nums">
               {eur(current.annualCostEur)}/anno · {current.hardware.sforzoPercent}% sforzo
             </span>
@@ -55,10 +58,19 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, onApply }) 
           </div>
         )}
 
+        {isCoarse && (
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-[#9AA3AD]">Energia in più</span>
+            <span className="text-2xl font-semibold text-[#FBBF24] tabular-nums">
+              +{eur(alternative.extraCostEur)}<span className="text-sm text-white">/anno</span>
+            </span>
+          </div>
+        )}
+
         <div className="flex items-baseline justify-between">
           <span className="text-xs text-[#9AA3AD] flex items-center space-x-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#12B76A]" />
-            <span>{isPitch ? 'In più con Fleet Monitor' : 'Con Fleet Monitor'}</span>
+            <span>{isPitch ? 'In più con Fleet Monitor' : isCoarse ? `Fleet Monitor sul P${proposed.pitchMm}` : 'Con Fleet Monitor'}</span>
           </span>
           <span className="text-base font-semibold text-white tabular-nums">
             -{alternative.fleetMonitorExtraPercent}% <span className="text-xs text-[#9AA3AD]">({eur(alternative.fleetMonitorExtraEur)}/anno)</span>
@@ -87,14 +99,14 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, onApply }) 
         <ul className="px-5 pb-4 space-y-2">
           {alternative.reasons.map((r, i) => (
             <li key={i} className="flex items-start space-x-2 text-xs text-[#C9D1D9] leading-relaxed">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#12B76A] flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${isCoarse ? 'text-[#FBBF24]' : 'text-[#12B76A]'}`} />
               <span>{r}</span>
             </li>
           ))}
         </ul>
       )}
 
-      {isPitch && (
+      {hasProposal && (
         <div className="px-5 pb-5">
           <button
             type="button"

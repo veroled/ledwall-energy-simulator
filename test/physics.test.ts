@@ -185,10 +185,26 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(alt.fleetMonitorExtraPercent).toBeGreaterThanOrEqual(50);
     });
 
-    it('P10 visto da 5m: nessuna alternativa più grossa possibile, la proposta non peggiora mai i consumi', () => {
+    it('P10 visto da 5m: passo troppo largo, propone il P2.6 dichiarando l\'energia in più', () => {
       const alt = suggerisciAlternativa(10, 5000, 18, 0.30, 18, 0.35, 3, 4);
+      expect(alt.kind).toBe('coarse');
+      expect(alt.proposed.pitchMm).toBe(2.6);
+      expect(alt.savingsEur).toBe(0);
+      expect(alt.extraCostEur).toBe(alt.proposed.annualCostEur - alt.current.annualCostEur);
+      expect(alt.extraCostEur).toBeGreaterThan(0);
+    });
+
+    it('P10 visto da 11m: non è "il passo giusto", serve il P3.9', () => {
+      const alt = suggerisciAlternativa(10, 5000, 4, 0.30, 18, 0.35, 5, 10);
+      expect(alt.kind).toBe('coarse');
+      expect(alt.proposed.pitchMm).toBe(3.9);
+      expect(alt.headline).toContain('troppo largo');
+    });
+
+    it('P10 da autostrada (40m): sotto 1 arcminuto i diodi si fondono, il passo resta giusto', () => {
+      const alt = suggerisciAlternativa(10, 5000, 32, 0.30, 18, 0.35, 8, 40);
+      expect(alt.kind).toBe('fleet');
       expect(alt.proposed.pitchMm).toBe(10);
-      expect(alt.proposed.annualCostEur).toBeLessThanOrEqual(alt.current.annualCostEur);
     });
 
     it('Distanza lunga (40m): dal P3.9 propone il P6.7 e il risparmio è consistente', () => {

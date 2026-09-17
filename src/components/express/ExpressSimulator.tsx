@@ -482,6 +482,11 @@ export const ExpressSimulator: React.FC = () => {
                   <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">3</span>
                   <Zap className="w-4 h-4 text-[#12B76A]" />
                   <span>Quanto consuma</span>
+                  <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline tabular-nums">
+                    · {aplSource === 'manual'
+                      ? `con l'APL impostato al ${n(aplPercent, 0)}%`
+                      : `con la media ${aplSource === 'foto' ? 'della tua foto' : 'del tuo video'} (APL ${n(aplPercent, 0)}%)`}
+                  </span>
                 </div>
                 <button
                   type="button"

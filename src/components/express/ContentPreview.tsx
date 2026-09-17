@@ -105,7 +105,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
         <span className="text-[#667085] tabular-nums">{n(ratioW)}×{n(ratioH)} m · {resolutionLabel}</span>
       </div>
 
-      <div className="flex items-center justify-center rounded-xl bg-[#07090C] border border-[#1A2028] p-3" style={{ minHeight: 120 }}>
+      <div className="flex items-center justify-center py-1">
         <div
           className="relative overflow-hidden rounded-[3px] bg-black ring-1 ring-[#2D3748] shadow-[0_0_24px_rgba(18,183,106,0.08)]"
           style={{ aspectRatio: `${w} / ${h}`, width: `min(100%, calc(${MAX_BOX_HEIGHT_PX}px * ${w} / ${h}))` }}

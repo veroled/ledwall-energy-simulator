@@ -687,7 +687,7 @@ export interface ConfigurazioneSnapshot {
 
 export interface AlternativeProposal {
   hasAlternative: boolean;
-  kind: 'pitch' | 'fleet' | 'none';
+  kind: 'pitch' | 'coarse' | 'fleet' | 'none';
   lineOfSightDistM: number;
   minResolvablePitchMm: number;
   recommendedPitchMm: number;
@@ -696,6 +696,7 @@ export interface AlternativeProposal {
   savingsEur: number;
   savingsPercent: number;
   savingsKwh: number;
+  extraCostEur: number; // solo kind 'coarse': energia in più del passo più fitto che serve a quella distanza
   co2SavedTons: number;
   wastedPixelsPercent: number;
   rentalSavings24mEur: number;
@@ -769,7 +770,20 @@ export function suggerisciAlternativa(
   const proposed = snapshotConfigurazione(proposedPitch, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
 
   const hasPitchAlternative = proposedPitch !== pitchMm && proposed.annualCostEur < current.annualCostEur;
-  const finalProposed = hasPitchAlternative ? proposed : current;
+
+  // Caso opposto: passo più largo di quello che la distanza regge. Consuma meno, ma i pixel si vedono:
+  // qui si propone il passo commerciale più generoso che resta pulito, dichiarando l'energia in più.
+  const cleanPresets = PITCH_PRESETS_EXPRESS.filter((p) => p <= optical.recommendedPitchMm + 0.15);
+  const finerPitch = cleanPresets.length > 0 ? Math.max(...cleanPresets) : PITCH_PRESETS_EXPRESS[0];
+  // Troppo largo solo se l'occhio separa davvero i diodi a quella distanza (oltre 1 arcminuto)
+  const isTooCoarse =
+    pitchMm > optical.recommendedPitchMm + 0.15 && pitchMm > optical.minResolvablePitchMm && finerPitch < pitchMm;
+  const finer = isTooCoarse
+    ? snapshotConfigurazione(finerPitch, nits, areaM2, apl, oreGiorno, tariffaEurKwh)
+    : current;
+
+  const finalProposed = hasPitchAlternative ? proposed : isTooCoarse ? finer : current;
+  const extraCostEur = isTooCoarse ? Math.max(0, finer.annualCostEur - current.annualCostEur) : 0;
 
   const savingsEur = Math.max(0, current.annualCostEur - finalProposed.annualCostEur);
   const savingsKwh = Math.max(0, current.annualKwh - finalProposed.annualKwh);
@@ -815,6 +829,26 @@ export function suggerisciAlternativa(
     reasons.push(
       `Potenza media reale con il tuo contenuto: da ${current.pMedioWmq} a ${proposed.pMedioWmq} W/m².`
     );
+  } else if (isTooCoarse) {
+    kind = 'coarse';
+    const pixelRatio = Math.round(Math.pow(pitchMm / finerPitch, 2) * 10) / 10;
+    headline = `A ${D} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena serve il P${finerPitch} mm.`;
+    reasons.push(
+      `A ${D} m l'occhio distingue i singoli diodi sopra i ${optical.minResolvablePitchMm.toLocaleString('it-IT')} mm di passo (1 arcminuto): con il P${pitchMm} testi e volti risultano sgranati.`
+    );
+    reasons.push(
+      `Il P${finerPitch} porta ${pixelRatio.toLocaleString('it-IT')}× più pixel sulla stessa superficie: il contenuto resta leggibile da dove lo guardano davvero.`
+    );
+    reasons.push(
+      extraCostEur > 0
+        ? `Il P${pitchMm} consuma meno (${current.pMedioWmq} contro ${finer.pMedioWmq} W/m²), ma il risparmio si paga in qualità. Il P${pitchMm} torna corretto da circa ${Math.round(pitchMm / 0.291)} m in su.`
+        : `Il P${pitchMm} torna corretto da circa ${Math.round(pitchMm / 0.291)} m in su.`
+    );
+    if (finer.hardware.isAtPhysicalLimit && finer.nitsEffettivi < nits) {
+      reasons.push(
+        `Attenzione: il P${finerPitch} eroga al massimo ${finer.hardware.maxPhysicalNits.toLocaleString('it-IT')} nit, non i ${nits.toLocaleString('it-IT')} richiesti.`
+      );
+    }
   } else if (fleetMonitorExtraEur > 0) {
     kind = 'fleet';
     headline = `Il P${pitchMm} mm è già il passo giusto per ${D} m: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
@@ -841,6 +875,7 @@ export function suggerisciAlternativa(
     savingsEur,
     savingsPercent,
     savingsKwh: Math.round(savingsKwh),
+    extraCostEur,
     co2SavedTons,
     wastedPixelsPercent: hasPitchAlternative ? optical.wastedPixelsPercent : 0,
     rentalSavings24mEur: hasPitchAlternative ? optical.monthlyRentalSavingsEur * 24 : 0,
