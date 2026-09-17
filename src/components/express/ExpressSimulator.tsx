@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { PIXEL_PITCH_PRESETS } from '../../config/config';
 import { asset } from '../../config/paths';
-import { getMaxNitsForPitch, stimaPotenzaDaPassoNit } from '../../core/physics';
-import { analizzaVideoApl, analizzaFotoApl } from '../../core/apl-engine';
+import { getMaxNitsForPitch, stimaPotenzaDaPassoNit, calcolaPotenzaWmq } from '../../core/physics';
+import { analizzaVideoApl, caricaFrameFoto, aplDaFrames, type FitMode } from '../../core/apl-engine';
 import { RecommendationBanner } from './RecommendationBanner';
+import { ContentPreview, type PreviewSource } from './ContentPreview';
 import { WizardFooter } from '../wizard/WizardFooter';
 import {
   Upload,
@@ -37,6 +38,11 @@ const SIZE_PRESETS = [
   { w: 10, h: 5 },
 ];
 
+const SAMPLES = [
+  { file: 'file-3.mp4', label: 'Spot showroom (campione)', button: 'Spot scuro', fallbackApl: 23 },
+  { file: 'file-10.mp4', label: 'Kinetic wall (campione)', button: 'Spot chiaro', fallbackApl: 50 },
+];
+
 const DISTANCE_PRESETS = [
   { d: 5, label: '5 m · piazza' },
   { d: 10, label: '10 m · strada' },
@@ -56,6 +62,8 @@ export const ExpressSimulator: React.FC = () => {
     videoFileName,
     operatingHoursDay,
     tariffEurKwh,
+    liveLumDiurna,
+    hasStandby,
     setPitchMm,
     setFormatId,
     setDimensioniMetri,
@@ -67,15 +75,30 @@ export const ExpressSimulator: React.FC = () => {
     setStep,
   } = useSimulatorStore();
 
-  const { dimensions, profile, alternative, pMax } = useSimulatorComputed();
+  const { dimensions, profile, alternative, pMax, pStandby } = useSimulatorComputed();
 
   const mounted = useMounted();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [aplRange, setAplRange] = useState<{ min: number; max: number } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<PreviewSource | null>(null);
+  const [fit, setFit] = useState<FitMode>('cover');
+  // Frame campionati del contenuto analizzato: l'APL si ricalcola su questi a ogni cambio di formato o adattamento
+  const [analysis, setAnalysis] = useState<{ frames: HTMLCanvasElement[]; source: 'video' | 'foto'; name: string } | null>(null);
+  const uploadUrlRef = useRef<string | null>(null);
+
+  // Il file caricato resta in memoria solo per l'anteprima: si libera al cambio e all'uscita
+  const replaceUploadPreview = (next: PreviewSource | null) => {
+    if (uploadUrlRef.current) URL.revokeObjectURL(uploadUrlRef.current);
+    uploadUrlRef.current = next?.url ?? null;
+    setUploadPreview(next);
+  };
+
+  useEffect(() => () => {
+    if (uploadUrlRef.current) URL.revokeObjectURL(uploadUrlRef.current);
+  }, []);
 
   useEffect(() => {
     // La modalità express ragiona in metri interi su cabinet 1000×1000
@@ -88,16 +111,18 @@ export const ExpressSimulator: React.FC = () => {
   const analyzeFile = async (file: File) => {
     setIsProcessing(true);
     setProgress(0);
-    setAplRange(null);
+    setAnalysis(null);
     setAnalysisError(null);
+    if (file.type.startsWith('video/') || file.type.startsWith('image/')) {
+      replaceUploadPreview({ kind: file.type.startsWith('video/') ? 'video' : 'image', url: URL.createObjectURL(file) });
+    }
     try {
       if (file.type.startsWith('video/')) {
         const res = await analizzaVideoApl(file, (p) => setProgress(p));
-        setAplPercent(res.averageAplPercent, 'video', file.name);
-        setAplRange({ min: res.minAplPercent, max: res.maxAplPercent });
+        setAnalysis({ frames: res.frames, source: 'video', name: file.name });
       } else if (file.type.startsWith('image/')) {
-        const apl = await analizzaFotoApl(file);
-        setAplPercent(apl, 'foto', file.name);
+        const frame = await caricaFrameFoto(file);
+        setAnalysis({ frames: [frame], source: 'foto', name: file.name });
       }
     } catch (err) {
       console.warn('Analisi contenuto fallita, resta lo slider manuale:', err);
@@ -121,15 +146,17 @@ export const ExpressSimulator: React.FC = () => {
   };
 
   const loadSample = async (name: string, label: string, fallbackApl: number) => {
+    replaceUploadPreview(null);
+    // Il nome del campione va nello store subito: l'anteprima parte mentre l'analisi gira
+    setAplPercent(fallbackApl, 'video', label);
     setIsProcessing(true);
     setProgress(0);
-    setAplRange(null);
+    setAnalysis(null);
     setAnalysisError(null);
     try {
       // URL diretto: evita di scaricare il file in memoria e funziona anche dove i blob video non vengono decodificati
-      const analysis = await analizzaVideoApl(asset(`/samples/${name}`), (p) => setProgress(p));
-      setAplPercent(analysis.averageAplPercent, 'video', label);
-      setAplRange({ min: analysis.minAplPercent, max: analysis.maxAplPercent });
+      const res = await analizzaVideoApl(asset(`/samples/${name}`), (p) => setProgress(p));
+      setAnalysis({ frames: res.frames, source: 'video', name: label });
     } catch (err) {
       console.warn('Campione non analizzabile, uso il valore misurato in precedenza:', err);
       setAplPercent(fallbackApl, 'video', label);
@@ -137,6 +164,19 @@ export const ExpressSimulator: React.FC = () => {
       setIsProcessing(false);
     }
   };
+
+  // Stessa misura dell'anteprima: contenuto inquadrato nel rapporto del LEDwall, ritaglio o bande nere compresi
+  const framed = useMemo(
+    () => (analysis ? aplDaFrames(analysis.frames, modulesW, modulesH, fit) : null),
+    [analysis, modulesW, modulesH, fit]
+  );
+
+  useEffect(() => {
+    if (analysis && framed) setAplPercent(framed.averageAplPercent, analysis.source, analysis.name);
+  }, [analysis, framed, setAplPercent]);
+
+  const aplRange =
+    framed && analysis && analysis.frames.length > 1 ? { min: framed.minAplPercent, max: framed.maxAplPercent } : null;
 
   const goToWizard = (step: number) => {
     setStep(step);
@@ -151,6 +191,12 @@ export const ExpressSimulator: React.FC = () => {
   }
 
   const kwIstantanei = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
+
+  const sample = aplSource === 'video' ? SAMPLES.find((s) => s.label === videoFileName) : undefined;
+  const previewSource: PreviewSource | null =
+    uploadPreview ?? (sample ? { kind: 'video', url: asset(`/samples/${sample.file}`) } : null);
+  const wattsForApl = (apl: number) =>
+    calcolaPotenzaWmq({ apl: apl / 100, lum: liveLumDiurna / 100, pMax, pStandby: hasStandby ? pStandby : 0 }) * dimensions.areaM2;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#07090C] selection:bg-[#12B76A] selection:text-[#07090C]">
@@ -410,18 +456,20 @@ export const ExpressSimulator: React.FC = () => {
                     min={5}
                     max={100}
                     value={Math.round(aplPercent)}
-                    onChange={(e) => setAplPercent(parseInt(e.target.value, 10), 'manual')}
+                    onChange={(e) => {
+                      replaceUploadPreview(null);
+                      setAnalysis(null);
+                      setAplPercent(parseInt(e.target.value, 10), 'manual');
+                    }}
                     className="w-full custom-slider cursor-pointer"
                   />
                   <div className="grid grid-cols-2 gap-1.5">
-                    <button type="button" onClick={() => loadSample('file-3.mp4', 'Spot showroom (campione)', 23)} disabled={isProcessing}
-                      className="py-1.5 px-2 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center justify-center space-x-1 cursor-pointer">
-                      <Play className="w-3 h-3 text-[#12B76A]" /><span>Spot scuro</span>
-                    </button>
-                    <button type="button" onClick={() => loadSample('file-10.mp4', 'Kinetic wall (campione)', 50)} disabled={isProcessing}
-                      className="py-1.5 px-2 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center justify-center space-x-1 cursor-pointer">
-                      <Play className="w-3 h-3 text-[#12B76A]" /><span>Spot chiaro</span>
-                    </button>
+                    {SAMPLES.map((sm) => (
+                      <button key={sm.file} type="button" onClick={() => loadSample(sm.file, sm.label, sm.fallbackApl)} disabled={isProcessing}
+                        className="py-1.5 px-2 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center justify-center space-x-1 cursor-pointer">
+                        <Play className="w-3 h-3 text-[#12B76A]" /><span>{sm.button}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -510,8 +558,21 @@ export const ExpressSimulator: React.FC = () => {
             </section>
           </div>
 
-          {/* Banner consiglio (sticky su desktop) */}
-          <div className="lg:sticky lg:top-24">
+          {/* Anteprima live + banner consiglio (sticky su desktop) */}
+          <div className="lg:sticky lg:top-24 space-y-5">
+            <section className="bg-[#0D1117] p-4 rounded-xl border border-[#1A2028] shadow-sm">
+              <ContentPreview
+                source={previewSource}
+                ratioW={modulesW}
+                ratioH={modulesH}
+                resolutionLabel={`${n(dimensions.resolutionX)}×${n(dimensions.resolutionY)} px`}
+                aplPercent={aplPercent}
+                wattsForApl={wattsForApl}
+                fit={fit}
+                onFitChange={setFit}
+                staleFileName={!previewSource && aplSource !== 'manual' ? videoFileName : undefined}
+              />
+            </section>
             <RecommendationBanner
               alternative={alternative}
               onApply={() => setPitchMm(alternative.proposed.pitchMm)}

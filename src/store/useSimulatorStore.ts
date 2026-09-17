@@ -384,6 +384,7 @@ export function useSimulatorComputed() {
     instantaneousPowerKw,
     maxNominalPowerKw,
     pMax,
+    pStandby,
     powerQuality,
     opticalConsulting,
     alternative,

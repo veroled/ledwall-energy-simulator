@@ -14,6 +14,73 @@ export interface VideoAplResult {
   minAplPercent: number;
   maxAplPercent: number;
   samples: AplFrameSample[];
+  /** Miniature dei frame campionati, nel rapporto originale del video: servono a ricalcolare l'APL inquadrato */
+  frames: HTMLCanvasElement[];
+}
+
+/** Come il controller adatta il contenuto allo schermo: riempie ritagliando, oppure mostra tutto con bande nere */
+export type FitMode = 'cover' | 'contain';
+
+export interface AplStats {
+  averageAplPercent: number;
+  minAplPercent: number;
+  maxAplPercent: number;
+}
+
+const SAMPLE_WIDTH_PX = 160;
+
+/** Rettangolo di disegno del contenuto dentro uno schermo dstW×dstH */
+export function fitRect(srcW: number, srcH: number, dstW: number, dstH: number, fit: FitMode) {
+  const scale = fit === 'cover' ? Math.max(dstW / srcW, dstH / srcH) : Math.min(dstW / srcW, dstH / srcH);
+  const w = srcW * scale;
+  const h = srcH * scale;
+  return { x: (dstW - w) / 2, y: (dstH - h) / 2, w, h };
+}
+
+let framingCanvas: HTMLCanvasElement | null = null;
+
+/**
+ * APL di ciò che lo schermo mostra davvero: il contenuto viene disegnato nel rapporto del LEDwall
+ * con lo stesso adattamento dell'anteprima, quindi il ritaglio e le bande nere entrano nel conto.
+ * Ritorna null se il frame non è leggibile (non ancora decodificato, canvas non accessibile).
+ */
+export function calcolaAplInquadrato(
+  media: CanvasImageSource,
+  srcW: number,
+  srcH: number,
+  ratioW: number,
+  ratioH: number,
+  fit: FitMode
+): number | null {
+  if (!srcW || !srcH || ratioW <= 0 || ratioH <= 0) return null;
+  const canvas = framingCanvas ?? (framingCanvas = document.createElement('canvas'));
+  canvas.width = SAMPLE_WIDTH_PX;
+  canvas.height = Math.max(8, Math.round((SAMPLE_WIDTH_PX * ratioH) / ratioW));
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  const r = fitRect(srcW, srcH, canvas.width, canvas.height, fit);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  try {
+    ctx.drawImage(media, r.x, r.y, r.w, r.h);
+    return calcolaImageDataApl(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  } catch {
+    return null;
+  }
+}
+
+/** Media, minimo e massimo dell'APL inquadrato sui frame campionati */
+export function aplDaFrames(frames: HTMLCanvasElement[], ratioW: number, ratioH: number, fit: FitMode): AplStats | null {
+  const values = frames
+    .map((f) => calcolaAplInquadrato(f, f.width, f.height, ratioW, ratioH, fit))
+    .filter((v): v is number => v !== null);
+  if (values.length === 0) return null;
+  const sum = values.reduce((acc, v) => acc + v, 0);
+  return {
+    averageAplPercent: Math.round((sum / values.length) * 10) / 10,
+    minAplPercent: Math.min(...values),
+    maxAplPercent: Math.max(...values),
+  };
 }
 
 /**
@@ -114,13 +181,17 @@ export async function analizzaVideoApl(
         return;
       }
 
-      // Risoluzione di campionamento ottimizzata per velocità (es. 160x90 px)
-      canvas.width = 160;
-      canvas.height = 90;
+      // Risoluzione di campionamento ottimizzata per velocità (es. 160x90 px), nel rapporto reale del video
+      canvas.width = SAMPLE_WIDTH_PX;
+      canvas.height =
+        video.videoWidth && video.videoHeight
+          ? Math.max(8, Math.round((SAMPLE_WIDTH_PX * video.videoHeight) / video.videoWidth))
+          : 90;
 
       const numFrames = 30;
       const stepTime = duration / (numFrames + 1);
       const samples: AplFrameSample[] = [];
+      const frames: HTMLCanvasElement[] = [];
 
       try {
         for (let i = 1; i <= numFrames; i++) {
@@ -135,6 +206,12 @@ export async function analizzaVideoApl(
             timestampSec: Math.round(seekTime * 10) / 10,
             aplPercent: frameApl,
           });
+
+          const thumb = document.createElement('canvas');
+          thumb.width = canvas.width;
+          thumb.height = canvas.height;
+          thumb.getContext('2d')?.putImageData(imgData, 0, 0);
+          frames.push(thumb);
 
           if (onProgress) {
             onProgress(Math.round((i / numFrames) * 100));
@@ -152,6 +229,7 @@ export async function analizzaVideoApl(
           minAplPercent,
           maxAplPercent,
           samples,
+          frames,
         });
       } catch (err) {
         fail(err instanceof Error ? err : new Error(String(err)));
@@ -197,5 +275,36 @@ export async function analizzaFotoApl(file: File): Promise<number> {
       URL.revokeObjectURL(objectUrl);
       reject(new Error('Impossibile elaborare il file immagine'));
     };
+  });
+}
+
+/**
+ * Miniatura di un'immagine statica nel suo rapporto originale, da passare ad aplDaFrames
+ */
+export async function caricaFrameFoto(file: File): Promise<HTMLCanvasElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = SAMPLE_WIDTH_PX;
+      canvas.height = Math.max(8, Math.round((SAMPLE_WIDTH_PX / img.width) * img.height));
+      const ctx = canvas.getContext('2d');
+      URL.revokeObjectURL(objectUrl);
+      if (!ctx) {
+        reject(new Error('Canvas non disponibile'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Impossibile elaborare il file immagine'));
+    };
+
+    img.src = objectUrl;
   });
 }
