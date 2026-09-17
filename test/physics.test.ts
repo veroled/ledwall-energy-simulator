@@ -222,6 +222,9 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(alt.proposed.pitchMm).toBe(3.9);
       expect(alt.savingsEur).toBe(0);
       expect(alt.fleetMonitorExtraPercent).toBeGreaterThanOrEqual(50);
+      // Percentuale, risparmio e bolletta residua devono tornare tra loro sulla bolletta mostrata
+      expect(alt.fleetMonitorCostEur).toBe(alt.proposed.annualCostEur - alt.fleetMonitorExtraEur);
+      expect(alt.fleetMonitorExtraPercent).toBe(Math.round((alt.fleetMonitorExtraEur / alt.proposed.annualCostEur) * 100));
     });
 
     it('P10 visto da 5m: passo troppo largo, propone il P2.6 dichiarando l\'energia in più', () => {

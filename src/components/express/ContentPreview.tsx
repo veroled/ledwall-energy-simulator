@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { calcolaAplInquadrato, type FitMode } from '../../core/apl-engine';
 import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, AlertTriangle, MonitorPlay } from 'lucide-react';
 
-const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d });
+const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: 'always' } as Intl.NumberFormatOptions);
 
 export interface PreviewSource {
   kind: 'video' | 'image';

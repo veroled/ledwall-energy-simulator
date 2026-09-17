@@ -28,7 +28,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
-const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d });
+const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: 'always' } as Intl.NumberFormatOptions);
 
 const subscribeNoop = () => () => {};
 const useMounted = () => useSyncExternalStore(subscribeNoop, () => true, () => false);
@@ -283,7 +283,7 @@ export const ExpressSimulator: React.FC = () => {
                   })}
                 </div>
                 <p className="text-[11px] text-[#868D97]">
-                  La percentuale è lo sforzo termico dei chip ai nit impostati. Sotto il 65% il diodo lavora fresco.
+                  La percentuale è lo sforzo termico dei chip a {n(targetOutdoorNits)} nit: cambia con la luminosità, non con il contenuto. Sotto il 65% il diodo lavora fresco.
                 </p>
               </div>
 

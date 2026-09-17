@@ -746,8 +746,9 @@ export interface AlternativeProposal {
   co2SavedTons: number;
   wastedPixelsPercent: number;
   rentalSavings24mEur: number;
-  fleetMonitorExtraEur: number; // ulteriore risparmio applicando Fleet Monitor alla proposta
-  fleetMonitorExtraPercent: number;
+  fleetMonitorExtraEur: number; // €/anno risparmiati applicando Fleet Monitor alla proposta
+  fleetMonitorExtraPercent: number; // sulla stessa bolletta mostrata per la proposta (proposed.annualCostEur)
+  fleetMonitorCostEur: number; // bolletta annua che resta con Fleet Monitor
   headline: string;
   reasons: string[];
 }
@@ -843,8 +844,13 @@ export function suggerisciAlternativa(
     finalProposed.pMaxWmq,
     standbyWmqPerPasso(finalProposed.pitchMm)
   );
-  const fleetMonitorExtraEur = Math.round(fleet.savingsEur);
-  const fleetMonitorExtraPercent = Math.round(fleet.savingsPercent);
+  // Il risparmio si misura sulla bolletta che l'utente vede per quella configurazione (già con dimming
+  // notturno CEI), non sullo scenario "non gestito" di confrontaScenari: altrimenti percentuale e importi
+  // non tornano tra loro.
+  const fleetMonitorCostEur = Math.min(finalProposed.annualCostEur, Math.round(fleet.annualCostEurB));
+  const fleetMonitorExtraEur = finalProposed.annualCostEur - fleetMonitorCostEur;
+  const fleetMonitorExtraPercent =
+    finalProposed.annualCostEur > 0 ? Math.round((fleetMonitorExtraEur / finalProposed.annualCostEur) * 100) : 0;
 
   const D = optical.lineOfSightDistM;
   const Dtxt = D.toLocaleString('it-IT');
@@ -928,6 +934,7 @@ export function suggerisciAlternativa(
     rentalSavings24mEur: hasPitchAlternative ? optical.monthlyRentalSavingsEur * 24 : 0,
     fleetMonitorExtraEur,
     fleetMonitorExtraPercent,
+    fleetMonitorCostEur,
     headline,
     reasons,
   };
