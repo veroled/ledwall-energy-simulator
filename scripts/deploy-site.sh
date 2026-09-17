@@ -7,6 +7,10 @@ SITE="${VEROLED_SITE_DIR:-$HOME/Documents/veroled}"
 DEST="$SITE/public/simulatore-consumi"
 [ -d "$SITE/public" ] || { echo "Repo del sito non trovato in $SITE (imposta VEROLED_SITE_DIR)"; exit 1; }
 
+echo "▸ nit per Selection × passo dal listino del sito"
+VEROLED_SITE_DIR="$SITE" node scripts/sync-catalogo-nit.mjs | head -1
+git diff --quiet -- src/config/catalogo-nit.json || echo "  ⚠ il listino è cambiato: committa src/config/catalogo-nit.json e rilancia i test"
+
 echo "▸ build statica con basePath /simulatore-consumi"
 npm run prebuild --silent
 NEXT_PUBLIC_BASE_PATH=/simulatore-consumi npx next build

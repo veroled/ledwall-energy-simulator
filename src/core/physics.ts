@@ -3,6 +3,7 @@
  * Conforme alle norme CEI 64-8 / DOOH Standards e benchmark VeroLED
  */
 import { CONFIG } from '../config/config';
+import catalogoNit from '../config/catalogo-nit.json';
 
 export interface PowerCalcInput {
   apl: number; // 0..1 (es. 0.30 per 30%)
@@ -302,6 +303,60 @@ export function standbyWmqPerPasso(pitchMm: number): number {
   return Math.round(50 - ((pitchMm - 2.9) * 25) / 7.1);
 }
 
+/* ──────────────────────────────────────────────────────────────────────────────
+ * CATALOGO: nit per combinazione Selection (tier) × passo
+ * Lo stesso passo è venduto in 6 Selection con chip e filo diversi (GoldWire, CopperWire,
+ * Alu/Copper): il tetto di nit è del COMPONENTE, non del passo. I valori arrivano dal listino
+ * del sito (`npm run sync:catalogo`). Una combinazione assente resta assente: il simulatore la
+ * dichiara "dato non disponibile" e non prende mai in prestito il valore di un'altra.
+ * ────────────────────────────────────────────────────────────────────────────── */
+export type TierId = 'diamond' | 'platinum' | 'gold' | 'silver' | 'bronze' | 'essential';
+
+export const TIERS: { id: TierId; name: string; wire: string }[] = [
+  { id: 'diamond', name: 'Diamond', wire: 'GoldWire' },
+  { id: 'platinum', name: 'Platinum', wire: 'GoldWire' },
+  { id: 'gold', name: 'Gold', wire: 'GoldWire' },
+  { id: 'silver', name: 'Silver', wire: 'CopperWire' },
+  { id: 'bronze', name: 'Bronze', wire: 'CopperWire' },
+  { id: 'essential', name: 'Essential', wire: 'Alu/Copper' },
+];
+
+export interface DatoCatalogo {
+  tier: TierId;
+  pitchMm: number;
+  maxNits: number;
+  chip: string;
+}
+
+const CATALOGO: DatoCatalogo[] = catalogoNit.rows as DatoCatalogo[];
+
+/** Stesso passo nominale: 3.9 e 3.91 sono lo stesso prodotto, 2.5 e 2.6 no */
+export const stessoPasso = (a: number, b: number) => Math.abs(a - b) <= 0.035;
+
+export const tierName = (tier: TierId) => TIERS.find((t) => t.id === tier)?.name ?? tier;
+
+/** Tutti i passi outdoor a listino, in qualunque Selection */
+export const PASSI_CATALOGO: number[] = [...new Set(CATALOGO.map((r) => r.pitchMm))].sort((a, b) => a - b);
+
+/** Le combinazioni a listino di una Selection, dal passo più fitto al più largo */
+export function passiDelTier(tier: TierId): DatoCatalogo[] {
+  return CATALOGO.filter((r) => r.tier === tier).sort((a, b) => a.pitchMm - b.pitchMm);
+}
+
+/** Il dato di listino di QUELLA combinazione, oppure null. Mai il valore di un altro tier o passo. */
+export function datoCatalogo(tier: TierId, pitchMm: number): DatoCatalogo | null {
+  return CATALOGO.find((r) => r.tier === tier && stessoPasso(r.pitchMm, pitchMm)) ?? null;
+}
+
+/**
+ * La combinazione eroga i nit richiesti? true / false dal listino, null se il dato non esiste:
+ * chi chiama deve trattare null come "non validabile", non come un sì.
+ */
+export function combinazioneRaggiungeNit(tier: TierId, pitchMm: number, nits: number): boolean | null {
+  const dato = datoCatalogo(tier, pitchMm);
+  return dato ? nits <= dato.maxNits : null;
+}
+
 export interface PitchPhysicalLimit {
   maxNits: number;
   chipType: string;
@@ -392,16 +447,27 @@ export function stimaPotenzaDaPassoNit(
   areaM2: number = 32,
   tariffaEurKwh: number = 0.35,
   oreGiorno: number = 18,
-  commonCathode: boolean = true
+  commonCathode: boolean = true,
+  catalogo?: DatoCatalogo | null
 ): HardwareComparisonResult {
-  const limit = getMaxNitsForPitch(pitchMm);
+  // Con il dato di listino della combinazione tier × passo, tetto e chip sono quelli del componente reale
+  const limit: PitchPhysicalLimit = catalogo
+    ? {
+        maxNits: catalogo.maxNits,
+        chipType: catalogo.chip,
+        limitReason: `Tetto di listino della Selection ${tierName(catalogo.tier)} sul P${catalogo.pitchMm}: ${catalogo.maxNits.toLocaleString('it-IT')} nit (${catalogo.chip}).`,
+      }
+    : getMaxNitsForPitch(pitchMm);
   // Rispetta il vincolo fisico del semiconduttore: non si possono eccedere i nit massimi
   const effectiveNits = Math.min(nits, limit.maxNits);
   const isAtPhysicalLimit = nits >= limit.maxNits;
 
   // Calcolo dello Sforzo del chip (duty cycle % per raggiungere i nit target)
   // Per i passi grandi (P10) il massimale di progetto su chip generosi SMD3535/DIP è 15.000 nit
-  const nominalCeiling = pitchMm >= 15 ? 22000 : pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : limit.maxNits;
+  // Con il dato di listino lo sforzo è il rapporto con il tetto reale di quel componente
+  const nominalCeiling = catalogo
+    ? catalogo.maxNits
+    : pitchMm >= 15 ? 22000 : pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : limit.maxNits;
   const sforzoPercent = Math.min(100, Math.max(15, Math.round((nits / nominalCeiling) * 100)));
 
   const pixelM2 = Math.round((1000 / pitchMm) * (1000 / pitchMm));
@@ -734,14 +800,22 @@ export interface AlternativeProposal {
    * pitch: il passo scelto è valido ma uno più largo, altrettanto valido, consuma meno
    * fleet / none: il passo scelto soddisfa TUTTI i requisiti (nit e distanza) — unici verdetti positivi
    * coarse: troppo largo per la distanza · brightness: non arriva ai nit richiesti
-   * compromise: nessun passo a catalogo soddisfa insieme nit e distanza
+   * compromise: nessun passo della Selection soddisfa insieme nit e distanza
+   * nodata: il listino non ha il tetto di nit di questa combinazione Selection × passo, quindi non è validabile
    */
-  kind: 'pitch' | 'coarse' | 'brightness' | 'compromise' | 'fleet' | 'none';
+  kind: 'pitch' | 'coarse' | 'brightness' | 'compromise' | 'nodata' | 'fleet' | 'none';
+  tier: TierId;
+  /** Il listino ha il dato di nit per la combinazione scelta */
+  currentHasData: boolean;
+  /** Tetto di nit di listino della combinazione scelta (null = dato non disponibile) */
+  currentMaxNits: number | null;
+  /** Altre Selection in cui un passo soddisfa entrambi i requisiti (il più largo per ciascuna) */
+  validInOtherTiers: DatoCatalogo[];
   /** Il passo scelto soddisfa entrambi i requisiti. Senza questo non esiste verdetto positivo. */
   currentIsValid: boolean;
   currentMeetsBrightness: boolean;
   currentMeetsDistance: boolean;
-  /** Passi a catalogo che soddisfano insieme luminosità richiesta e distanza di visione */
+  /** Passi della Selection scelta che soddisfano insieme luminosità richiesta e distanza di visione */
   validPitchesMm: number[];
   lineOfSightDistM: number;
   lineOfSightBaseM: number;
@@ -765,17 +839,16 @@ export interface AlternativeProposal {
   reasons: string[];
 }
 
-const PITCH_PRESETS_EXPRESS = [2.6, 2.9, 3.9, 4.8, 6.7, 8.0, 10.0, 16.0];
-
 function snapshotConfigurazione(
   pitchMm: number,
   nits: number,
   areaM2: number,
   apl: number,
   oreGiorno: number,
-  tariffaEurKwh: number
+  tariffaEurKwh: number,
+  catalogo: DatoCatalogo | null
 ): ConfigurazioneSnapshot {
-  const hardware = stimaPotenzaDaPassoNit(pitchMm, nits, areaM2, tariffaEurKwh, oreGiorno);
+  const hardware = stimaPotenzaDaPassoNit(pitchMm, nits, areaM2, tariffaEurKwh, oreGiorno, true, catalogo);
   const pStandby = standbyWmqPerPasso(pitchMm);
   const profile = calcolaProfiloEnergetico(
     areaM2,
@@ -804,11 +877,6 @@ function snapshotConfigurazione(
   };
 }
 
-/** Il passo eroga davvero i nit richiesti? Il tetto è quello fisico del componente, senza tolleranze. */
-export function passoRaggiungeNit(pitchMm: number, nits: number): boolean {
-  return nits <= getMaxNitsForPitch(pitchMm).maxNits;
-}
-
 export function suggerisciAlternativa(
   pitchMm: number,
   nits: number,
@@ -816,39 +884,53 @@ export function suggerisciAlternativa(
   apl: number,
   oreGiorno: number,
   tariffaEurKwh: number,
-  installHeightM: number = 5,
-  groundViewingDistM: number = 10,
-  screenHeightM: number = 0
+  installHeightM: number,
+  groundViewingDistM: number,
+  screenHeightM: number,
+  tier: TierId
 ): AlternativeProposal {
   const optical = calcolaConsulenzaOttica(installHeightM, groundViewingDistM, pitchMm, areaM2, nits, screenHeightM);
-  const snapshot = (p: number) => snapshotConfigurazione(p, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
+  const snapshot = (p: number) => snapshotConfigurazione(p, nits, areaM2, apl, oreGiorno, tariffaEurKwh, datoCatalogo(tier, p));
   const current = snapshot(pitchMm);
+  const T = tierName(tier);
 
-  // I DUE REQUISITI, entrambi vincolanti: una proposta o un verdetto positivo esistono solo se tornano tutti e due.
-  // 1. Luminosità: il componente deve arrivare ai nit richiesti.
+  // I DUE REQUISITI, entrambi vincolanti e calcolati sulla combinazione Selection × passo:
+  // 1. Luminosità: il componente di QUELLA combinazione deve arrivare ai nit richiesti (dato di listino).
+  //    Se il listino non ha il dato, la combinazione non è validabile: non è mai un sì.
   // 2. Distanza: il passo non deve essere così largo che l'occhio separa i diodi (oltre 1 arcminuto).
-  const meetsBrightness = (p: number) => passoRaggiungeNit(p, nits);
   const meetsDistance = (p: number) => !(p > optical.recommendedPitchMm + 0.15 && p > optical.minResolvablePitchMm);
-  const isValid = (p: number) => meetsBrightness(p) && meetsDistance(p);
+  const validiIn = (t: TierId) => passiDelTier(t).filter((r) => nits <= r.maxNits && meetsDistance(r.pitchMm));
 
-  const validPitchesMm = PITCH_PRESETS_EXPRESS.filter(isValid);
-  const currentMeetsBrightness = meetsBrightness(pitchMm);
+  const righeTier = passiDelTier(tier);
+  const validi = validiIn(tier);
+  const validPitchesMm = validi.map((r) => r.pitchMm);
+  const datoCorrente = datoCatalogo(tier, pitchMm);
+  const currentHasData = datoCorrente !== null;
+  const currentMeetsBrightness = datoCorrente !== null && nits <= datoCorrente.maxNits;
   const currentMeetsDistance = meetsDistance(pitchMm);
   const currentIsValid = currentMeetsBrightness && currentMeetsDistance;
+
+  const validInOtherTiers = TIERS.filter((t) => t.id !== tier)
+    .map((t) => validiIn(t.id))
+    .filter((r) => r.length > 0)
+    .map((r) => r[r.length - 1]);
 
   const D = optical.lineOfSightDistM;
   const Dtxt = D.toLocaleString('it-IT');
   // 'always': in italiano i numeri a 4 cifre uscirebbero senza punto (8000 accanto a 12.000)
   const it = (v: number) => v.toLocaleString('it-IT', { useGrouping: 'always' } as Intl.NumberFormatOptions);
   const nitsTxt = it(nits);
-  const tetto = (p: number) => it(getMaxNitsForPitch(p).maxNits);
+  const tetto = (p: number) => {
+    const d = datoCatalogo(tier, p);
+    return d ? it(d.maxNits) : 'n.d.';
+  };
   const pulitoDaM = (p: number) => Math.round(p / 0.291);
 
   let kind: AlternativeProposal['kind'] = 'none';
   let finalProposed = current;
 
   if (currentIsValid) {
-    // Passo valido: si cerca solo un passo più largo, ANCH'ESSO valido, che consumi meno
+    // Combinazione valida: si cerca solo un passo più largo, ANCH'ESSO valido nella stessa Selection, che consumi meno
     const cheaper = validPitchesMm
       .filter((p) => p > pitchMm + 0.05 && p <= optical.recommendedPitchMm + 0.15)
       .map(snapshot)
@@ -858,20 +940,20 @@ export function suggerisciAlternativa(
       finalProposed = cheaper[cheaper.length - 1];
     }
   } else if (validPitchesMm.length > 0) {
-    // Passo non valido ma a catalogo esiste chi soddisfa entrambi i requisiti: il più largo, che consuma meno
-    kind = currentMeetsBrightness ? 'coarse' : 'brightness';
+    // Non valida, ma nella Selection esiste chi soddisfa entrambi i requisiti: il passo più largo, che consuma meno
+    kind = !currentHasData ? 'nodata' : currentMeetsBrightness ? 'coarse' : 'brightness';
     finalProposed = snapshot(Math.max(...validPitchesMm));
+  } else if (!currentHasData) {
+    kind = 'nodata';
   } else {
-    // Nessun passo soddisfa insieme nit e distanza. Compromesso più vicino: si tiene la luminosità
-    // (sotto il sole un contenuto che non si legge non serve) con il passo più fitto che ci arriva;
-    // se nessuno ci arriva, quello con il tetto più alto.
+    // Nessun passo della Selection soddisfa insieme nit e distanza. Compromesso più vicino: si tiene la
+    // luminosità (sotto il sole un contenuto che non si legge non serve) con il passo più fitto che ci
+    // arriva; se nessuno ci arriva, quello con il tetto più alto. Sempre e solo combinazioni a listino.
     kind = 'compromise';
-    const bright = PITCH_PRESETS_EXPRESS.filter(meetsBrightness);
-    const compromisePitch =
-      bright.length > 0
-        ? Math.min(...bright)
-        : PITCH_PRESETS_EXPRESS.reduce((best, p) => (getMaxNitsForPitch(p).maxNits > getMaxNitsForPitch(best).maxNits ? p : best));
-    finalProposed = Math.abs(compromisePitch - pitchMm) < 0.05 ? current : snapshot(compromisePitch);
+    const bright = righeTier.filter((r) => nits <= r.maxNits);
+    const compromise =
+      bright.length > 0 ? bright[0] : righeTier.reduce((best, r) => (r.maxNits > best.maxNits ? r : best));
+    finalProposed = stessoPasso(compromise.pitchMm, pitchMm) ? current : snapshot(compromise.pitchMm);
   }
 
   const proposedPitch = finalProposed.pitchMm;
@@ -899,45 +981,57 @@ export function suggerisciAlternativa(
   const fleetMonitorExtraPercent =
     finalProposed.annualCostEur > 0 ? Math.round((fleetMonitorExtraEur / finalProposed.annualCostEur) * 100) : 0;
 
+  const altreSelection = validInOtherTiers
+    .map((r) => `${tierName(r.tier)} P${r.pitchMm} (${it(r.maxNits)} nit)`)
+    .join(', ');
+
   const reasons: string[] = [];
   let headline = '';
 
   if (kind === 'pitch') {
-    headline = `Ti consigliamo il P${proposedPitch} mm: -${savingsPercent}% di consumi a parità di qualità percepita a ${Dtxt} m.`;
+    headline = `Ti consigliamo il P${proposedPitch} mm ${T}: -${savingsPercent}% di consumi a parità di qualità percepita a ${Dtxt} m.`;
     reasons.push(
       `A ${Dtxt} m di linea di vista l'occhio fonde i pixel già dal P${optical.recommendedPitchMm} mm: il P${pitchMm} spende il ${optical.wastedPixelsPercent}% dei pixel in dettaglio non visibile.`
     );
     reasons.push(
-      `Sforzo dei chip dal ${current.hardware.sforzoPercent}% al ${finalProposed.hardware.sforzoPercent}%: giunzione più fredda, meno thermal droop, vita utile più lunga.`
-    );
-    reasons.push(
-      `Efficienza da ${current.hardware.efficienzaLmPerW} a ${finalProposed.hardware.efficienzaLmPerW} lm/W (${current.hardware.tecnologiaChip} → ${finalProposed.hardware.tecnologiaChip}).`
+      `Il P${proposedPitch} ${T} arriva a ${tetto(proposedPitch)} nit: copre i ${nitsTxt} richiesti con i chip al ${finalProposed.hardware.sforzoPercent}% di sforzo (oggi ${current.hardware.sforzoPercent}%).`
     );
     reasons.push(
       `Potenza media reale con il tuo contenuto: da ${current.pMedioWmq} a ${finalProposed.pMedioWmq} W/m².`
     );
-  } else if (kind === 'brightness') {
-    headline = `Il P${pitchMm} mm non esiste a ${nitsTxt} nit: si ferma a ${tetto(pitchMm)}. Per questa luminosità a ${Dtxt} m serve il P${proposedPitch} mm.`;
+  } else if (kind === 'nodata') {
+    headline = `Dato non disponibile per il P${pitchMm} mm ${T}: il listino non ha il tetto di nit di questa combinazione, quindi non possiamo dirti se regge ${nitsTxt} nit.`;
     reasons.push(
-      `Tetto fisico del P${pitchMm}: ${tetto(pitchMm)} nit (${current.hardware.tecnologiaChip}). ${current.hardware.limitReason}`
+      `Non usiamo il valore di un'altra Selection o di un altro passo: il tetto dipende dal chip reale montato su quella combinazione.`
     );
     reasons.push(
-      `Il P${proposedPitch} arriva a ${tetto(proposedPitch)} nit e a ${Dtxt} m resta pulito: soddisfa insieme luminosità e distanza di visione.`
+      righeTier.length > 0
+        ? `In ${T} il listino copre con dati certi: ${righeTier.map((r) => `P${r.pitchMm}`).join(', ')}.`
+        : `Per la Selection ${T} il listino non ha ancora nessun dato outdoor.`
+    );
+    if (validPitchesMm.length > 0) {
+      reasons.push(`Con dati certi, a ${nitsTxt} nit e ${Dtxt} m in ${T} torna tutto sul P${proposedPitch} (tetto ${tetto(proposedPitch)} nit).`);
+    } else if (altreSelection) {
+      reasons.push(`A ${nitsTxt} nit e ${Dtxt} m i requisiti tornano in: ${altreSelection}.`);
+    }
+  } else if (kind === 'brightness') {
+    headline = `Il P${pitchMm} mm ${T} non esiste a ${nitsTxt} nit: si ferma a ${tetto(pitchMm)}. Per questa luminosità a ${Dtxt} m, in ${T} serve il P${proposedPitch} mm.`;
+    reasons.push(`Tetto di listino del P${pitchMm} ${T}: ${tetto(pitchMm)} nit (${current.hardware.tecnologiaChip}).`);
+    reasons.push(
+      `Il P${proposedPitch} ${T} arriva a ${tetto(proposedPitch)} nit e a ${Dtxt} m resta pulito: soddisfa insieme luminosità e distanza di visione.`
     );
     if (!currentMeetsDistance) {
       reasons.push(`Il P${pitchMm} a ${Dtxt} m è anche troppo largo: la trama dei pixel si vede.`);
     }
-    reasons.push(
-      `Sforzo dei chip a ${nitsTxt} nit: ${finalProposed.hardware.sforzoPercent}% sul P${proposedPitch}. Il P${pitchMm} resterebbe a fondo scala senza arrivarci.`
-    );
+    reasons.push(`Sforzo dei chip a ${nitsTxt} nit sul P${proposedPitch} ${T}: ${finalProposed.hardware.sforzoPercent}% del suo tetto.`);
   } else if (kind === 'coarse') {
     const pixelRatio = Math.round(Math.pow(pitchMm / proposedPitch, 2) * 10) / 10;
-    headline = `A ${Dtxt} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena serve il P${proposedPitch} mm.`;
+    headline = `A ${Dtxt} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena, in ${T} serve il P${proposedPitch} mm.`;
     reasons.push(
       `A ${Dtxt} m l'occhio distingue i singoli diodi sopra i ${optical.minResolvablePitchMm.toLocaleString('it-IT')} mm di passo (1 arcminuto): con il P${pitchMm} testi e volti risultano sgranati.`
     );
     reasons.push(
-      `Il P${proposedPitch} porta ${pixelRatio.toLocaleString('it-IT')}× più pixel sulla stessa superficie e arriva a ${tetto(proposedPitch)} nit: copre anche i ${nitsTxt} richiesti.`
+      `Il P${proposedPitch} ${T} porta ${pixelRatio.toLocaleString('it-IT')}× più pixel sulla stessa superficie e arriva a ${tetto(proposedPitch)} nit: copre anche i ${nitsTxt} richiesti.`
     );
     reasons.push(
       extraCostEur > 0
@@ -945,35 +1039,47 @@ export function suggerisciAlternativa(
         : `Il P${pitchMm} torna corretto da circa ${pulitoDaM(pitchMm)} m in su.`
     );
   } else if (kind === 'compromise') {
-    const cleanPresets = PITCH_PRESETS_EXPRESS.filter(meetsDistance);
-    const widestClean = cleanPresets.length > 0 ? Math.max(...cleanPresets) : PITCH_PRESETS_EXPRESS[0];
-    headline = `Nessun passo disponibile soddisfa entrambi i requisiti: ${nitsTxt} nit e immagine pulita a ${Dtxt} m.`;
+    const puliti = righeTier.filter((r) => meetsDistance(r.pitchMm));
+    const widestClean = puliti.length > 0 ? puliti[puliti.length - 1] : null;
+    const proposedDato = datoCatalogo(tier, proposedPitch);
+    const arriva = proposedDato !== null && nits <= proposedDato.maxNits;
+    headline = `Nessun passo disponibile in ${T} soddisfa entrambi i requisiti: ${nitsTxt} nit e immagine pulita a ${Dtxt} m.`;
     reasons.push(
-      meetsBrightness(proposedPitch)
-        ? `Per ${nitsTxt} nit serve almeno il P${proposedPitch} (tetto ${tetto(proposedPitch)} nit): i passi più fitti si fermano prima, il P${widestClean} a ${tetto(widestClean)} nit.`
-        : `Nessun passo a catalogo arriva a ${nitsTxt} nit: il tetto più alto è il P${proposedPitch} con ${tetto(proposedPitch)} nit.`
+      arriva
+        ? `In ${T}, per ${nitsTxt} nit serve almeno il P${proposedPitch} (tetto ${tetto(proposedPitch)} nit): i passi più fitti si fermano prima${widestClean ? `, il P${widestClean.pitchMm} a ${it(widestClean.maxNits)} nit` : ''}.`
+        : `Nessun passo ${T} arriva a ${nitsTxt} nit: il tetto più alto della Selection è il P${proposedPitch} con ${tetto(proposedPitch)} nit.`
+    );
+    if (!meetsDistance(proposedPitch)) {
+      reasons.push(
+        `A ${Dtxt} m l'immagine resta pulita solo fino al P${widestClean ? widestClean.pitchMm : optical.recommendedPitchMm}: il P${proposedPitch} mostra la trama dei pixel e torna pulito da circa ${pulitoDaM(proposedPitch)} m.`
+      );
+    }
+    reasons.push(
+      `Compromesso più vicino in ${T}: P${proposedPitch} a ${it(Math.min(nits, proposedDato ? proposedDato.maxNits : nits))} nit${arriva ? ', luminosità piena ma trama visibile da vicino' : ', il massimo che la Selection eroga'}.${widestClean && !stessoPasso(widestClean.pitchMm, proposedPitch) ? ` L'alternativa è il P${widestClean.pitchMm} a ${it(Math.min(nits, widestClean.maxNits))} nit: immagine pulita, ma sotto il sole diretto rende meno.` : ''}`
     );
     reasons.push(
-      `A ${Dtxt} m l'immagine resta pulita solo fino al P${widestClean}: il P${proposedPitch} mostra la trama dei pixel e torna pulito da circa ${pulitoDaM(proposedPitch)} m.`
+      altreSelection
+        ? `Entrambi i requisiti tornano cambiando Selection: ${altreSelection}.`
+        : 'In nessuna Selection a listino tornano entrambi: va allontanato il punto di visione oppure abbassati i nit richiesti.'
     );
-    reasons.push(
-      `Compromesso più vicino: P${proposedPitch} a ${it(Math.min(nits, getMaxNitsForPitch(proposedPitch).maxNits))} nit, luminosità piena ma trama visibile da vicino. L'alternativa è il P${widestClean} a ${tetto(widestClean)} nit: immagine pulita, ma sotto il sole diretto rende meno.`
-    );
-    reasons.push('Per far tornare entrambi i requisiti: allontanare il punto di visione oppure abbassare i nit richiesti.');
   } else if (fleetMonitorExtraEur > 0) {
     kind = 'fleet';
-    headline = `Il P${pitchMm} mm è già il passo giusto per ${Dtxt} m e ${nitsTxt} nit: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
+    headline = `Il P${pitchMm} mm ${T} è già il passo giusto per ${Dtxt} m e ${nitsTxt} nit: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
+    reasons.push(`Tetto di listino del P${pitchMm} ${T}: ${tetto(pitchMm)} nit (${current.hardware.tecnologiaChip}). Chip al ${current.hardware.sforzoPercent}% di sforzo.`);
     reasons.push('Sensore lux e dimming adattivo: luminosità diurna tarata sull\'ambiente, non fissa al 100%.');
     reasons.push('Dimming notturno al 10% (CEI) e relè di standby a 0 W/m² a schermo spento.');
-    reasons.push(`Chip al ${current.hardware.sforzoPercent}% di sforzo: già in regime termico sano.`);
   } else {
-    headline = `Configurazione bilanciata: il P${pitchMm} mm a ${nitsTxt} nit è coerente con ${Dtxt} m di distanza.`;
+    headline = `Configurazione bilanciata: il P${pitchMm} mm ${T} a ${nitsTxt} nit è coerente con ${Dtxt} m di distanza.`;
   }
 
   const isPitchSaving = kind === 'pitch';
   return {
     hasAlternative: kind !== 'none',
     kind,
+    tier,
+    currentHasData,
+    currentMaxNits: datoCorrente ? datoCorrente.maxNits : null,
+    validInOtherTiers,
     currentIsValid,
     currentMeetsBrightness,
     currentMeetsDistance,

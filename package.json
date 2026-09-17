@@ -10,7 +10,8 @@
     "test": "vitest run",
     "prebuild": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs",
     "build:site": "NEXT_PUBLIC_BASE_PATH=/simulatore-consumi next build",
-    "deploy:site": "bash scripts/deploy-site.sh"
+    "deploy:site": "bash scripts/deploy-site.sh",
+    "sync:catalogo": "node scripts/sync-catalogo-nit.mjs"
   },
   "dependencies": {
     "framer-motion": "^13.3.0",

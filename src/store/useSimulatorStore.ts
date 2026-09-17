@@ -13,6 +13,8 @@ import {
   calcolaConsulenzaOttica,
   suggerisciAlternativa,
   standbyWmqPerPasso,
+  datoCatalogo,
+  TierId,
   ScreenDimensions,
   DailyEnergyProfile,
   ScenarioResult,
@@ -33,6 +35,7 @@ export interface SimulatorState {
   modulesW: number;
   modulesH: number;
   pitchMm: number;
+  tier: TierId; // Selection VeroLED: il tetto di nit è della combinazione tier × passo
   targetOutdoorNits: number; // Luminosità operativa outdoor di riferimento (standard 5.000 nit)
   installHeightM: number; // Quota installazione da terra (metri)
   groundViewingDistM: number; // Distanza osservatori su strada (metri)
@@ -89,6 +92,7 @@ export interface SimulatorState {
   setModulesW: (w: number) => void;
   setModulesH: (h: number) => void;
   setPitchMm: (p: number) => void;
+  setTier: (tier: TierId) => void;
   setTargetOutdoorNits: (nits: number) => void;
   setInstallHeightM: (h: number) => void;
   setGroundViewingDistM: (d: number) => void;
@@ -116,7 +120,8 @@ export const useSimulatorStore = create<SimulatorState>()(
       formatId: '1000x1000',
       modulesW: 5,
       modulesH: 3,
-      pitchMm: 3.9,
+      pitchMm: 3.91,
+      tier: 'gold',
       targetOutdoorNits: 5000,
       installHeightM: 5.0,
       groundViewingDistM: 10.0,
@@ -177,6 +182,7 @@ export const useSimulatorStore = create<SimulatorState>()(
       setModulesW: (modulesW) => set({ modulesW: Math.max(1, modulesW) }),
       setModulesH: (modulesH) => set({ modulesH: Math.max(1, modulesH) }),
       setPitchMm: (pitchMm) => set({ pitchMm }),
+      setTier: (tier) => set({ tier }),
       setTargetOutdoorNits: (targetOutdoorNits) =>
         set({ targetOutdoorNits: Math.max(2500, Math.min(12000, targetOutdoorNits)) }),
       setInstallHeightM: (installHeightM) => set({ installHeightM: Math.max(0, installHeightM) }),
@@ -245,7 +251,8 @@ export const useSimulatorStore = create<SimulatorState>()(
           formatId: '1000x1000',
           modulesW: 5,
           modulesH: 3,
-          pitchMm: 3.9,
+          pitchMm: 3.91,
+      tier: 'gold',
           targetOutdoorNits: 5000,
           aplSource: 'manual',
           aplPercent: CONFIG.DEFAULT_APL_PERCENT,
@@ -281,6 +288,7 @@ export const useSimulatorStore = create<SimulatorState>()(
         modulesW: s.modulesW,
         modulesH: s.modulesH,
         pitchMm: s.pitchMm,
+        tier: s.tier,
         targetOutdoorNits: s.targetOutdoorNits,
         installHeightM: s.installHeightM,
         groundViewingDistM: s.groundViewingDistM,
@@ -304,7 +312,10 @@ export function useSimulatorComputed() {
     CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
 
   // Calcolo potenza massima e standby reali basate sul passo pixel selezionato e luminosità target (5.000 nit)
-  const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000);
+  // Tetto di nit e sforzo dalla combinazione Selection × passo del listino (null = dato non disponibile)
+  const tier: TierId = state.tier ?? 'gold';
+  const catalogo = datoCatalogo(tier, state.pitchMm);
+  const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000, undefined, undefined, undefined, true, catalogo);
   const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
   const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(state.pitchMm);
 
@@ -374,7 +385,8 @@ export function useSimulatorComputed() {
     state.tariffEurKwh,
     state.installHeightM ?? 5.0,
     state.groundViewingDistM ?? 10.0,
-    dimensions.heightM
+    dimensions.heightM,
+    tier
   );
 
   return {

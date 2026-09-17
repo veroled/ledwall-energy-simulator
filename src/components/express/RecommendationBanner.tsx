@@ -72,7 +72,9 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
   // Requisito fisico non soddisfatto: il passo non arriva ai nit, o nessun passo soddisfa nit e distanza insieme
   const isBrightness = kind === 'brightness';
   const isCompromise = kind === 'compromise';
-  const isInvalid = isBrightness || isCompromise;
+  // Il listino non ha il tetto di nit della combinazione scelta: non validabile, quindi mai positivo
+  const isNoData = kind === 'nodata';
+  const isInvalid = isBrightness || isCompromise || isNoData;
   const hasProposal = (isPitch || isCoarse || isInvalid) && proposed.pitchMm !== current.pitchMm;
   // Verde solo se il passo scelto soddisfa tutti i requisiti; ambra = troppo largo; rosso = requisito fisico mancato
   const tone = isInvalid
@@ -86,6 +88,8 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
     ? 'Luminosità non raggiungibile'
     : isCompromise
     ? 'Nessun passo valido'
+    : isNoData
+    ? 'Dato non disponibile'
     : isCoarse
     ? 'Passo troppo largo'
     : isFleet
@@ -120,13 +124,15 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
           <div className="p-3 rounded-lg bg-[#0D1117] border border-[#1A2028]">
             <span className="text-[10px] uppercase text-[#868D97] font-medium block">La tua scelta</span>
             <span className={`text-lg font-semibold tabular-nums ${isCoarse ? 'text-[#FBBF24]' : 'text-[#F87171]'}`}>P{current.pitchMm} mm</span>
-            {alternative.currentMeetsBrightness ? (
+            {!alternative.currentHasData ? (
+              <span className="text-[11px] text-[#F87171] block">tetto di nit non a listino per questa Selection</span>
+            ) : alternative.currentMeetsBrightness ? (
               <span className="text-[11px] text-[#9AA3AD] block tabular-nums">
                 {eur(current.annualCostEur)}/anno · {current.hardware.sforzoPercent}% sforzo chip
               </span>
             ) : (
               <span className="text-[11px] text-[#F87171] block tabular-nums">
-                max {num(current.hardware.maxPhysicalNits, 0)} nit · ne servono {num(current.nits, 0)}
+                max {num(alternative.currentMaxNits ?? 0, 0)} nit · ne servono {num(current.nits, 0)}
               </span>
             )}
           </div>

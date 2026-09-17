@@ -3,9 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
-import { CABINET_FORMATS, PIXEL_PITCH_PRESETS, CONFIG } from '../../config/config';
+import { CABINET_FORMATS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
-import { stimaPotenzaDaPassoNit, getMaxNitsForPitch, calcolaConsulenzaOttica, standbyWmqPerPasso, passoRaggiungeNit } from '../../core/physics';
+import { stimaPotenzaDaPassoNit, calcolaConsulenzaOttica, standbyWmqPerPasso, datoCatalogo, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
 import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock, Sun, Eye, ThumbsUp, AlertTriangle } from 'lucide-react';
 
 export const S2Dimensions: React.FC = () => {
@@ -33,7 +33,12 @@ export const S2Dimensions: React.FC = () => {
   // Calcolo consumi in tempo reale basati sull'APL istantaneo e sulla fisica reale del passo pixel a 5.000 Nit
   const targetOutdoorNits = useSimulatorStore((s) => s.targetOutdoorNits) || 5000;
   const effectiveLiveApl = Math.max(0.05, Math.min(1, (liveApl ?? 30) / 100));
-  const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, targetOutdoorNits);
+  // Selection VeroLED: tetto di nit e chip sono della combinazione Selection × passo del listino
+  const tier = useSimulatorStore((s) => s.tier) ?? 'gold';
+  const setTier = useSimulatorStore((s) => s.setTier);
+  const tierLabel = tierName(tier);
+  const righeTier = passiDelTier(tier);
+  const hardwareEstimate = stimaPotenzaDaPassoNit(pitchMm, targetOutdoorNits, undefined, undefined, undefined, true, datoCatalogo(tier, pitchMm));
   const pMaxWmq = useSimulatorStore.getState().datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
   const pStandbyWmq = useSimulatorStore.getState().datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(pitchMm);
   const livePowerWmq = pStandbyWmq + effectiveLiveApl * (pMaxWmq - pStandbyWmq);
@@ -71,16 +76,21 @@ export const S2Dimensions: React.FC = () => {
   // Helper per la formattazione dei numeri con punto delle migliaia garantito
   const fmt = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-  // Limiti fisici-meccanici reali dei package LED (es. P3.91 non può eccedere 6.500 nit)
-  const limitA = getMaxNitsForPitch(compPitchA);
-  const limitB = getMaxNitsForPitch(compPitchB);
+  // Il comparatore lavora solo su combinazioni a listino della Selection scelta: se il passo in memoria
+  // non esiste in quella Selection si passa al primo (A) e all'ultimo (B) che il listino copre.
+  const rowA = datoCatalogo(tier, compPitchA) ?? righeTier[0];
+  const rowB = datoCatalogo(tier, compPitchB) ?? righeTier[righeTier.length - 1];
+  const pitchA = rowA.pitchMm;
+  const pitchB = rowB.pitchMm;
+  const limitA = { maxNits: rowA.maxNits, chipType: rowA.chip };
+  const limitB = { maxNits: rowB.maxNits, chipType: rowB.chip };
 
   // Clamping sul limite fisico reale del semiconduttore
   const effectiveNitsA = Math.min(compNitsA, limitA.maxNits);
   const effectiveNitsB = Math.min(compNitsB, limitB.maxNits);
 
-  const compResA = stimaPotenzaDaPassoNit(compPitchA, effectiveNitsA, dimensions.areaM2);
-  const compResB = stimaPotenzaDaPassoNit(compPitchB, effectiveNitsB, dimensions.areaM2);
+  const compResA = stimaPotenzaDaPassoNit(rowA.pitchMm, effectiveNitsA, dimensions.areaM2, undefined, undefined, true, rowA);
+  const compResB = stimaPotenzaDaPassoNit(rowB.pitchMm, effectiveNitsB, dimensions.areaM2, undefined, undefined, true, rowB);
 
   const deltaCostEur = Math.abs(compResA.annualCostEur - compResB.annualCostEur);
   const isAMoreExpensive = compResA.annualCostEur > compResB.annualCostEur;
@@ -90,12 +100,12 @@ export const S2Dimensions: React.FC = () => {
     return calcolaConsulenzaOttica(
       installHeightM,
       groundViewingDistM,
-      compPitchA,
+      pitchA,
       dimensions.areaM2,
       Math.max(effectiveNitsA, effectiveNitsB, 6000),
       dimensions.heightM
     );
-  }, [installHeightM, groundViewingDistM, compPitchA, dimensions.areaM2, dimensions.heightM, effectiveNitsA, effectiveNitsB]);
+  }, [installHeightM, groundViewingDistM, pitchA, dimensions.areaM2, dimensions.heightM, effectiveNitsA, effectiveNitsB]);
 
   const applyBarbecuePreset = () => {
     setDimensioniMetri(6.0, 3.0);
@@ -339,11 +349,11 @@ export const S2Dimensions: React.FC = () => {
                   <div className="p-3 rounded-lg bg-[#2E200B]/60 border border-[#5E3F10] text-[#FDB022] space-y-1">
                     <div className="flex items-center space-x-1.5 font-semibold text-xs">
                       <AlertTriangle className="w-4 h-4 text-[#FDB022] flex-shrink-0" />
-                      <span>Avviso Tecnico: Il passo scelto dal cliente (P{compPitchA} mm) è in Overkill Ottico</span>
+                      <span>Avviso Tecnico: Il passo scelto dal cliente (P{pitchA} mm) è in Overkill Ottico</span>
                     </div>
                     <p className="text-[11px] text-[#E8EDF2] leading-relaxed">
                       A <strong>{opticalConsulting.lineOfSightDistM} m</strong> di distanza effettiva, l&apos;occhio umano non è in grado di distinguere pixel inferiori a <strong>{opticalConsulting.minResolvablePitchMm} mm</strong>.
-                      Con un P{compPitchA} il cliente acquisterebbe <strong>{fmt(opticalConsulting.wastedPixelsCount)} pixel invisibili all&apos;occhio umano (+{opticalConsulting.wastedPixelsPercent}%)</strong>, aumentando inutilmente il canone di noleggio e spingendo i chip in saturazione termica a {fmt(effectiveNitsA)} nit.
+                      Con un P{pitchA} il cliente acquisterebbe <strong>{fmt(opticalConsulting.wastedPixelsCount)} pixel invisibili all&apos;occhio umano (+{opticalConsulting.wastedPixelsPercent}%)</strong>, aumentando inutilmente il canone di noleggio e spingendo i chip in saturazione termica a {fmt(effectiveNitsA)} nit.
                     </p>
                   </div>
                 )}
@@ -369,23 +379,20 @@ export const S2Dimensions: React.FC = () => {
                   <div>
                     <label className="text-xs text-[#868D97] block mb-1">Passo Pixel (Pitch):</label>
                     <select
-                      value={compPitchA.toString()}
+                      value={rowA.pitchMm.toString()}
                       onChange={(e) => {
                         const newP = parseFloat(e.target.value);
                         setCompPitchA(newP);
-                        const maxA = getMaxNitsForPitch(newP).maxNits;
+                        const maxA = datoCatalogo(tier, newP)?.maxNits ?? compNitsA;
                         if (compNitsA > maxA) setCompNitsA(maxA);
                       }}
                       className="w-full p-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white outline-none font-medium text-xs"
                     >
-                      <option value="1.95">P1.95 mm (max 4.000 nit - Micro/Mini)</option>
-                      <option value="2.6">P2.6 mm (max 4.500 nit - Mini-LED)</option>
-                      <option value="2.9">P2.9 mm (max 5.000 nit - SMD1515)</option>
-                      <option value="3.91">P3.91 mm (max 6.500 nit - SMD1921)</option>
-                      <option value="4.81">P4.81 mm (max 7.000 nit - SMD1921)</option>
-                      <option value="6.67">P6.67 mm (fino a 12.000 nit - Gold Wire)</option>
-                      <option value="8">P8.0 mm (fino a 12.000 nit - Gold Wire)</option>
-                      <option value="10">P10.0 mm (fino a 12.000 nit - Gold Wire)</option>
+                      {righeTier.map((r) => (
+                        <option key={r.pitchMm} value={r.pitchMm.toString()}>
+                          P{r.pitchMm} mm {tierLabel} (max {fmt(r.maxNits)} nit · {r.chip})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -420,9 +427,9 @@ export const S2Dimensions: React.FC = () => {
                       <span className="text-[#9AA3AD] font-medium">Tetto: {fmt(limitA.maxNits)} nit ({limitA.chipType.split(' ')[0]})</span>
                     </div>
 
-                    {compPitchA <= 2.6 && effectiveNitsA >= 4500 && (
+                    {pitchA <= 2.6 && effectiveNitsA >= 4500 && (
                       <div className="mt-2 p-2 rounded bg-[#2E200B]/40 border border-[#5E3F10] text-[11px] text-[#FDB022]">
-                        ⚠️ <strong>Saturazione Termica:</strong> Su P{compPitchA}mm a {fmt(effectiveNitsA)} nit i chip operano al 100% di sforzo PWM. Tj elevata con rischio deperimento precoce e thermal droop.
+                        ⚠️ <strong>Saturazione Termica:</strong> Su P{pitchA}mm a {fmt(effectiveNitsA)} nit i chip operano al 100% di sforzo PWM. Tj elevata con rischio deperimento precoce e thermal droop.
                       </div>
                     )}
                   </div>
@@ -479,12 +486,12 @@ export const S2Dimensions: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setPitchMm(compPitchA);
+                      setPitchMm(rowA.pitchMm);
                       setSizingMode('cabinet');
                     }}
                     className="w-full py-2 rounded-lg bg-[#10141D] hover:bg-[#161F30] border border-[#1A2028] text-[#E8EDF2] font-medium text-xs transition-colors cursor-pointer"
                   >
-                    Seleziona Passo P{compPitchA}
+                    Seleziona Passo P{pitchA}
                   </button>
                 </div>
 
@@ -502,22 +509,20 @@ export const S2Dimensions: React.FC = () => {
                   <div>
                     <label className="text-xs text-[#868D97] block mb-1">Passo Pixel (Pitch):</label>
                     <select
-                      value={compPitchB.toString()}
+                      value={rowB.pitchMm.toString()}
                       onChange={(e) => {
                         const newP = parseFloat(e.target.value);
                         setCompPitchB(newP);
-                        const maxB = getMaxNitsForPitch(newP).maxNits;
+                        const maxB = datoCatalogo(tier, newP)?.maxNits ?? compNitsB;
                         if (compNitsB > maxB) setCompNitsB(maxB);
                       }}
                       className="w-full p-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white outline-none font-medium text-xs"
                     >
-                      <option value="2.6">P2.6 mm (max 4.500 nit - Mini-LED)</option>
-                      <option value="2.9">P2.9 mm (max 5.000 nit - SMD1515)</option>
-                      <option value="3.91">P3.91 mm (max 6.500 nit - SMD1921)</option>
-                      <option value="4.81">P4.81 mm (max 7.000 nit - SMD1921)</option>
-                      <option value="6.67">P6.67 mm (fino a 12.000 nit - Gold Wire)</option>
-                      <option value="8">P8.0 mm (fino a 12.000 nit - Gold Wire)</option>
-                      <option value="10">P10.0 mm (fino a 12.000 nit - Gold Wire)</option>
+                      {righeTier.map((r) => (
+                        <option key={r.pitchMm} value={r.pitchMm.toString()}>
+                          P{r.pitchMm} mm {tierLabel} (max {fmt(r.maxNits)} nit · {r.chip})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -525,9 +530,9 @@ export const S2Dimensions: React.FC = () => {
                     <div className="flex justify-between items-center text-xs text-[#868D97] mb-1">
                       <span>Luminosità Garantita:</span>
                       <div className="flex items-center space-x-1.5">
-                        {effectiveNitsB >= 12000 ? (
+                        {effectiveNitsB >= limitB.maxNits ? (
                           <span className="text-[10px] text-[#FDB022] bg-[#2E200B] px-1.5 py-0.5 rounded border border-[#5E3F10] font-medium">
-                            Gold Wire 12.000 nit
+                            Tetto {tierLabel}: {fmt(limitB.maxNits)} nit
                           </span>
                         ) : effectiveNitsB >= 10000 ? (
                           <span className="text-[10px] text-[#34D399] bg-[#0D2818] px-1.5 py-0.5 rounded border border-[#163826] font-medium">
@@ -560,12 +565,12 @@ export const S2Dimensions: React.FC = () => {
                       <span>3.000 nit</span>
                       <span>10.000 nit</span>
                       <span className="text-[#12B76A] font-medium">
-                        {limitB.maxNits >= 12000 ? 'Gold Wire 12.000 nit' : `Max: ${fmt(limitB.maxNits)} nit`}
+                        {`Max ${tierLabel}: ${fmt(limitB.maxNits)} nit`}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                      {compPitchB !== opticalConsulting.recommendedPitchMm && (
+                      {pitchB !== opticalConsulting.recommendedPitchMm && (
                         <button
                           type="button"
                           onClick={() => {
@@ -595,7 +600,7 @@ export const S2Dimensions: React.FC = () => {
                       </button>
                     </div>
 
-                    {compPitchB === opticalConsulting.recommendedPitchMm && (
+                    {pitchB === opticalConsulting.recommendedPitchMm && (
                       <div className="mt-2 p-2 rounded bg-[#0D2818]/40 border border-[#163826] text-[11px] text-[#34D399]">
                         ✅ <strong>100% Retina Blended:</strong> A {opticalConsulting.lineOfSightDistM}m di distanza i pixel sono fusi otticamente. I diodi lavorano a riposo ({compResB.sforzoPercent}% sforzo) garantendo 6.000+ nit stabili per anni.
                       </div>
@@ -652,12 +657,12 @@ export const S2Dimensions: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setPitchMm(compPitchB);
+                      setPitchMm(rowB.pitchMm);
                       setSizingMode('cabinet');
                     }}
                     className="w-full py-2 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs transition-colors cursor-pointer shadow-sm"
                   >
-                    Seleziona Passo P{compPitchB}
+                    Seleziona Passo P{pitchB}
                   </button>
                 </div>
               </div>
@@ -811,19 +816,36 @@ export const S2Dimensions: React.FC = () => {
                       % = carico termico per erogare {fmt(targetOutdoorNits)} Nit
                     </span>
                   </div>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {TIERS.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTier(t.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
+                          tier === t.id
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
+                            : 'border border-[#1A2028] bg-[#10141D] text-[#9AA3AD] hover:text-white'
+                        }`}
+                      >
+                        {t.name} <span className="font-mono text-[10px] opacity-70">{t.wire}</span>
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {PIXEL_PITCH_PRESETS.map((p) => {
-                      const pEst = stimaPotenzaDaPassoNit(p, targetOutdoorNits);
-                      const isSelected = pitchMm === p;
-                      // Gate fisico: un passo che non arriva ai nit richiesti non è una scelta possibile
-                      const reachable = passoRaggiungeNit(p, targetOutdoorNits);
+                    {PASSI_CATALOGO.map((p) => {
+                      const dato = datoCatalogo(tier, p);
+                      const pEst = stimaPotenzaDaPassoNit(p, targetOutdoorNits, undefined, undefined, undefined, true, dato);
+                      const isSelected = stessoPasso(pitchMm, p);
+                      // Gate: selezionabile solo se il listino ha il dato di QUESTA combinazione e arriva ai nit richiesti
+                      const reachable = dato !== null && targetOutdoorNits <= dato.maxNits;
                       return (
                         <button
                           key={p}
                           type="button"
                           disabled={!reachable}
                           onClick={() => setPitchMm(p)}
-                          title={reachable ? undefined : `Il P${p} si ferma a ${fmt(pEst.maxPhysicalNits)} nit: non esiste a ${fmt(targetOutdoorNits)} nit`}
+                          title={!dato ? `Dato non disponibile: il listino non ha il tetto di nit del P${p} ${tierLabel}` : reachable ? undefined : `Il P${p} ${tierLabel} si ferma a ${fmt(dato.maxNits)} nit: non esiste a ${fmt(targetOutdoorNits)} nit`}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 ${
                             !reachable
                               ? isSelected
@@ -850,7 +872,7 @@ export const S2Dimensions: React.FC = () => {
                                 : 'bg-[#0D2818] text-[#34D399]'
                             }`}
                           >
-                            {reachable ? `${pEst.sforzoPercent}%` : `max ${fmt(pEst.maxPhysicalNits)}`}
+                            {!dato ? 'n.d.' : reachable ? `${pEst.sforzoPercent}%` : `max ${fmt(dato.maxNits)}`}
                           </span>
                         </button>
                       );

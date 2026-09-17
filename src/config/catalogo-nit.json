@@ -1,0 +1,383 @@
+{
+  "fonte": "veroledsrl.com · src/data/listino-ledwall.json (righe outdoor)",
+  "rows": [
+    {
+      "tier": "diamond",
+      "pitchMm": 2.5,
+      "maxNits": 5500,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 2.9,
+      "maxNits": 5500,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 3.91,
+      "maxNits": 9000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 4.81,
+      "maxNits": 9000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 5.81,
+      "maxNits": 9000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 6.67,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 7.81,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 8.81,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 9.81,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 10.81,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 11.81,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 12.81,
+      "maxNits": 10000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "diamond",
+      "pitchMm": 16,
+      "maxNits": 20000,
+      "chip": "Nichia o Cree"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 2.5,
+      "maxNits": 6300,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 2.9,
+      "maxNits": 6500,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 3,
+      "maxNits": 6500,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 3.91,
+      "maxNits": 6800,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 4.81,
+      "maxNits": 7000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 5.81,
+      "maxNits": 7000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 6.67,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 7.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 8.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 9.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 10.81,
+      "maxNits": 9000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 11.81,
+      "maxNits": 9000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 12.81,
+      "maxNits": 9000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "platinum",
+      "pitchMm": 16,
+      "maxNits": 10000,
+      "chip": "NationStar o KingLight Gold Copper"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 2.5,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 2.9,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 3,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 3.91,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 4.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 5.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 6.67,
+      "maxNits": 7000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 7.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 8.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 9.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 10.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 11.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 12.81,
+      "maxNits": 8000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "gold",
+      "pitchMm": 16,
+      "maxNits": 9000,
+      "chip": "NationStar o KingLight o Syno Opto Gold Wire"
+    },
+    {
+      "tier": "silver",
+      "pitchMm": 3.91,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "silver",
+      "pitchMm": 6.67,
+      "maxNits": 7000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 2.5,
+      "maxNits": 4000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 2.9,
+      "maxNits": 4000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 3,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 3.91,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 4.81,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 5.81,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 6.67,
+      "maxNits": 4500,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 7.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 8.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 9.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 10.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 11.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 12.81,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "bronze",
+      "pitchMm": 16,
+      "maxNits": 6000,
+      "chip": "NationStar o KingLight o Syno Opto Copper Wire"
+    },
+    {
+      "tier": "essential",
+      "pitchMm": 2.5,
+      "maxNits": 4000,
+      "chip": "Other Brand Copper Wire"
+    },
+    {
+      "tier": "essential",
+      "pitchMm": 2.9,
+      "maxNits": 4000,
+      "chip": "Other Brand Copper Wire"
+    },
+    {
+      "tier": "essential",
+      "pitchMm": 3,
+      "maxNits": 4000,
+      "chip": "Other Brand Copper Wire"
+    },
+    {
+      "tier": "essential",
+      "pitchMm": 3.91,
+      "maxNits": 4500,
+      "chip": "Other Brand Copper Wire"
+    },
+    {
+      "tier": "essential",
+      "pitchMm": 4.81,
+      "maxNits": 4500,
+      "chip": "Other Brand Copper Wire"
+    },
+    {
+      "tier": "essential",
+      "pitchMm": 6.67,
+      "maxNits": 5000,
+      "chip": "Other Brand Copper Wire"
+    }
+  ]
+}

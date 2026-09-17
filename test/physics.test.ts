@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { passoRaggiungeNit, standbyWmqPerPasso, calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
+import catalogoNit from '../src/config/catalogo-nit.json';
+import { datoCatalogo, combinazioneRaggiungeNit, passiDelTier, PASSI_CATALOGO, TIERS, type TierId, standbyWmqPerPasso, calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
 
 describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', () => {
   const P_MAX = 500;
@@ -160,69 +161,127 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
     });
   });
 
-  describe('Gate di validazione: nit e distanza devono tornare entrambi', () => {
-    const PASSI = [2.6, 2.9, 3.9, 4.8, 6.7, 8, 10, 16];
-    const TETTI: Record<number, number> = { 2.6: 4500, 2.9: 5000, 3.9: 6500, 4.8: 7000, 6.7: 12000, 8: 12000, 10: 12000, 16: 20000 };
+  describe('Gate di validazione per combinazione Selection × passo (dati di listino)', () => {
+    // Oracolo indipendente dal motore: le righe del listino così come sono nel file sincronizzato
+    const RIGHE = catalogoNit.rows as { tier: TierId; pitchMm: number; maxNits: number; chip: string }[];
+    const tettoListino = (tier: TierId, p: number) => RIGHE.find((r) => r.tier === tier && Math.abs(r.pitchMm - p) <= 0.035)?.maxNits ?? null;
+    const TIER_IDS = TIERS.map((t) => t.id);
+    const alt = (tier: TierId, p: number, nits: number, dist: number, h = 5, H = 0) =>
+      suggerisciAlternativa(p, nits, 32, 0.30, 18, 0.35, h, dist, H, tier);
 
-    it('P2.9 a 8.000 nit non è mai "il passo giusto": il P2.9 si ferma a 5.000', () => {
-      for (const dist of [5, 10, 20, 40]) {
-        const alt = suggerisciAlternativa(2.9, 8000, 18, 0.30, 18, 0.35, 5, dist);
-        expect(alt.currentMeetsBrightness).toBe(false);
-        expect(alt.currentIsValid).toBe(false);
-        expect(['fleet', 'none', 'pitch']).not.toContain(alt.kind);
-        expect(alt.headline).not.toContain('passo giusto');
+    it('il catalogo è quello del listino: 6 Selection, nessun valore inventato per le combinazioni assenti', () => {
+      expect(RIGHE.length).toBeGreaterThan(50);
+      expect(datoCatalogo('silver', 4.81)).toBeNull();
+      expect(datoCatalogo('essential', 16)).toBeNull();
+      expect(combinazioneRaggiungeNit('silver', 4.81, 3000)).toBeNull();
+      // 3.9 e 3.91 sono lo stesso prodotto; 2.6 non è il 2.5 e non ne eredita il dato
+      expect(datoCatalogo('gold', 3.9)?.pitchMm).toBe(3.91);
+      expect(datoCatalogo('gold', 2.6)).toBeNull();
+    });
+
+    it('a parità di passo il tetto cambia con la Selection: P3.91 a 6.500 nit', () => {
+      expect(tettoListino('diamond', 3.91)).toBe(9000);
+      expect(tettoListino('platinum', 3.91)).toBe(6800);
+      expect(tettoListino('gold', 3.91)).toBe(6000);
+      expect(alt('diamond', 3.91, 6500, 10).currentIsValid).toBe(true);
+      expect(alt('platinum', 3.91, 6500, 10).currentIsValid).toBe(true);
+      for (const t of ['gold', 'silver', 'bronze'] as TierId[]) {
+        const a = alt(t, 3.91, 6500, 10);
+        expect(a.currentMeetsBrightness, t).toBe(false);
+        expect(['fleet', 'none', 'pitch'], t).not.toContain(a.kind);
       }
     });
 
-    it('8.000 nit a 11 m: nessun passo soddisfa entrambi, lo dice e propone il compromesso più vicino', () => {
-      const alt = suggerisciAlternativa(2.9, 8000, 18, 0.30, 18, 0.35, 5, 10);
-      expect(alt.validPitchesMm).toEqual([]);
-      expect(alt.kind).toBe('compromise');
-      expect(alt.headline).toContain('Nessun passo disponibile soddisfa entrambi i requisiti');
-      // compromesso: il passo più fitto che arriva davvero a 8.000 nit
-      expect(alt.proposed.pitchMm).toBe(6.7);
-      expect(passoRaggiungeNit(alt.proposed.pitchMm, 8000)).toBe(true);
-      // e applicandolo il verdetto NON diventa verde: la distanza continua a non tornare
-      const dopo = suggerisciAlternativa(6.7, 8000, 18, 0.30, 18, 0.35, 5, 10);
+    it('lo sforzo è il rapporto con il tetto reale della combinazione, quindi cambia con la Selection', () => {
+      const d = stimaPotenzaDaPassoNit(3.91, 4500, 32, 0.35, 18, true, datoCatalogo('diamond', 3.91));
+      const b = stimaPotenzaDaPassoNit(3.91, 4500, 32, 0.35, 18, true, datoCatalogo('bronze', 3.91));
+      expect(d.sforzoPercent).toBe(50);
+      expect(b.sforzoPercent).toBe(100);
+      expect(d.maxPhysicalNits).toBe(9000);
+      expect(b.maxPhysicalNits).toBe(4500);
+    });
+
+    it('P2.9 a 8.000 nit non è mai "il passo giusto", in nessuna Selection e a nessuna distanza', () => {
+      for (const t of TIER_IDS) {
+        for (const dist of [5, 10, 20, 40]) {
+          const a = alt(t, 2.9, 8000, dist);
+          expect(a.currentIsValid, t).toBe(false);
+          expect(['fleet', 'none', 'pitch'], t).not.toContain(a.kind);
+          expect(a.headline, t).not.toContain('passo giusto');
+        }
+      }
+    });
+
+    it('dato non disponibile: Silver P4.81 non è validabile e non eredita il valore di nessun altro', () => {
+      const a = alt('silver', 4.81, 5000, 10);
+      expect(a.kind).toBe('nodata');
+      expect(a.currentHasData).toBe(false);
+      expect(a.currentMaxNits).toBeNull();
+      expect(a.currentIsValid).toBe(false);
+      expect(a.headline).toContain('Dato non disponibile');
+      // l'eventuale proposta è solo tra le combinazioni che il listino Silver copre davvero
+      expect(passiDelTier('silver').map((r) => r.pitchMm)).toContain(a.proposed.pitchMm === 4.81 ? 3.91 : a.proposed.pitchMm);
+      for (const v of a.validPitchesMm) expect(tettoListino('silver', v)).not.toBeNull();
+    });
+
+    it('Gold a 8.000 nit da 11 m: nessun passo Gold soddisfa entrambi, lo dice, propone il compromesso e indica la Selection in cui torna', () => {
+      const a = alt('gold', 2.9, 8000, 10);
+      expect(a.validPitchesMm).toEqual([]);
+      expect(a.kind).toBe('compromise');
+      expect(a.headline).toContain('Nessun passo disponibile');
+      expect(a.headline).toContain('soddisfa entrambi i requisiti');
+      // compromesso: il passo Gold più fitto che arriva davvero a 8.000 nit
+      expect(a.proposed.pitchMm).toBe(7.81);
+      expect(tettoListino('gold', a.proposed.pitchMm)).toBeGreaterThanOrEqual(8000);
+      // Diamond P3.91 (9.000 nit) soddisfa entrambi: viene indicato, con il SUO dato
+      expect(a.validInOtherTiers.map((r) => `${r.tier} ${r.pitchMm} ${r.maxNits}`)).toContain('diamond 3.91 9000');
+      // applicando il compromesso il verdetto NON diventa positivo
+      const dopo = alt('gold', 7.81, 8000, 10);
       expect(dopo.kind).toBe('compromise');
       expect(dopo.currentIsValid).toBe(false);
     });
 
-    it('8.000 nit da 25 m: il P2.9 non ci arriva, esiste un passo valido (P6.7) e viene proposto quello', () => {
-      const alt = suggerisciAlternativa(2.9, 8000, 50, 0.30, 18, 0.35, 5, 24.5);
-      expect(alt.kind).toBe('brightness');
-      expect(alt.proposed.pitchMm).toBe(6.7);
-      expect(alt.validPitchesMm).toContain(6.7);
-      expect(alt.validPitchesMm).not.toContain(2.9);
-    });
-
-    it('il tetto di nit vale per ogni passo, senza tolleranze', () => {
-      for (const p of PASSI) {
-        expect(passoRaggiungeNit(p, TETTI[p])).toBe(true);
-        expect(passoRaggiungeNit(p, TETTI[p] + 500)).toBe(false);
-      }
-    });
-
-    it('su tutti i passi, nit e distanze: mai un verdetto positivo o una proposta che violi un requisito', () => {
-      for (const p of PASSI) {
-        for (let nits = 2500; nits <= 20000; nits += 500) {
-          for (const dist of [3, 5, 10, 15, 20, 25, 30, 40, 60, 100]) {
-            const alt = suggerisciAlternativa(p, nits, 32, 0.30, 18, 0.35, 5, dist, 4);
-            const ctx = `P${p} · ${nits} nit · ${dist} m → ${alt.kind}`;
-            const positivo = alt.kind === 'fleet' || alt.kind === 'none' || alt.kind === 'pitch';
-            // 1. verdetto positivo solo se il passo scelto soddisfa tutto
-            expect(positivo, ctx).toBe(alt.currentIsValid);
-            if (positivo) expect(nits, ctx).toBeLessThanOrEqual(TETTI[p]);
-            // 2. ogni passo proposto come soluzione soddisfa entrambi i requisiti
-            if (alt.kind !== 'compromise') {
-              expect(alt.validPitchesMm, ctx).toContain(alt.proposed.pitchMm);
-              expect(nits, ctx).toBeLessThanOrEqual(TETTI[alt.proposed.pitchMm]);
+    it('su ogni Selection × passo × nit × distanza: mai un verdetto positivo o una proposta che violi un requisito', () => {
+      const passiProva = [...PASSI_CATALOGO, 2.6, 8, 10];
+      for (const t of TIER_IDS) {
+        for (const p of passiProva) {
+          for (let nits = 2500; nits <= 20000; nits += 1250) {
+            for (const dist of [3, 5, 10, 20, 25, 30, 40, 60, 100]) {
+              const a = alt(t, p, nits, dist, 5, 4);
+              const ctx = `${t} P${p} · ${nits} nit · ${dist} m → ${a.kind}`;
+              const tetto = tettoListino(t, p);
+              const positivo = a.kind === 'fleet' || a.kind === 'none' || a.kind === 'pitch';
+              // 1. verdetto positivo solo se la combinazione scelta ha il dato e soddisfa tutto
+              expect(positivo, ctx).toBe(a.currentIsValid);
+              if (positivo) {
+                expect(tetto, ctx).not.toBeNull();
+                expect(nits, ctx).toBeLessThanOrEqual(tetto as number);
+              }
+              // 2. senza dato di listino non esiste verdetto diverso da "dato non disponibile"
+              expect(a.kind === 'nodata', ctx).toBe(tetto === null);
+              // 3. i passi validi sono solo combinazioni a listino di QUELLA Selection che arrivano ai nit
+              for (const v of a.validPitchesMm) {
+                expect(tettoListino(t, v), ctx).not.toBeNull();
+                expect(nits, ctx).toBeLessThanOrEqual(tettoListino(t, v) as number);
+              }
+              // 4. una proposta diversa dalla scelta è sempre una combinazione a listino della stessa Selection,
+              //    e fuori dal compromesso soddisfa entrambi i requisiti
+              if (a.proposed.pitchMm !== a.current.pitchMm) {
+                expect(tettoListino(t, a.proposed.pitchMm), ctx).not.toBeNull();
+                if (a.kind !== 'compromise') expect(a.validPitchesMm, ctx).toContain(a.proposed.pitchMm);
+              }
+              // 5. il compromesso compare solo se nessun passo della Selection è valido, e lo dichiara
+              if (a.kind === 'compromise') {
+                expect(a.validPitchesMm.length, ctx).toBe(0);
+                expect(a.headline, ctx).toContain('Nessun passo disponibile');
+              }
+              // 6. le altre Selection indicate soddisfano i nit con il PROPRIO dato
+              for (const r of a.validInOtherTiers) {
+                expect(r.tier, ctx).not.toBe(t);
+                expect(tettoListino(r.tier, r.pitchMm), ctx).toBe(r.maxNits);
+                expect(nits, ctx).toBeLessThanOrEqual(r.maxNits);
+              }
             }
-            // 3. il compromesso compare solo quando davvero nessun passo è valido, e lo dichiara
-            expect(alt.kind === 'compromise', ctx).toBe(alt.validPitchesMm.length === 0);
-            if (alt.kind === 'compromise') expect(alt.headline, ctx).toContain('Nessun passo disponibile');
-            // 4. nessun passo oltre il proprio tetto entra mai tra i validi
-            for (const v of alt.validPitchesMm) expect(nits, ctx).toBeLessThanOrEqual(TETTI[v]);
           }
         }
       }
@@ -260,8 +319,8 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(a10000.pMedioWmq).toBeLessThan(120);
     });
 
-    it('da 60 m di linea di vista il passo giusto è il P16', () => {
-      const alt = suggerisciAlternativa(10, 8000, 96, 0.30, 18, 0.35, 20, 57);
+    it('da 60 m di linea di vista il passo giusto è il P16, se la Selection ci arriva ai nit richiesti', () => {
+      const alt = suggerisciAlternativa(9.81, 8000, 96, 0.30, 18, 0.35, 20, 57, 0, 'gold');
       expect(alt.recommendedPitchMm).toBe(16);
       expect(alt.kind).toBe('pitch');
       expect(alt.proposed.pitchMm).toBe(16);
@@ -269,28 +328,26 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
   });
 
   describe('Modalità Express · Proposta Alternativa', () => {
-    it('P2.6 a 6000 nit su 6x3m visto da 10m: il P2.6 non ci arriva (4.500), propone P3.9 che consuma meno', () => {
-      const alt = suggerisciAlternativa(2.6, 6000, 18, 0.30, 18, 0.35, 5, 10);
+    it('P2.5 Gold a 6.000 nit visto da 10m: il P2.5 Gold si ferma a 4.500, propone il P3.91 Gold', () => {
+      const alt = suggerisciAlternativa(2.5, 6000, 18, 0.30, 18, 0.35, 5, 10, 0, 'gold');
       expect(alt.hasAlternative).toBe(true);
       expect(alt.kind).toBe('brightness');
       expect(alt.currentIsValid).toBe(false);
       expect(alt.currentMeetsBrightness).toBe(false);
+      expect(alt.currentMaxNits).toBe(4500);
       expect(alt.recommendedPitchMm).toBe(3.91);
-      expect(alt.proposed.pitchMm).toBe(3.9);
-      expect(alt.proposed.annualCostEur).toBeLessThan(alt.current.annualCostEur);
-      expect(alt.savingsPercent).toBeGreaterThan(5);
-      expect(alt.current.hardware.isAtPhysicalLimit).toBe(true);
-      expect(alt.proposed.hardware.isAtPhysicalLimit).toBe(false);
-      expect(alt.proposed.hardware.sforzoPercent).toBeLessThan(alt.current.hardware.sforzoPercent);
+      expect(alt.proposed.pitchMm).toBe(3.91);
       expect(alt.fleetMonitorExtraEur).toBeGreaterThan(0);
       expect(alt.reasons.length).toBeGreaterThanOrEqual(3);
-      expect(alt.headline).toContain('P3.9');
+      expect(alt.headline).toContain('P3.91');
+      expect(alt.headline).toContain('Gold');
     });
 
-    it('P3.9 già ottimale per 10m: nessun cambio passo, propone solo Fleet Monitor', () => {
-      const alt = suggerisciAlternativa(3.9, 5000, 18, 0.30, 18, 0.35, 5, 10);
+    it('P3.91 Gold già ottimale per 10m a 5.000 nit: nessun cambio passo, propone solo Fleet Monitor', () => {
+      const alt = suggerisciAlternativa(3.91, 5000, 18, 0.30, 18, 0.35, 5, 10, 0, 'gold');
       expect(alt.kind).toBe('fleet');
-      expect(alt.proposed.pitchMm).toBe(3.9);
+      expect(alt.currentIsValid).toBe(true);
+      expect(alt.proposed.pitchMm).toBe(3.91);
       expect(alt.savingsEur).toBe(0);
       expect(alt.fleetMonitorExtraPercent).toBeGreaterThanOrEqual(50);
       // Percentuale, risparmio e bolletta residua devono tornare tra loro sulla bolletta mostrata
@@ -298,61 +355,62 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(alt.fleetMonitorExtraPercent).toBe(Math.round((alt.fleetMonitorExtraEur / alt.proposed.annualCostEur) * 100));
     });
 
-    it('P10 visto da 5m: passo troppo largo, propone il P2.6 dichiarando l\'energia in più', () => {
-      const alt = suggerisciAlternativa(10, 4500, 18, 0.30, 18, 0.35, 3, 4);
+    it('P10.81 Gold visto da 5m: passo troppo largo, propone il P2.5 Gold dichiarando l\'energia in più', () => {
+      const alt = suggerisciAlternativa(10.81, 4500, 18, 0.30, 18, 0.35, 3, 4, 0, 'gold');
       expect(alt.kind).toBe('coarse');
-      expect(alt.proposed.pitchMm).toBe(2.6);
+      expect(alt.proposed.pitchMm).toBe(2.5);
       expect(alt.savingsEur).toBe(0);
       expect(alt.extraCostEur).toBe(alt.proposed.annualCostEur - alt.current.annualCostEur);
       expect(alt.extraCostEur).toBeGreaterThan(0);
     });
 
-    it('P10 visto da 11m: non è "il passo giusto", serve il P3.9', () => {
-      const alt = suggerisciAlternativa(10, 5000, 4, 0.30, 18, 0.35, 5, 10);
+    it('P10.81 Gold visto da 11m: non è "il passo giusto", serve il P3.91', () => {
+      const alt = suggerisciAlternativa(10.81, 5000, 4, 0.30, 18, 0.35, 5, 10, 0, 'gold');
       expect(alt.kind).toBe('coarse');
-      expect(alt.proposed.pitchMm).toBe(3.9);
+      expect(alt.proposed.pitchMm).toBe(3.91);
       expect(alt.headline).toContain('troppo largo');
     });
 
-    it('P10 da autostrada (40m): sotto 1 arcminuto i diodi si fondono, il passo resta giusto', () => {
-      const alt = suggerisciAlternativa(10, 5000, 32, 0.30, 18, 0.35, 8, 40);
+    it('P9.81 Gold da autostrada (40m): sotto 1 arcminuto i diodi si fondono, il passo resta giusto', () => {
+      const alt = suggerisciAlternativa(9.81, 5000, 32, 0.30, 18, 0.35, 8, 40, 0, 'gold');
       expect(alt.kind).toBe('fleet');
-      expect(alt.proposed.pitchMm).toBe(10);
+      expect(alt.proposed.pitchMm).toBe(9.81);
     });
 
-    it('Distanza lunga (40m): da 40,8 m l\'occhio fonde anche il P10, dal P3.9 propone il P10', () => {
-      const alt = suggerisciAlternativa(3.9, 6000, 32, 0.30, 18, 0.35, 8, 40);
+    it('Distanza lunga (40m): dal P3.91 Gold propone il passo Gold più largo che resta pulito e regge i nit', () => {
+      const alt = suggerisciAlternativa(3.91, 6000, 32, 0.30, 18, 0.35, 8, 40, 0, 'gold');
       expect(alt.kind).toBe('pitch');
-      expect(alt.proposed.pitchMm).toBe(10);
+      expect(alt.proposed.pitchMm).toBe(9.81);
       expect(alt.savingsPercent).toBeGreaterThan(30);
     });
 
-    it('Distanza media (25m): dal P3.9 propone il P6.7', () => {
-      const alt = suggerisciAlternativa(3.9, 6000, 32, 0.30, 18, 0.35, 5, 24.5);
+    it('Distanza media (25m): dal P3.91 Gold propone il P6.67', () => {
+      const alt = suggerisciAlternativa(3.91, 6000, 32, 0.30, 18, 0.35, 5, 24.5, 0, 'gold');
       expect(alt.lineOfSightDistM).toBeCloseTo(25, 0);
-      expect(alt.proposed.pitchMm).toBe(6.7);
+      expect(alt.proposed.pitchMm).toBe(6.67);
     });
 
     it('5x10 m con la base a 10 m, visto da 20 m a terra: la linea di vista si misura al centro (25 m), non alla base (22,4 m)', () => {
-      const alt = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 10, 20, 10);
+      const alt = suggerisciAlternativa(10.81, 5000, 50, 0.30, 18, 0.35, 10, 20, 10, 'gold');
       expect(alt.centerHeightM).toBe(15);
       expect(alt.lineOfSightDistM).toBeCloseTo(25.0, 1);
       expect(alt.lineOfSightBaseM).toBeCloseTo(22.4, 1);
       expect(alt.lineOfSightTopM).toBeCloseTo(28.3, 1);
       expect(alt.kind).toBe('coarse');
-      expect(alt.proposed.pitchMm).toBe(6.7);
+      expect(alt.proposed.pitchMm).toBe(6.67);
     });
 
-    it('5x10 m con la base a 20 m di quota: il P10 è largo visto da 10 m a terra, giusto da 30 m', () => {
-      const vicino = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 10, 10);
+    it('5x10 m con la base a 20 m di quota: il P10.81 Gold è largo visto da 10 m a terra, giusto da 30 m', () => {
+      const vicino = suggerisciAlternativa(10.81, 5000, 50, 0.30, 18, 0.35, 20, 10, 10, 'gold');
       expect(vicino.lineOfSightDistM).toBeCloseTo(26.9, 1);
       expect(vicino.kind).toBe('coarse');
-      expect(vicino.proposed.pitchMm).toBe(6.7);
+      // a 26,9 m l'occhio fonde fino a 7,83 mm: il P7.81 è il più largo che resta pulito
+      expect(vicino.proposed.pitchMm).toBe(7.81);
 
-      const lontano = suggerisciAlternativa(10, 5000, 50, 0.30, 18, 0.35, 20, 30, 10);
+      const lontano = suggerisciAlternativa(10.81, 5000, 50, 0.30, 18, 0.35, 20, 30, 10, 'gold');
       expect(lontano.lineOfSightDistM).toBeCloseTo(39.1, 1);
       expect(lontano.kind).toBe('fleet');
-      expect(lontano.proposed.pitchMm).toBe(10);
+      expect(lontano.proposed.pitchMm).toBe(10.81);
     });
   });
 });
