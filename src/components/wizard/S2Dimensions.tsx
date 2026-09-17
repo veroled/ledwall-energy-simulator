@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { CABINET_FORMATS, PIXEL_PITCH_PRESETS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
-import { stimaPotenzaDaPassoNit, getMaxNitsForPitch, calcolaConsulenzaOttica, standbyWmqPerPasso } from '../../core/physics';
+import { stimaPotenzaDaPassoNit, getMaxNitsForPitch, calcolaConsulenzaOttica, standbyWmqPerPasso, passoRaggiungeNit } from '../../core/physics';
 import { ArrowRight, Grid3X3, Ruler, Monitor, GitCompare, Zap, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock, Sun, Eye, ThumbsUp, AlertTriangle } from 'lucide-react';
 
 export const S2Dimensions: React.FC = () => {
@@ -815,15 +815,23 @@ export const S2Dimensions: React.FC = () => {
                     {PIXEL_PITCH_PRESETS.map((p) => {
                       const pEst = stimaPotenzaDaPassoNit(p, targetOutdoorNits);
                       const isSelected = pitchMm === p;
+                      // Gate fisico: un passo che non arriva ai nit richiesti non è una scelta possibile
+                      const reachable = passoRaggiungeNit(p, targetOutdoorNits);
                       return (
                         <button
                           key={p}
                           type="button"
+                          disabled={!reachable}
                           onClick={() => setPitchMm(p)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
-                            isSelected
-                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
-                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                          title={reachable ? undefined : `Il P${p} si ferma a ${fmt(pEst.maxPhysicalNits)} nit: non esiste a ${fmt(targetOutdoorNits)} nit`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 ${
+                            !reachable
+                              ? isSelected
+                                ? 'border border-[#F87171] bg-[#2A1111] text-[#F87171] font-semibold cursor-not-allowed'
+                                : 'border border-[#1A2028] bg-[#0B0E13] text-[#4B5563] cursor-not-allowed opacity-60'
+                              : isSelected
+                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm cursor-pointer'
+                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A] cursor-pointer'
                           }`}
                         >
                           <span>P{p} mm</span>
@@ -842,7 +850,7 @@ export const S2Dimensions: React.FC = () => {
                                 : 'bg-[#0D2818] text-[#34D399]'
                             }`}
                           >
-                            {pEst.sforzoPercent}%
+                            {reachable ? `${pEst.sforzoPercent}%` : `max ${fmt(pEst.maxPhysicalNits)}`}
                           </span>
                         </button>
                       );

@@ -730,7 +730,19 @@ export interface ConfigurazioneSnapshot {
 
 export interface AlternativeProposal {
   hasAlternative: boolean;
-  kind: 'pitch' | 'coarse' | 'fleet' | 'none';
+  /**
+   * pitch: il passo scelto è valido ma uno più largo, altrettanto valido, consuma meno
+   * fleet / none: il passo scelto soddisfa TUTTI i requisiti (nit e distanza) — unici verdetti positivi
+   * coarse: troppo largo per la distanza · brightness: non arriva ai nit richiesti
+   * compromise: nessun passo a catalogo soddisfa insieme nit e distanza
+   */
+  kind: 'pitch' | 'coarse' | 'brightness' | 'compromise' | 'fleet' | 'none';
+  /** Il passo scelto soddisfa entrambi i requisiti. Senza questo non esiste verdetto positivo. */
+  currentIsValid: boolean;
+  currentMeetsBrightness: boolean;
+  currentMeetsDistance: boolean;
+  /** Passi a catalogo che soddisfano insieme luminosità richiesta e distanza di visione */
+  validPitchesMm: number[];
   lineOfSightDistM: number;
   lineOfSightBaseM: number;
   lineOfSightTopM: number;
@@ -742,7 +754,7 @@ export interface AlternativeProposal {
   savingsEur: number;
   savingsPercent: number;
   savingsKwh: number;
-  extraCostEur: number; // solo kind 'coarse': energia in più del passo più fitto che serve a quella distanza
+  extraCostEur: number; // energia in più della proposta rispetto alla scelta attuale (0 se costa meno)
   co2SavedTons: number;
   wastedPixelsPercent: number;
   rentalSavings24mEur: number;
@@ -792,6 +804,11 @@ function snapshotConfigurazione(
   };
 }
 
+/** Il passo eroga davvero i nit richiesti? Il tetto è quello fisico del componente, senza tolleranze. */
+export function passoRaggiungeNit(pitchMm: number, nits: number): boolean {
+  return nits <= getMaxNitsForPitch(pitchMm).maxNits;
+}
+
 export function suggerisciAlternativa(
   pitchMm: number,
   nits: number,
@@ -804,32 +821,62 @@ export function suggerisciAlternativa(
   screenHeightM: number = 0
 ): AlternativeProposal {
   const optical = calcolaConsulenzaOttica(installHeightM, groundViewingDistM, pitchMm, areaM2, nits, screenHeightM);
-  const current = snapshotConfigurazione(pitchMm, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
+  const snapshot = (p: number) => snapshotConfigurazione(p, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
+  const current = snapshot(pitchMm);
 
-  // Passo commerciale più generoso che resta "retina" alla distanza dichiarata
-  const candidates = PITCH_PRESETS_EXPRESS.filter(
-    (p) => p > pitchMm + 0.05 && p <= optical.recommendedPitchMm + 0.15
-  );
-  const proposedPitch = candidates.length > 0 ? Math.max(...candidates) : pitchMm;
-  const proposed = snapshotConfigurazione(proposedPitch, nits, areaM2, apl, oreGiorno, tariffaEurKwh);
+  // I DUE REQUISITI, entrambi vincolanti: una proposta o un verdetto positivo esistono solo se tornano tutti e due.
+  // 1. Luminosità: il componente deve arrivare ai nit richiesti.
+  // 2. Distanza: il passo non deve essere così largo che l'occhio separa i diodi (oltre 1 arcminuto).
+  const meetsBrightness = (p: number) => passoRaggiungeNit(p, nits);
+  const meetsDistance = (p: number) => !(p > optical.recommendedPitchMm + 0.15 && p > optical.minResolvablePitchMm);
+  const isValid = (p: number) => meetsBrightness(p) && meetsDistance(p);
 
-  const hasPitchAlternative = proposedPitch !== pitchMm && proposed.annualCostEur < current.annualCostEur;
+  const validPitchesMm = PITCH_PRESETS_EXPRESS.filter(isValid);
+  const currentMeetsBrightness = meetsBrightness(pitchMm);
+  const currentMeetsDistance = meetsDistance(pitchMm);
+  const currentIsValid = currentMeetsBrightness && currentMeetsDistance;
 
-  // Caso opposto: passo più largo di quello che la distanza regge. Consuma meno, ma i pixel si vedono:
-  // qui si propone il passo commerciale più generoso che resta pulito, dichiarando l'energia in più.
-  const cleanPresets = PITCH_PRESETS_EXPRESS.filter((p) => p <= optical.recommendedPitchMm + 0.15);
-  const finerPitch = cleanPresets.length > 0 ? Math.max(...cleanPresets) : PITCH_PRESETS_EXPRESS[0];
-  // Troppo largo solo se l'occhio separa davvero i diodi a quella distanza (oltre 1 arcminuto)
-  const isTooCoarse =
-    pitchMm > optical.recommendedPitchMm + 0.15 && pitchMm > optical.minResolvablePitchMm && finerPitch < pitchMm;
-  const finer = isTooCoarse
-    ? snapshotConfigurazione(finerPitch, nits, areaM2, apl, oreGiorno, tariffaEurKwh)
-    : current;
+  const D = optical.lineOfSightDistM;
+  const Dtxt = D.toLocaleString('it-IT');
+  // 'always': in italiano i numeri a 4 cifre uscirebbero senza punto (8000 accanto a 12.000)
+  const it = (v: number) => v.toLocaleString('it-IT', { useGrouping: 'always' } as Intl.NumberFormatOptions);
+  const nitsTxt = it(nits);
+  const tetto = (p: number) => it(getMaxNitsForPitch(p).maxNits);
+  const pulitoDaM = (p: number) => Math.round(p / 0.291);
 
-  const finalProposed = hasPitchAlternative ? proposed : isTooCoarse ? finer : current;
-  const extraCostEur = isTooCoarse ? Math.max(0, finer.annualCostEur - current.annualCostEur) : 0;
+  let kind: AlternativeProposal['kind'] = 'none';
+  let finalProposed = current;
 
+  if (currentIsValid) {
+    // Passo valido: si cerca solo un passo più largo, ANCH'ESSO valido, che consumi meno
+    const cheaper = validPitchesMm
+      .filter((p) => p > pitchMm + 0.05 && p <= optical.recommendedPitchMm + 0.15)
+      .map(snapshot)
+      .filter((c) => c.annualCostEur < current.annualCostEur);
+    if (cheaper.length > 0) {
+      kind = 'pitch';
+      finalProposed = cheaper[cheaper.length - 1];
+    }
+  } else if (validPitchesMm.length > 0) {
+    // Passo non valido ma a catalogo esiste chi soddisfa entrambi i requisiti: il più largo, che consuma meno
+    kind = currentMeetsBrightness ? 'coarse' : 'brightness';
+    finalProposed = snapshot(Math.max(...validPitchesMm));
+  } else {
+    // Nessun passo soddisfa insieme nit e distanza. Compromesso più vicino: si tiene la luminosità
+    // (sotto il sole un contenuto che non si legge non serve) con il passo più fitto che ci arriva;
+    // se nessuno ci arriva, quello con il tetto più alto.
+    kind = 'compromise';
+    const bright = PITCH_PRESETS_EXPRESS.filter(meetsBrightness);
+    const compromisePitch =
+      bright.length > 0
+        ? Math.min(...bright)
+        : PITCH_PRESETS_EXPRESS.reduce((best, p) => (getMaxNitsForPitch(p).maxNits > getMaxNitsForPitch(best).maxNits ? p : best));
+    finalProposed = Math.abs(compromisePitch - pitchMm) < 0.05 ? current : snapshot(compromisePitch);
+  }
+
+  const proposedPitch = finalProposed.pitchMm;
   const savingsEur = Math.max(0, current.annualCostEur - finalProposed.annualCostEur);
+  const extraCostEur = Math.max(0, finalProposed.annualCostEur - current.annualCostEur);
   const savingsKwh = Math.max(0, current.annualKwh - finalProposed.annualKwh);
   const savingsPercent = current.annualCostEur > 0 ? Math.round((savingsEur / current.annualCostEur) * 100) : 0;
   const co2SavedTons = Math.round(savingsKwh * (CONFIG.CO2_FACTOR_KG_KWH / 1000) * 100) / 100;
@@ -852,71 +899,85 @@ export function suggerisciAlternativa(
   const fleetMonitorExtraPercent =
     finalProposed.annualCostEur > 0 ? Math.round((fleetMonitorExtraEur / finalProposed.annualCostEur) * 100) : 0;
 
-  const D = optical.lineOfSightDistM;
-  const Dtxt = D.toLocaleString('it-IT');
   const reasons: string[] = [];
   let headline = '';
-  let kind: AlternativeProposal['kind'] = 'none';
 
-  if (hasPitchAlternative) {
-    kind = 'pitch';
+  if (kind === 'pitch') {
     headline = `Ti consigliamo il P${proposedPitch} mm: -${savingsPercent}% di consumi a parità di qualità percepita a ${Dtxt} m.`;
     reasons.push(
       `A ${Dtxt} m di linea di vista l'occhio fonde i pixel già dal P${optical.recommendedPitchMm} mm: il P${pitchMm} spende il ${optical.wastedPixelsPercent}% dei pixel in dettaglio non visibile.`
     );
-    if (current.hardware.isAtPhysicalLimit && current.nitsEffettivi < nits) {
-      reasons.push(
-        `Il P${pitchMm} non arriva a ${nits.toLocaleString('it-IT')} nit (tetto fisico ${current.hardware.maxPhysicalNits.toLocaleString('it-IT')}): sotto il sole diretto il contenuto sbiadisce. Il P${proposedPitch} li eroga al ${proposed.hardware.sforzoPercent}% di sforzo.`
-      );
-    } else {
-      reasons.push(
-        `Sforzo dei chip dal ${current.hardware.sforzoPercent}% al ${proposed.hardware.sforzoPercent}%: giunzione più fredda, meno thermal droop, vita utile più lunga.`
-      );
+    reasons.push(
+      `Sforzo dei chip dal ${current.hardware.sforzoPercent}% al ${finalProposed.hardware.sforzoPercent}%: giunzione più fredda, meno thermal droop, vita utile più lunga.`
+    );
+    reasons.push(
+      `Efficienza da ${current.hardware.efficienzaLmPerW} a ${finalProposed.hardware.efficienzaLmPerW} lm/W (${current.hardware.tecnologiaChip} → ${finalProposed.hardware.tecnologiaChip}).`
+    );
+    reasons.push(
+      `Potenza media reale con il tuo contenuto: da ${current.pMedioWmq} a ${finalProposed.pMedioWmq} W/m².`
+    );
+  } else if (kind === 'brightness') {
+    headline = `Il P${pitchMm} mm non esiste a ${nitsTxt} nit: si ferma a ${tetto(pitchMm)}. Per questa luminosità a ${Dtxt} m serve il P${proposedPitch} mm.`;
+    reasons.push(
+      `Tetto fisico del P${pitchMm}: ${tetto(pitchMm)} nit (${current.hardware.tecnologiaChip}). ${current.hardware.limitReason}`
+    );
+    reasons.push(
+      `Il P${proposedPitch} arriva a ${tetto(proposedPitch)} nit e a ${Dtxt} m resta pulito: soddisfa insieme luminosità e distanza di visione.`
+    );
+    if (!currentMeetsDistance) {
+      reasons.push(`Il P${pitchMm} a ${Dtxt} m è anche troppo largo: la trama dei pixel si vede.`);
     }
     reasons.push(
-      `Efficienza da ${current.hardware.efficienzaLmPerW} a ${proposed.hardware.efficienzaLmPerW} lm/W (${current.hardware.tecnologiaChip} → ${proposed.hardware.tecnologiaChip}).`
+      `Sforzo dei chip a ${nitsTxt} nit: ${finalProposed.hardware.sforzoPercent}% sul P${proposedPitch}. Il P${pitchMm} resterebbe a fondo scala senza arrivarci.`
     );
-    reasons.push(
-      `Potenza media reale con il tuo contenuto: da ${current.pMedioWmq} a ${proposed.pMedioWmq} W/m².`
-    );
-  } else if (isTooCoarse) {
-    kind = 'coarse';
-    const pixelRatio = Math.round(Math.pow(pitchMm / finerPitch, 2) * 10) / 10;
-    headline = `A ${Dtxt} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena serve il P${finerPitch} mm.`;
+  } else if (kind === 'coarse') {
+    const pixelRatio = Math.round(Math.pow(pitchMm / proposedPitch, 2) * 10) / 10;
+    headline = `A ${Dtxt} m il P${pitchMm} mm è troppo largo: la trama dei pixel si vede. Per un'immagine piena serve il P${proposedPitch} mm.`;
     reasons.push(
       `A ${Dtxt} m l'occhio distingue i singoli diodi sopra i ${optical.minResolvablePitchMm.toLocaleString('it-IT')} mm di passo (1 arcminuto): con il P${pitchMm} testi e volti risultano sgranati.`
     );
     reasons.push(
-      `Il P${finerPitch} porta ${pixelRatio.toLocaleString('it-IT')}× più pixel sulla stessa superficie: il contenuto resta leggibile da dove lo guardano davvero.`
+      `Il P${proposedPitch} porta ${pixelRatio.toLocaleString('it-IT')}× più pixel sulla stessa superficie e arriva a ${tetto(proposedPitch)} nit: copre anche i ${nitsTxt} richiesti.`
     );
     reasons.push(
       extraCostEur > 0
-        ? `Il P${pitchMm} consuma meno (${current.pMedioWmq} contro ${finer.pMedioWmq} W/m²), ma il risparmio si paga in qualità. Il P${pitchMm} torna corretto da circa ${Math.round(pitchMm / 0.291)} m in su.`
-        : `Il P${pitchMm} torna corretto da circa ${Math.round(pitchMm / 0.291)} m in su.`
+        ? `Il P${pitchMm} consuma meno (${current.pMedioWmq} contro ${finalProposed.pMedioWmq} W/m²), ma il risparmio si paga in qualità. Il P${pitchMm} torna corretto da circa ${pulitoDaM(pitchMm)} m in su.`
+        : `Il P${pitchMm} torna corretto da circa ${pulitoDaM(pitchMm)} m in su.`
     );
-    if (finer.hardware.isAtPhysicalLimit && finer.nitsEffettivi < nits) {
-      reasons.push(
-        `Attenzione: il P${finerPitch} eroga al massimo ${finer.hardware.maxPhysicalNits.toLocaleString('it-IT')} nit, non i ${nits.toLocaleString('it-IT')} richiesti.`
-      );
-    }
+  } else if (kind === 'compromise') {
+    const cleanPresets = PITCH_PRESETS_EXPRESS.filter(meetsDistance);
+    const widestClean = cleanPresets.length > 0 ? Math.max(...cleanPresets) : PITCH_PRESETS_EXPRESS[0];
+    headline = `Nessun passo disponibile soddisfa entrambi i requisiti: ${nitsTxt} nit e immagine pulita a ${Dtxt} m.`;
+    reasons.push(
+      meetsBrightness(proposedPitch)
+        ? `Per ${nitsTxt} nit serve almeno il P${proposedPitch} (tetto ${tetto(proposedPitch)} nit): i passi più fitti si fermano prima, il P${widestClean} a ${tetto(widestClean)} nit.`
+        : `Nessun passo a catalogo arriva a ${nitsTxt} nit: il tetto più alto è il P${proposedPitch} con ${tetto(proposedPitch)} nit.`
+    );
+    reasons.push(
+      `A ${Dtxt} m l'immagine resta pulita solo fino al P${widestClean}: il P${proposedPitch} mostra la trama dei pixel e torna pulito da circa ${pulitoDaM(proposedPitch)} m.`
+    );
+    reasons.push(
+      `Compromesso più vicino: P${proposedPitch} a ${it(Math.min(nits, getMaxNitsForPitch(proposedPitch).maxNits))} nit, luminosità piena ma trama visibile da vicino. L'alternativa è il P${widestClean} a ${tetto(widestClean)} nit: immagine pulita, ma sotto il sole diretto rende meno.`
+    );
+    reasons.push('Per far tornare entrambi i requisiti: allontanare il punto di visione oppure abbassare i nit richiesti.');
   } else if (fleetMonitorExtraEur > 0) {
     kind = 'fleet';
-    headline = `Il P${pitchMm} mm è già il passo giusto per ${Dtxt} m: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
-    if (current.hardware.isAtPhysicalLimit && current.nitsEffettivi < nits) {
-      reasons.push(
-        `Attenzione: il P${pitchMm} eroga al massimo ${current.hardware.maxPhysicalNits.toLocaleString('it-IT')} nit, non i ${nits.toLocaleString('it-IT')} richiesti. Per quel picco serve un passo più generoso, che a ${Dtxt} m sarebbe però visibile.`
-      );
-    }
+    headline = `Il P${pitchMm} mm è già il passo giusto per ${Dtxt} m e ${nitsTxt} nit: il margine è nella gestione. Fleet Monitor taglia un altro ${fleetMonitorExtraPercent}% di bolletta.`;
     reasons.push('Sensore lux e dimming adattivo: luminosità diurna tarata sull\'ambiente, non fissa al 100%.');
     reasons.push('Dimming notturno al 10% (CEI) e relè di standby a 0 W/m² a schermo spento.');
     reasons.push(`Chip al ${current.hardware.sforzoPercent}% di sforzo: già in regime termico sano.`);
   } else {
-    headline = `Configurazione bilanciata: il P${pitchMm} mm a ${nits.toLocaleString('it-IT')} nit è coerente con ${Dtxt} m di distanza.`;
+    headline = `Configurazione bilanciata: il P${pitchMm} mm a ${nitsTxt} nit è coerente con ${Dtxt} m di distanza.`;
   }
 
+  const isPitchSaving = kind === 'pitch';
   return {
     hasAlternative: kind !== 'none',
     kind,
+    currentIsValid,
+    currentMeetsBrightness,
+    currentMeetsDistance,
+    validPitchesMm,
     lineOfSightDistM: D,
     lineOfSightBaseM: optical.lineOfSightBaseM,
     lineOfSightTopM: optical.lineOfSightTopM,
@@ -930,8 +991,8 @@ export function suggerisciAlternativa(
     savingsKwh: Math.round(savingsKwh),
     extraCostEur,
     co2SavedTons,
-    wastedPixelsPercent: hasPitchAlternative ? optical.wastedPixelsPercent : 0,
-    rentalSavings24mEur: hasPitchAlternative ? optical.monthlyRentalSavingsEur * 24 : 0,
+    wastedPixelsPercent: isPitchSaving ? optical.wastedPixelsPercent : 0,
+    rentalSavings24mEur: isPitchSaving ? optical.monthlyRentalSavingsEur * 24 : 0,
     fleetMonitorExtraEur,
     fleetMonitorExtraPercent,
     fleetMonitorCostEur,

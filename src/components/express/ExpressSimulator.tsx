@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
 import { PIXEL_PITCH_PRESETS } from '../../config/config';
 import { asset } from '../../config/paths';
-import { getMaxNitsForPitch, stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico } from '../../core/physics';
+import { getMaxNitsForPitch, stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico, passoRaggiungeNit } from '../../core/physics';
 import { analizzaVideoApl, caricaFrameFoto, aplDaFrames, type FitMode } from '../../core/apl-engine';
 import { RecommendationBanner } from './RecommendationBanner';
 import { ContentPreview, type PreviewSource } from './ContentPreview';
@@ -265,25 +265,40 @@ export const ExpressSimulator: React.FC = () => {
                     const est = stimaPotenzaDaPassoNit(p, targetOutdoorNits);
                     const selected = pitchMm === p;
                     const stress = est.sforzoPercent >= 90 ? 'text-[#F87171]' : est.sforzoPercent >= 65 ? 'text-[#FBBF24]' : 'text-[#34D399]';
+                    // Gate fisico: un passo che non arriva ai nit richiesti non è una scelta possibile
+                    const reachable = passoRaggiungeNit(p, targetOutdoorNits);
                     return (
                       <button
                         key={p}
                         type="button"
+                        disabled={!reachable}
                         onClick={() => setPitchMm(p)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
-                          selected
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                        title={reachable ? undefined : `Il P${p} si ferma a ${n(est.maxPhysicalNits)} nit: non esiste a ${n(targetOutdoorNits)} nit`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 ${
+                          !reachable
+                            ? selected
+                              ? 'border border-[#F87171] bg-[#2A1111] text-[#F87171] font-semibold cursor-not-allowed'
+                              : 'border border-[#1A2028] bg-[#0B0E13] text-[#4B5563] cursor-not-allowed line-through decoration-[#4B5563]'
+                            : selected
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm cursor-pointer'
+                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A] cursor-pointer'
                         }`}
                       >
                         <span>P{p}</span>
-                        <span className={`text-[10px] font-mono ${stress}`}>{est.sforzoPercent}%</span>
+                        {reachable ? (
+                          <span className={`text-[10px] font-mono ${stress}`}>{est.sforzoPercent}%</span>
+                        ) : (
+                          <span className="text-[10px] font-mono no-underline">max {n(est.maxPhysicalNits)}</span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
                 <p className="text-[11px] text-[#868D97]">
                   La percentuale è lo sforzo termico dei chip a {n(targetOutdoorNits)} nit: cambia con la luminosità, non con il contenuto. Sotto il 65% il diodo lavora fresco.
+                  {PIXEL_PITCH_PRESETS.some((p) => !passoRaggiungeNit(p, targetOutdoorNits)) && (
+                    <> I passi barrati non arrivano a {n(targetOutdoorNits)} nit: a questa luminosità non esistono.</>
+                  )}
                 </p>
               </div>
 
@@ -379,7 +394,7 @@ export const ExpressSimulator: React.FC = () => {
                   ) : nitsOverLimit ? (
                     <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span>Il P{pitchMm} si ferma a {n(limit.maxNits)} nit ({limit.chipType}). Per questo picco serve un passo più generoso.</span>
+                      <span>Il P{pitchMm} si ferma a {n(limit.maxNits)} nit ({limit.chipType}): a {n(targetOutdoorNits)} nit non è una scelta valida. Scegli un passo non barrato.</span>
                     </p>
                   ) : (
                     <p className="text-[11px] text-[#868D97]">Tetto fisico del P{pitchMm}: {n(limit.maxNits)} nit · {limit.chipType}</p>
@@ -600,6 +615,15 @@ export const ExpressSimulator: React.FC = () => {
                 </div>
               )}
 
+              {nitsOverLimit && !softwareOff && (
+                <p className="p-3 rounded-lg bg-[#2A1111] border border-[#5B1F1F] text-[11px] text-[#FCA5A5] flex items-start space-x-2">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Configurazione non valida: il P{pitchMm} non esiste a {n(targetOutdoorNits)} nit. I consumi qui sotto sono quelli del P{pitchMm} al suo tetto di {n(limit.maxNits)} nit, non alla luminosità che hai chiesto.
+                  </span>
+                </p>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028]">
                   <span className="text-[10px] uppercase text-[#868D97] font-medium block">Potenza in esercizio</span>
@@ -616,8 +640,8 @@ export const ExpressSimulator: React.FC = () => {
                   <span className="text-xl font-semibold text-white tabular-nums">{n(profile.monthlyCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></span>
                   <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.dailyCostEur, 2)} €/giorno</span>
                 </div>
-                <div className="p-3.5 rounded-lg bg-[#0D2818] border border-[#163826]">
-                  <span className="text-[10px] uppercase text-[#34D399] font-medium block">Bolletta all&apos;anno</span>
+                <div className={`p-3.5 rounded-lg border ${nitsOverLimit && !softwareOff ? 'bg-[#10141D] border-[#1A2028]' : 'bg-[#0D2818] border-[#163826]'}`}>
+                  <span className={`text-[10px] uppercase font-medium block ${nitsOverLimit && !softwareOff ? 'text-[#868D97]' : 'text-[#34D399]'}`}>Bolletta all&apos;anno</span>
                   <span className="text-xl font-semibold text-white tabular-nums">{n(profile.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></span>
                   <span className="text-[11px] text-[#868D97] block tabular-nums">{n(profile.annualKwh * 0.305 / 1000, 2)} t CO₂/anno</span>
                 </div>

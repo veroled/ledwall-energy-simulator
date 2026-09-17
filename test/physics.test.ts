@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { standbyWmqPerPasso, calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
+import { passoRaggiungeNit, standbyWmqPerPasso, calcolaPotenzaWmq, calcolaProfiloEnergetico, stimaPotenzaDaPassoNit, calcolaPowerQuality, calcolaConsulenzaOttica, suggerisciAlternativa } from '../src/core/physics';
 
 describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', () => {
   const P_MAX = 500;
@@ -160,6 +160,75 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
     });
   });
 
+  describe('Gate di validazione: nit e distanza devono tornare entrambi', () => {
+    const PASSI = [2.6, 2.9, 3.9, 4.8, 6.7, 8, 10, 16];
+    const TETTI: Record<number, number> = { 2.6: 4500, 2.9: 5000, 3.9: 6500, 4.8: 7000, 6.7: 12000, 8: 12000, 10: 12000, 16: 20000 };
+
+    it('P2.9 a 8.000 nit non è mai "il passo giusto": il P2.9 si ferma a 5.000', () => {
+      for (const dist of [5, 10, 20, 40]) {
+        const alt = suggerisciAlternativa(2.9, 8000, 18, 0.30, 18, 0.35, 5, dist);
+        expect(alt.currentMeetsBrightness).toBe(false);
+        expect(alt.currentIsValid).toBe(false);
+        expect(['fleet', 'none', 'pitch']).not.toContain(alt.kind);
+        expect(alt.headline).not.toContain('passo giusto');
+      }
+    });
+
+    it('8.000 nit a 11 m: nessun passo soddisfa entrambi, lo dice e propone il compromesso più vicino', () => {
+      const alt = suggerisciAlternativa(2.9, 8000, 18, 0.30, 18, 0.35, 5, 10);
+      expect(alt.validPitchesMm).toEqual([]);
+      expect(alt.kind).toBe('compromise');
+      expect(alt.headline).toContain('Nessun passo disponibile soddisfa entrambi i requisiti');
+      // compromesso: il passo più fitto che arriva davvero a 8.000 nit
+      expect(alt.proposed.pitchMm).toBe(6.7);
+      expect(passoRaggiungeNit(alt.proposed.pitchMm, 8000)).toBe(true);
+      // e applicandolo il verdetto NON diventa verde: la distanza continua a non tornare
+      const dopo = suggerisciAlternativa(6.7, 8000, 18, 0.30, 18, 0.35, 5, 10);
+      expect(dopo.kind).toBe('compromise');
+      expect(dopo.currentIsValid).toBe(false);
+    });
+
+    it('8.000 nit da 25 m: il P2.9 non ci arriva, esiste un passo valido (P6.7) e viene proposto quello', () => {
+      const alt = suggerisciAlternativa(2.9, 8000, 50, 0.30, 18, 0.35, 5, 24.5);
+      expect(alt.kind).toBe('brightness');
+      expect(alt.proposed.pitchMm).toBe(6.7);
+      expect(alt.validPitchesMm).toContain(6.7);
+      expect(alt.validPitchesMm).not.toContain(2.9);
+    });
+
+    it('il tetto di nit vale per ogni passo, senza tolleranze', () => {
+      for (const p of PASSI) {
+        expect(passoRaggiungeNit(p, TETTI[p])).toBe(true);
+        expect(passoRaggiungeNit(p, TETTI[p] + 500)).toBe(false);
+      }
+    });
+
+    it('su tutti i passi, nit e distanze: mai un verdetto positivo o una proposta che violi un requisito', () => {
+      for (const p of PASSI) {
+        for (let nits = 2500; nits <= 20000; nits += 500) {
+          for (const dist of [3, 5, 10, 15, 20, 25, 30, 40, 60, 100]) {
+            const alt = suggerisciAlternativa(p, nits, 32, 0.30, 18, 0.35, 5, dist, 4);
+            const ctx = `P${p} · ${nits} nit · ${dist} m → ${alt.kind}`;
+            const positivo = alt.kind === 'fleet' || alt.kind === 'none' || alt.kind === 'pitch';
+            // 1. verdetto positivo solo se il passo scelto soddisfa tutto
+            expect(positivo, ctx).toBe(alt.currentIsValid);
+            if (positivo) expect(nits, ctx).toBeLessThanOrEqual(TETTI[p]);
+            // 2. ogni passo proposto come soluzione soddisfa entrambi i requisiti
+            if (alt.kind !== 'compromise') {
+              expect(alt.validPitchesMm, ctx).toContain(alt.proposed.pitchMm);
+              expect(nits, ctx).toBeLessThanOrEqual(TETTI[alt.proposed.pitchMm]);
+            }
+            // 3. il compromesso compare solo quando davvero nessun passo è valido, e lo dichiara
+            expect(alt.kind === 'compromise', ctx).toBe(alt.validPitchesMm.length === 0);
+            if (alt.kind === 'compromise') expect(alt.headline, ctx).toContain('Nessun passo disponibile');
+            // 4. nessun passo oltre il proprio tetto entra mai tra i validi
+            for (const v of alt.validPitchesMm) expect(nits, ctx).toBeLessThanOrEqual(TETTI[v]);
+          }
+        }
+      }
+    });
+  });
+
   describe('Spento da software e Aegis Hink Premium P16', () => {
     it('assorbimento a schermo nero: 50 W/m² al P2.9, 25 W/m² al P10, 3 W/m² al P16', () => {
       expect(standbyWmqPerPasso(2.6)).toBe(50);
@@ -200,10 +269,12 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
   });
 
   describe('Modalità Express · Proposta Alternativa', () => {
-    it('P2.6 a 6000 nit su 6x3m visto da 10m: propone P3.9, consuma meno e non è al limite fisico', () => {
+    it('P2.6 a 6000 nit su 6x3m visto da 10m: il P2.6 non ci arriva (4.500), propone P3.9 che consuma meno', () => {
       const alt = suggerisciAlternativa(2.6, 6000, 18, 0.30, 18, 0.35, 5, 10);
       expect(alt.hasAlternative).toBe(true);
-      expect(alt.kind).toBe('pitch');
+      expect(alt.kind).toBe('brightness');
+      expect(alt.currentIsValid).toBe(false);
+      expect(alt.currentMeetsBrightness).toBe(false);
       expect(alt.recommendedPitchMm).toBe(3.91);
       expect(alt.proposed.pitchMm).toBe(3.9);
       expect(alt.proposed.annualCostEur).toBeLessThan(alt.current.annualCostEur);
@@ -228,7 +299,7 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
     });
 
     it('P10 visto da 5m: passo troppo largo, propone il P2.6 dichiarando l\'energia in più', () => {
-      const alt = suggerisciAlternativa(10, 5000, 18, 0.30, 18, 0.35, 3, 4);
+      const alt = suggerisciAlternativa(10, 4500, 18, 0.30, 18, 0.35, 3, 4);
       expect(alt.kind).toBe('coarse');
       expect(alt.proposed.pitchMm).toBe(2.6);
       expect(alt.savingsEur).toBe(0);
