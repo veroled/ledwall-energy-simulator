@@ -8,7 +8,10 @@ import { FileDown, Share2, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 
 export const S9ReportExport: React.FC = () => {
   const { lead, setLead, resetToDefaults } = useSimulatorStore();
-  const { dimensions, profile, scenario, powerQuality, opticalConsulting } = useSimulatorComputed();
+  const { dimensions, profile, scenario, powerQuality, opticalConsulting, alternative } = useSimulatorComputed();
+  // Il report è un documento che va al cliente: non si genera se i nit impostati superano il tetto
+  // di listino della combinazione Selection × passo (tetto noto e superato; il dato mancante non blocca).
+  const nitOltreTetto = alternative.currentHasData && !alternative.currentMeetsBrightness;
   const state = useSimulatorStore();
 
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -123,10 +126,18 @@ export const S9ReportExport: React.FC = () => {
 
             {/* Download Buttons */}
             <div className="space-y-2">
+              {nitOltreTetto && (
+                <p className="p-2.5 rounded-lg bg-[#2A1111] border border-[#5B1F1F] text-[11px] text-[#FCA5A5] leading-relaxed">
+                  Report bloccato: i {alternative.current.nits.toLocaleString('it-IT')} nit impostati superano il tetto di listino del P{alternative.current.pitchMm} ({(alternative.currentMaxNits ?? 0).toLocaleString('it-IT')} nit). Torna al passo 2 e abbassa i nit o cambia Selection.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                className="w-full py-2.5 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs tracking-wider flex items-center justify-center space-x-2 cursor-pointer transition-colors shadow-sm"
+                disabled={nitOltreTetto}
+                className={`w-full py-2.5 rounded-lg font-semibold text-xs tracking-wider flex items-center justify-center space-x-2 transition-colors shadow-sm ${
+                  nitOltreTetto ? 'bg-[#1A2028] text-[#667085] cursor-not-allowed' : 'bg-[#12B76A] hover:bg-[#0E9F5D] text-white cursor-pointer'
+                }`}
               >
                 <FileDown className="w-4 h-4" />
                 <span>

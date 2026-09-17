@@ -218,7 +218,16 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
       expect(a.currentHasData).toBe(false);
       expect(a.currentMaxNits).toBeNull();
       expect(a.currentIsValid).toBe(false);
-      expect(a.headline).toContain('Dato non disponibile');
+      expect(a.headline).toContain('non ancora censito');
+      // dato mancante ≠ vietato: la distanza si giudica comunque, e a 11 m il P4.81 non è pulito
+      expect(a.currentMeetsDistance).toBe(false);
+      expect(alt('silver', 4.81, 5000, 20).currentMeetsDistance).toBe(true);
+      expect(alt('silver', 4.81, 5000, 20).headline).toContain('il passo va bene');
+      // la stima di potenza non prende in prestito nessun tetto: nit non limitati, sforzo non dichiarabile
+      const stima = stimaPotenzaDaPassoNit(4.81, 9000, 32, 0.35, 18, true, null);
+      expect(stima.tettoNoto).toBe(false);
+      expect(stima.isAtPhysicalLimit).toBe(false);
+      expect(stima.maxPhysicalNits).toBe(9000);
       // l'eventuale proposta è solo tra le combinazioni che il listino Silver copre davvero
       expect(passiDelTier('silver').map((r) => r.pitchMm)).toContain(a.proposed.pitchMm === 4.81 ? 3.91 : a.proposed.pitchMm);
       for (const v of a.validPitchesMm) expect(tettoListino('silver', v)).not.toBeNull();

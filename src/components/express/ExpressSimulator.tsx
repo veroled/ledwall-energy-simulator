@@ -16,6 +16,7 @@ import {
   Zap,
   Sun,
   Eye,
+  Info,
   Power,
   ArrowUpFromLine,
   Monitor,
@@ -127,8 +128,11 @@ export const ExpressSimulator: React.FC = () => {
   const datoMancante = datoScelto === null;
   const nitsOverLimit = datoScelto !== null && targetOutdoorNits > datoScelto.maxNits;
   const configNonValida = datoMancante || nitsOverLimit;
-  // Lo slider arriva al nit più alto che la Selection eroga a listino, non oltre
-  const nitSliderMax = Math.max(3000, ...passiDelTier(tier).map((r) => r.maxNits));
+  // Lo slider copre tutto il catalogo: l'utente deve poter chiedere più nit di quanti la combinazione regga,
+  // perché è lì che scatta il controllo. Il tetto della combinazione scelta è segnato sulla barra.
+  const NIT_MIN = 2500;
+  const nitSliderMax = Math.max(...TIERS.flatMap((t) => passiDelTier(t.id).map((r) => r.maxNits)));
+  const tettoPos = datoScelto ? Math.max(0, Math.min(100, ((datoScelto.maxNits - NIT_MIN) / (nitSliderMax - NIT_MIN)) * 100)) : null;
 
   const analyzeFile = async (file: File) => {
     setIsProcessing(true);
@@ -296,53 +300,41 @@ export const ExpressSimulator: React.FC = () => {
                   {PASSI_CATALOGO.map((p) => {
                     const dato = datoCatalogo(tier, p);
                     const selected = stessoPasso(pitchMm, p);
-                    // Gate: selezionabile solo se il listino ha il dato di QUESTA combinazione e arriva ai nit richiesti
-                    const reachable = dato !== null && targetOutdoorNits <= dato.maxNits;
-                    const est = dato ? stimaPotenzaDaPassoNit(p, targetOutdoorNits, undefined, undefined, undefined, true, dato) : null;
+                    // Il passo si sceglie per la distanza di visione ed è SEMPRE selezionabile: la Selection decide
+                    // quanti nit regge, e il controllo severo sta sul valore di nit, non sul bottone.
+                    const oltreTetto = dato !== null && targetOutdoorNits > dato.maxNits;
+                    const est = dato && !oltreTetto ? stimaPotenzaDaPassoNit(p, targetOutdoorNits, undefined, undefined, undefined, true, dato) : null;
                     const stress = !est ? '' : est.sforzoPercent >= 90 ? 'text-[#F87171]' : est.sforzoPercent >= 65 ? 'text-[#FBBF24]' : 'text-[#34D399]';
                     return (
                       <button
                         key={p}
                         type="button"
-                        disabled={!reachable}
                         onClick={() => setPitchMm(p)}
                         title={
                           !dato
-                            ? `Dato non disponibile: il listino non ha il tetto di nit del P${p} ${tierLabel}`
-                            : !reachable
-                            ? `Il P${p} ${tierLabel} si ferma a ${n(dato.maxNits)} nit: non esiste a ${n(targetOutdoorNits)} nit`
+                            ? `P${p} ${tierLabel}: tetto di nit non ancora censito per questa combinazione`
                             : `P${p} ${tierLabel}: fino a ${n(dato.maxNits)} nit · ${dato.chip}`
                         }
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 ${
-                          !reachable
-                            ? selected
-                              ? 'border border-[#F87171] bg-[#2A1111] text-[#F87171] font-semibold cursor-not-allowed'
-                              : `border border-[#1A2028] bg-[#0B0E13] text-[#4B5563] cursor-not-allowed ${dato ? 'line-through decoration-[#4B5563]' : ''}`
-                            : selected
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm cursor-pointer'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A] cursor-pointer'
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
+                          selected
+                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
+                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
                         }`}
                       >
                         <span>P{p}</span>
                         {!dato ? (
-                          <span className="text-[10px] font-mono">n.d.</span>
-                        ) : reachable && est ? (
+                          <span className="text-[10px] font-mono text-[#868D97]">n.d.</span>
+                        ) : est ? (
                           <span className={`text-[10px] font-mono ${stress}`}>{est.sforzoPercent}%</span>
                         ) : (
-                          <span className="text-[10px] font-mono">max {n(dato.maxNits)}</span>
+                          <span className="text-[10px] font-mono text-[#FBBF24]">max {n(dato.maxNits)}</span>
                         )}
                       </button>
                     );
                   })}
                 </div>
                 <p className="text-[11px] text-[#868D97]">
-                  La percentuale è lo sforzo dei chip {tierLabel} a {n(targetOutdoorNits)} nit, cioè quanta parte del tetto di listino di quella combinazione stai usando: cambia con la luminosità e con la Selection, non con il contenuto.
-                  {PASSI_CATALOGO.some((p) => { const d = datoCatalogo(tier, p); return d !== null && targetOutdoorNits > d.maxNits; }) && (
-                    <> I passi barrati in {tierLabel} non arrivano a {n(targetOutdoorNits)} nit.</>
-                  )}
-                  {PASSI_CATALOGO.some((p) => datoCatalogo(tier, p) === null) && (
-                    <> «n.d.» = dato non disponibile per questa Selection: il listino non ha il tetto di nit di quella combinazione, e non usiamo quello di un&apos;altra.</>
-                  )}
+                  Tutti i passi sono selezionabili: il passo si sceglie per la distanza di visione, la Selection decide quanti nit regge. La percentuale è lo sforzo dei chip {tierLabel} a {n(targetOutdoorNits)} nit (quota del tetto di listino di quella combinazione); «max» indica un tetto più basso dei nit impostati; «n.d.» un tetto non ancora censito nel listino, che non stimiamo né prendiamo da un&apos;altra Selection.
                 </p>
               </div>
 
@@ -403,20 +395,31 @@ export const ExpressSimulator: React.FC = () => {
                     </span>
                     <span className="text-sm font-semibold text-white tabular-nums">{softwareOff ? '0 nit · spento' : `${n(targetOutdoorNits)} nit`}</span>
                   </div>
-                  <input
-                    type="range"
-                    min={2500}
-                    max={nitSliderMax}
-                    step={500}
-                    value={Math.min(targetOutdoorNits, nitSliderMax)}
-                    disabled={softwareOff}
-                    onChange={(e) => setTargetOutdoorNits(parseInt(e.target.value, 10))}
-                    className={`w-full custom-slider ${softwareOff ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                  />
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min={NIT_MIN}
+                      max={nitSliderMax}
+                      step={500}
+                      value={Math.min(targetOutdoorNits, nitSliderMax)}
+                      disabled={softwareOff}
+                      onChange={(e) => setTargetOutdoorNits(parseInt(e.target.value, 10))}
+                      className={`w-full custom-slider ${softwareOff ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    />
+                    {tettoPos !== null && !softwareOff && (
+                      <span
+                        className={`absolute top-0 h-4 w-0.5 rounded pointer-events-none ${nitsOverLimit ? 'bg-[#F87171]' : 'bg-[#34D399]'}`}
+                        style={{ left: `calc(8px + (100% - 16px) * ${tettoPos / 100})` }}
+                        title={`Tetto P${pitchMm} ${tierLabel}: ${n(datoScelto?.maxNits ?? 0)} nit`}
+                      />
+                    )}
+                  </div>
                   <div className="flex justify-between text-[10px] text-[#868D97]">
-                    <span>2.500 · ombra</span>
-                    <span>5.000 · outdoor</span>
-                    <span>{n(nitSliderMax)} · massimo {tierLabel}</span>
+                    <span className="whitespace-nowrap">2.500</span>
+                    <span className={`text-center ${nitsOverLimit ? 'text-[#F87171]' : 'text-[#34D399]'}`}>
+                      {datoScelto ? `▏tetto P${pitchMm} ${tierLabel}: ${n(datoScelto.maxNits)}` : 'tetto non censito'}
+                    </span>
+                    <span className="whitespace-nowrap">{n(nitSliderMax)}</span>
                   </div>
                   <button
                     type="button"
@@ -436,15 +439,24 @@ export const ExpressSimulator: React.FC = () => {
                       Schermo nero ma alimentato: il P{pitchMm} assorbe {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m² di sola elettronica, 24 ore su 24. Si azzera solo staccando la linea con un relè.
                     </p>
                   ) : datoMancante ? (
-                    <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span>Dato non disponibile per il P{pitchMm} {tierLabel}: il listino non ha il tetto di nit di questa combinazione. Scegli un passo con il dato oppure un&apos;altra Selection.</span>
+                    <p className="text-[11px] text-[#93C5FD] flex items-start space-x-1.5">
+                      <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span>Tetto di nit non ancora censito per il P{pitchMm} {tierLabel}: il passo resta valido come scelta, ma non possiamo verificare che regga {n(targetOutdoorNits)} nit. È un dato che manca nel listino, non un limite del prodotto.</span>
                     </p>
                   ) : nitsOverLimit ? (
-                    <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span>Il P{pitchMm} {tierLabel} si ferma a {n(datoScelto.maxNits)} nit ({datoScelto.chip}): a {n(targetOutdoorNits)} nit non è una scelta valida. Scegli un passo non barrato.</span>
-                    </p>
+                    <div className="p-2.5 rounded-lg bg-[#2A1111] border border-[#5B1F1F] space-y-2">
+                      <p className="text-[11px] text-[#FCA5A5] flex items-start space-x-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                        <span>{n(targetOutdoorNits)} nit superano il tetto del P{pitchMm} {tierLabel}: {n(datoScelto.maxNits)} nit ({datoScelto.chip}). Questo valore non è erogabile: finché resta, risultati e report non sono validi.</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setTargetOutdoorNits(Math.floor(datoScelto.maxNits / 500) * 500)}
+                        className="w-full px-3 py-1.5 rounded-lg bg-[#F87171] hover:bg-[#EF4444] text-[#1A0B0B] text-xs font-semibold cursor-pointer transition-colors"
+                      >
+                        Riporta a {n(Math.floor(datoScelto.maxNits / 500) * 500)} nit
+                      </button>
+                    </div>
                   ) : (
                     <p className="text-[11px] text-[#868D97]">Tetto di listino del P{pitchMm} {tierLabel}: {n(datoScelto.maxNits)} nit · {datoScelto.chip}</p>
                   )}
@@ -664,13 +676,19 @@ export const ExpressSimulator: React.FC = () => {
                 </div>
               )}
 
-              {configNonValida && !softwareOff && (
+              {nitsOverLimit && datoScelto && !softwareOff && (
                 <p className="p-3 rounded-lg bg-[#2A1111] border border-[#5B1F1F] text-[11px] text-[#FCA5A5] flex items-start space-x-2">
                   <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   <span>
-                    {datoScelto
-                      ? `Configurazione non valida: il P${pitchMm} ${tierLabel} non esiste a ${n(targetOutdoorNits)} nit. I consumi qui sotto sono quelli del P${pitchMm} ${tierLabel} al suo tetto di ${n(datoScelto.maxNits)} nit, non alla luminosità che hai chiesto.`
-                      : `Configurazione non validabile: per il P${pitchMm} ${tierLabel} il listino non ha il tetto di nit. I consumi qui sotto sono una stima sul solo passo, senza la verifica che questa combinazione arrivi a ${n(targetOutdoorNits)} nit.`}
+                    Risultati non validi: il P{pitchMm} {tierLabel} non eroga {n(targetOutdoorNits)} nit. I consumi qui sotto sono quelli al suo tetto di {n(datoScelto.maxNits)} nit, non alla luminosità che hai chiesto. Abbassa i nit o cambia Selection.
+                  </span>
+                </p>
+              )}
+              {datoMancante && !softwareOff && (
+                <p className="p-3 rounded-lg bg-[#0F1A2A] border border-[#1E3A5F] text-[11px] text-[#93C5FD] flex items-start space-x-2">
+                  <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Tetto non ancora censito per il P{pitchMm} {tierLabel}: i consumi qui sotto sono una stima sul solo passo a {n(targetOutdoorNits)} nit, senza la verifica che questa combinazione ci arrivi.
                   </span>
                 </p>
               )}
@@ -699,14 +717,24 @@ export const ExpressSimulator: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <Link
-                  href="/"
-                  onClick={() => goToWizard(9)}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 transition-colors shadow-sm"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Scarica il report PDF</span>
-                </Link>
+                {nitsOverLimit && !softwareOff ? (
+                  <span
+                    title="I nit impostati superano il tetto della combinazione: il report non si può generare"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#1A2028] text-[#667085] font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 cursor-not-allowed"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Report bloccato: nit oltre il tetto</span>
+                  </span>
+                ) : (
+                  <Link
+                    href="/"
+                    onClick={() => goToWizard(9)}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 transition-colors shadow-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Scarica il report PDF</span>
+                  </Link>
+                )}
                 <Link
                   href="/"
                   onClick={() => goToWizard(7)}

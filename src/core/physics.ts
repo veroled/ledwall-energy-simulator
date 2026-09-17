@@ -458,6 +458,8 @@ export interface HardwareComparisonResult {
   isAtPhysicalLimit: boolean;
   limitReason: string;
   sforzoPercent: number; // % di sforzo del chip (duty cycle / carico termico) per erogare i nit target
+  /** false = tetto di nit non censito per la combinazione: nit non limitati, sforzo non dichiarabile */
+  tettoNoto: boolean;
 }
 
 /**
@@ -484,17 +486,26 @@ export function stimaPotenzaDaPassoNit(
         chipType: catalogo.chip,
         limitReason: `Tetto di listino della Selection ${tierName(catalogo.tier)} sul P${catalogo.pitchMm}: ${catalogo.maxNits.toLocaleString('it-IT')} nit (${catalogo.chip}).`,
       }
+    : catalogo === null
+    ? {
+        // Combinazione non censita: nessun tetto preso in prestito. I nit NON vengono limitati, la potenza
+        // resta una stima sul solo passo e chi mostra il risultato deve dichiarare che manca la verifica.
+        maxNits: Number.POSITIVE_INFINITY,
+        chipType: 'chip non ancora censito per questa combinazione',
+        limitReason: 'Tetto di nit non ancora censito per questa combinazione Selection × passo.',
+      }
     : getMaxNitsForPitch(pitchMm);
+  const tettoNoto = catalogo !== null;
   // Rispetta il vincolo fisico del semiconduttore: non si possono eccedere i nit massimi
   const effectiveNits = Math.min(nits, limit.maxNits);
-  const isAtPhysicalLimit = nits >= limit.maxNits;
+  const isAtPhysicalLimit = tettoNoto && nits >= limit.maxNits;
 
   // Calcolo dello Sforzo del chip (duty cycle % per raggiungere i nit target)
   // Per i passi grandi (P10) il massimale di progetto su chip generosi SMD3535/DIP è 15.000 nit
   // Con il dato di listino lo sforzo è il rapporto con il tetto reale di quel componente
   const nominalCeiling = catalogo
     ? catalogo.maxNits
-    : pitchMm >= 15 ? 22000 : pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : limit.maxNits;
+    : pitchMm >= 15 ? 22000 : pitchMm >= 9.5 ? 15000 : pitchMm >= 6.0 ? 12000 : tettoNoto ? limit.maxNits : getMaxNitsForPitch(pitchMm).maxNits;
   const sforzoPercent = Math.min(100, Math.max(15, Math.round((nits / nominalCeiling) * 100)));
 
   const pixelM2 = Math.round((1000 / pitchMm) * (1000 / pitchMm));
@@ -562,10 +573,11 @@ export function stimaPotenzaDaPassoNit(
     annualKwh,
     efficienzaLmPerW,
     tecnologiaChip,
-    maxPhysicalNits: limit.maxNits,
+    maxPhysicalNits: tettoNoto ? limit.maxNits : effectiveNits,
     isAtPhysicalLimit,
     limitReason: limit.limitReason,
     sforzoPercent,
+    tettoNoto,
   };
 }
 
@@ -1032,19 +1044,24 @@ export function suggerisciAlternativa(
       `Potenza media reale con il tuo contenuto: da ${current.pMedioWmq} a ${finalProposed.pMedioWmq} W/m².`
     );
   } else if (kind === 'nodata') {
-    headline = `Dato non disponibile per il P${pitchMm} mm ${T}: il listino non ha il tetto di nit di questa combinazione, quindi non possiamo dirti se regge ${nitsTxt} nit.`;
+    // Dato mancante nel censimento, NON un limite fisico: il passo resta una scelta legittima.
+    // La distanza si giudica comunque (è fisica, non dipende dalla Selection); i nit non sono verificabili.
+    headline = `Tetto di nit non ancora censito per il P${pitchMm} mm ${T}: non possiamo confermare che regga ${nitsTxt} nit. Per la distanza di visione (${Dtxt} m) il passo ${currentMeetsDistance ? 'va bene' : 'è troppo largo: la trama dei pixel si vede'}.`;
     reasons.push(
-      `Non usiamo il valore di un'altra Selection o di un altro passo: il tetto dipende dal chip reale montato su quella combinazione.`
+      `È un dato che manca nel nostro listino, non un divieto: puoi tenere il P${pitchMm} ${T}, ma senza il tetto del chip reale non dichiariamo che la combinazione è valida.`
+    );
+    reasons.push(
+      `Non usiamo il valore di un'altra Selection o di un altro passo: il tetto dipende dal componente montato su quella combinazione.`
     );
     reasons.push(
       righeTier.length > 0
-        ? `In ${T} il listino copre con dati certi: ${righeTier.map((r) => `P${r.pitchMm}`).join(', ')}.`
-        : `Per la Selection ${T} il listino non ha ancora nessun dato outdoor.`
+        ? `In ${T} il listino ha il tetto censito per: ${righeTier.map((r) => `P${r.pitchMm}`).join(', ')}.`
+        : `Per la Selection ${T} il listino non ha ancora nessun tetto outdoor censito.`
     );
     if (validPitchesMm.length > 0) {
       reasons.push(`Con dati certi, a ${nitsTxt} nit e ${Dtxt} m in ${T} torna tutto sul P${proposedPitch} (tetto ${tetto(proposedPitch)} nit).`);
     } else if (altreSelection) {
-      reasons.push(`A ${nitsTxt} nit e ${Dtxt} m i requisiti tornano in: ${altreSelection}.`);
+      reasons.push(`Con dati certi, a ${nitsTxt} nit e ${Dtxt} m i requisiti tornano in: ${altreSelection}.`);
     }
   } else if (kind === 'brightness') {
     headline = `Il P${pitchMm} mm ${T} non esiste a ${nitsTxt} nit: si ferma a ${tetto(pitchMm)}. Per questa luminosità a ${Dtxt} m, in ${T} serve il P${proposedPitch} mm.`;

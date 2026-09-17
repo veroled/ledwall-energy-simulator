@@ -837,29 +837,28 @@ export const S2Dimensions: React.FC = () => {
                       const dato = datoCatalogo(tier, p);
                       const pEst = stimaPotenzaDaPassoNit(p, targetOutdoorNits, undefined, undefined, undefined, true, dato);
                       const isSelected = stessoPasso(pitchMm, p);
-                      // Gate: selezionabile solo se il listino ha il dato di QUESTA combinazione e arriva ai nit richiesti
+                      // Il passo è SEMPRE selezionabile (si sceglie per la distanza): il controllo severo è sui nit
                       const reachable = dato !== null && targetOutdoorNits <= dato.maxNits;
                       return (
                         <button
                           key={p}
                           type="button"
-                          disabled={!reachable}
                           onClick={() => setPitchMm(p)}
-                          title={!dato ? `Dato non disponibile: il listino non ha il tetto di nit del P${p} ${tierLabel}` : reachable ? undefined : `Il P${p} ${tierLabel} si ferma a ${fmt(dato.maxNits)} nit: non esiste a ${fmt(targetOutdoorNits)} nit`}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center space-x-1.5 ${
-                            !reachable
-                              ? isSelected
-                                ? 'border border-[#F87171] bg-[#2A1111] text-[#F87171] font-semibold cursor-not-allowed'
-                                : 'border border-[#1A2028] bg-[#0B0E13] text-[#4B5563] cursor-not-allowed opacity-60'
-                              : isSelected
-                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm cursor-pointer'
-                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A] cursor-pointer'
+                          title={!dato ? `P${p} ${tierLabel}: tetto di nit non ancora censito per questa combinazione` : `P${p} ${tierLabel}: fino a ${fmt(dato.maxNits)} nit · ${dato.chip}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
+                            isSelected
+                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
+                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
                           }`}
                         >
                           <span>P{p} mm</span>
                           <span
                             className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                              pEst.sforzoPercent >= 90
+                              !dato
+                                ? 'bg-[#1A2028] text-[#9AA3AD]'
+                                : !reachable
+                                ? 'bg-[#2E200B] text-[#FBBF24]'
+                                : pEst.sforzoPercent >= 90
                                 ? isSelected
                                   ? 'bg-[#7F1D1D] text-[#FCA5A5]'
                                   : 'bg-[#3D1414] text-[#F87171]'
@@ -878,6 +877,24 @@ export const S2Dimensions: React.FC = () => {
                       );
                     })}
                   </div>
+                  {(() => {
+                    const datoScelto = datoCatalogo(tier, pitchMm);
+                    if (!datoScelto) {
+                      return (
+                        <p className="mt-2 p-2.5 rounded-lg bg-[#0F1A2A] border border-[#1E3A5F] text-[11px] text-[#93C5FD] leading-relaxed">
+                          Tetto di nit non ancora censito per il P{pitchMm} {tierLabel}: il passo resta una scelta valida, ma non possiamo verificare che regga {fmt(targetOutdoorNits)} nit. È un dato che manca nel listino, non un limite del prodotto.
+                        </p>
+                      );
+                    }
+                    if (targetOutdoorNits > datoScelto.maxNits) {
+                      return (
+                        <p className="mt-2 p-2.5 rounded-lg bg-[#2A1111] border border-[#5B1F1F] text-[11px] text-[#FCA5A5] leading-relaxed">
+                          {fmt(targetOutdoorNits)} nit superano il tetto del P{pitchMm} {tierLabel}: {fmt(datoScelto.maxNits)} nit ({datoScelto.chip}). Questo valore non è erogabile: abbassa i nit o cambia Selection, altrimenti il report finale resta bloccato.
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {/* Banner esplicativo sforzo e thermal droop */}

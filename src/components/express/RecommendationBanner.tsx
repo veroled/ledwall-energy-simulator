@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AlternativeProposal } from '../../core/physics';
-import { Sparkles, ShieldCheck, ArrowRight, Leaf, Gauge, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Sparkles, ShieldCheck, ArrowRight, Leaf, Gauge, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
 interface Props {
   alternative: AlternativeProposal;
@@ -74,11 +74,13 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
   const isCompromise = kind === 'compromise';
   // Il listino non ha il tetto di nit della combinazione scelta: non validabile, quindi mai positivo
   const isNoData = kind === 'nodata';
-  const isInvalid = isBrightness || isCompromise || isNoData;
-  const hasProposal = (isPitch || isCoarse || isInvalid) && proposed.pitchMm !== current.pitchMm;
+  const isInvalid = isBrightness || isCompromise;
+  const hasProposal = (isPitch || isCoarse || isInvalid || isNoData) && proposed.pitchMm !== current.pitchMm;
   // Verde solo se il passo scelto soddisfa tutti i requisiti; ambra = troppo largo; rosso = requisito fisico mancato
   const tone = isInvalid
     ? { border: 'border-[#5B1F1F]', bg: 'bg-[#1A0B0B]', text: 'text-[#F87171]', hex: '#F87171' }
+    : isNoData
+    ? { border: 'border-[#1E3A5F]', bg: 'bg-[#0B1320]', text: 'text-[#93C5FD]', hex: '#93C5FD' }
     : isCoarse
     ? { border: 'border-[#4A3510]', bg: 'bg-[#161006]', text: 'text-[#FBBF24]', hex: '#FBBF24' }
     : { border: 'border-[#163826]', bg: 'bg-[#0A1610]', text: 'text-[#34D399]', hex: '#34D399' };
@@ -89,7 +91,7 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
     : isCompromise
     ? 'Nessun passo valido'
     : isNoData
-    ? 'Dato non disponibile'
+    ? 'Tetto non ancora censito'
     : isCoarse
     ? 'Passo troppo largo'
     : isFleet
@@ -100,7 +102,7 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
     <aside className={`rounded-xl border shadow-md overflow-hidden ${tone.border} ${tone.bg}`}>
       <div className={`px-5 pt-5 pb-4 border-b space-y-2 ${tone.border}`}>
         <div className={`flex items-center space-x-2 text-[11px] font-semibold uppercase tracking-wider ${tone.text}`}>
-          {isCoarse || isInvalid ? <AlertTriangle className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5 text-[#12B76A]" />}
+          {isNoData ? <Info className="w-3.5 h-3.5" /> : isCoarse || isInvalid ? <AlertTriangle className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5 text-[#12B76A]" />}
           <span>{title}</span>
         </div>
         <p className="text-sm text-white font-medium leading-snug">{alternative.headline}</p>
@@ -123,9 +125,9 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
         <div className={`px-5 py-4 grid grid-cols-2 gap-3 border-b ${tone.border}`}>
           <div className="p-3 rounded-lg bg-[#0D1117] border border-[#1A2028]">
             <span className="text-[10px] uppercase text-[#868D97] font-medium block">La tua scelta</span>
-            <span className={`text-lg font-semibold tabular-nums ${isCoarse ? 'text-[#FBBF24]' : 'text-[#F87171]'}`}>P{current.pitchMm} mm</span>
+            <span className={`text-lg font-semibold tabular-nums ${isNoData ? 'text-[#93C5FD]' : isCoarse ? 'text-[#FBBF24]' : 'text-[#F87171]'}`}>P{current.pitchMm} mm</span>
             {!alternative.currentHasData ? (
-              <span className="text-[11px] text-[#F87171] block">tetto di nit non a listino per questa Selection</span>
+              <span className="text-[11px] text-[#93C5FD] block">tetto di nit non ancora censito</span>
             ) : alternative.currentMeetsBrightness ? (
               <span className="text-[11px] text-[#9AA3AD] block tabular-nums">
                 {eur(current.annualCostEur)}/anno · {current.hardware.sforzoPercent}% sforzo chip
@@ -137,7 +139,7 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
             )}
           </div>
           <div className="p-3 rounded-lg bg-[#0D2818] border border-[#163826]">
-            <span className="text-[10px] uppercase text-[#34D399] font-medium block">{isCompromise ? 'Compromesso più vicino' : 'Proposta VeroLED'}</span>
+            <span className="text-[10px] uppercase text-[#34D399] font-medium block">{isCompromise ? 'Compromesso più vicino' : isNoData ? 'Con dati certi' : 'Proposta VeroLED'}</span>
             <span className="text-lg font-semibold text-white tabular-nums">P{proposed.pitchMm} mm</span>
             <span className="text-[11px] text-[#9AA3AD] block tabular-nums">
               {eur(proposed.annualCostEur)}/anno · {proposed.hardware.sforzoPercent}% sforzo chip
@@ -205,7 +207,9 @@ export const RecommendationBanner: React.FC<Props> = ({ alternative, installHeig
         <ul className="px-5 pb-4 space-y-2">
           {alternative.reasons.map((r, i) => (
             <li key={i} className="flex items-start space-x-2 text-xs text-[#C9D1D9] leading-relaxed">
-              {isInvalid ? (
+              {isNoData ? (
+                <Info className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${tone.text}`} />
+              ) : isInvalid ? (
                 <AlertTriangle className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${tone.text}`} />
               ) : (
                 <CheckCircle2 className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${isCoarse ? 'text-[#FBBF24]' : 'text-[#12B76A]'}`} />
