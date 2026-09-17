@@ -299,13 +299,16 @@ export interface DatoDiTarga {
   tier: 'diamond' | 'platinum' | 'gold' | 'silver' | 'bronze' | 'essential';
   pitchMm: number;
   prodotto: string;
-  standbyWmq: number; // W/m² a schermo spento da software
+  standbyWPerCabinet: number; // W a schermo spento da software, PER CABINET (così lo dichiara la scheda)
+  cabinetM2: number; // superficie del cabinet usata per riportarlo al m²
   pMaxWmq: number; // W/m² a bianco pieno alla luminosità massima della combinazione
 }
 
 export const DATI_DI_TARGA: DatoDiTarga[] = [
-  // Aegis Hink Premium (dato VeroLED, 17/09/2026): 3 W/m² in standby, 300 W/m² massimi a 20.000 nit
-  { tier: 'diamond', pitchMm: 16, prodotto: 'Aegis Hink Premium', standbyWmq: 3, pMaxWmq: 300 },
+  // Aegis Hink Premium (dato VeroLED, 17/09/2026): 3 W in standby per cabinet, 300 W/m² massimi a 20.000 nit.
+  // Esiste in cabinet 1440×960 (1,38 m² → 2,2 W/m²) e 960×960 (0,92 m² → 3,3 W/m²): si usa il più
+  // piccolo, che è il caso peggiore, così il simulatore non promette meno di quanto l'impianto assorbe.
+  { tier: 'diamond', pitchMm: 16, prodotto: 'Aegis Hink Premium', standbyWPerCabinet: 3, cabinetM2: 0.96 * 0.96, pMaxWmq: 300 },
 ];
 
 export function datoDiTarga(tier: DatoDiTarga['tier'] | undefined | null, pitchMm: number): DatoDiTarga | null {
@@ -316,12 +319,12 @@ export function datoDiTarga(tier: DatoDiTarga['tier'] | undefined | null, pitchM
 /**
  * Assorbimento a schermo spento da software (nero, elettronica alimentata), in W/m².
  * Dati VeroLED: 50 W/m² per il P2.9, 25 W/m² per il P10, interpolati sul passo e fermi a 25 oltre.
- * Se la combinazione Selection × passo ha un dato di targa (Aegis Hink Premium: 3 W/m²) vale quello,
+ * Se la combinazione Selection × passo ha un dato di targa (Aegis Hink Premium: 3 W per cabinet → 3,3 W/m²) vale quello,
  * e solo per quella combinazione: un P16 di un'altra Selection resta a 25 W/m².
  */
 export function standbyWmqPerPasso(pitchMm: number, tier?: DatoDiTarga['tier'] | null): number {
   const targa = datoDiTarga(tier, pitchMm);
-  if (targa) return targa.standbyWmq;
+  if (targa) return Math.round((targa.standbyWPerCabinet / targa.cabinetM2) * 10) / 10;
   if (pitchMm <= 2.9) return 50;
   if (pitchMm >= 10) return 25;
   return Math.round(50 - ((pitchMm - 2.9) * 25) / 7.1);

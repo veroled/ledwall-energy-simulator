@@ -289,12 +289,13 @@ describe('Motore Fisico LEDwall — Test di Accettazione Obbligatori (a–e)', (
   });
 
   describe('Spento da software e Aegis Hink Premium P16', () => {
-    it('assorbimento a schermo nero: 50 W/m² al P2.9, 25 W/m² dal P10 in su; 3 W/m² solo Aegis Hink (Diamond P16)', () => {
+    it('assorbimento a schermo nero: 50 W/m² al P2.9, 25 W/m² dal P10 in su; 3 W a cabinet (3,3 W/m²) solo Aegis Hink (Diamond P16)', () => {
       expect(standbyWmqPerPasso(2.6)).toBe(50);
       expect(standbyWmqPerPasso(2.9)).toBe(50);
       expect(standbyWmqPerPasso(10)).toBe(25);
       // il dato di targa vale per la sola combinazione Diamond P16, non per il P16 delle altre Selection
-      expect(standbyWmqPerPasso(16, 'diamond')).toBe(3);
+      // 3 W per CABINET: sul cabinet più piccolo (960×960 = 0,92 m²) fanno 3,3 W/m²
+      expect(standbyWmqPerPasso(16, 'diamond')).toBe(3.3);
       expect(standbyWmqPerPasso(16)).toBe(25);
       for (const t of ['platinum', 'gold', 'silver', 'bronze', 'essential'] as TierId[]) {
         expect(standbyWmqPerPasso(16, t), t).toBe(25);

@@ -429,11 +429,11 @@ export const ExpressSimulator: React.FC = () => {
                     }`}
                   >
                     <Power className="w-3.5 h-3.5" />
-                    <span>Spento da software · {n(standbyWmq)} W/m²</span>
+                    <span>Spento da software · {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m²</span>
                   </button>
                   {softwareOff ? (
                     <p className="text-[11px] text-[#868D97]">
-                      Schermo nero ma alimentato: il P{pitchMm} assorbe {n(standbyWmq)} W/m² di sola elettronica, 24 ore su 24. Si azzera solo staccando la linea con un relè.
+                      Schermo nero ma alimentato: il P{pitchMm} assorbe {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m² di sola elettronica, 24 ore su 24. Si azzera solo staccando la linea con un relè.
                     </p>
                   ) : datoMancante ? (
                     <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
@@ -660,7 +660,7 @@ export const ExpressSimulator: React.FC = () => {
                     </div>
                     <input type="range" min={0.10} max={0.60} step={0.01} value={tariffEurKwh} onChange={(e) => setTariffRate(parseFloat(e.target.value))} className="w-full custom-slider cursor-pointer" />
                   </div>
-                  <p className="col-span-2 text-[11px] text-[#667085]">Di notte lo schermo scende al 10% (norma CEI). Spento da software il P{pitchMm} assorbe comunque {n(standbyWmq)} W/m².</p>
+                  <p className="col-span-2 text-[11px] text-[#667085]">Di notte lo schermo scende al 10% (norma CEI). Spento da software il P{pitchMm} assorbe comunque {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m².</p>
                 </div>
               )}
 
