@@ -5,189 +5,189 @@
       "tier": "diamond",
       "pitchMm": 2.5,
       "maxNits": 5500,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 10584.58
     },
     {
       "tier": "diamond",
       "pitchMm": 2.9,
       "maxNits": 5500,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 9645.52
     },
     {
       "tier": "diamond",
       "pitchMm": 3.91,
       "maxNits": 9000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 8000
     },
     {
       "tier": "diamond",
       "pitchMm": 4.81,
       "maxNits": 9000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 7027.06
     },
     {
       "tier": "diamond",
       "pitchMm": 5.81,
       "maxNits": 9000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 6243.47
     },
     {
       "tier": "diamond",
       "pitchMm": 6.67,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 5726.64
     },
     {
       "tier": "diamond",
       "pitchMm": 7.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 5188.08
     },
     {
       "tier": "diamond",
       "pitchMm": 8.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4811.2
     },
     {
       "tier": "diamond",
       "pitchMm": 9.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4498.06
     },
     {
       "tier": "diamond",
       "pitchMm": 10.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4232.89
     },
     {
       "tier": "diamond",
       "pitchMm": 11.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4004.84
     },
     {
       "tier": "diamond",
       "pitchMm": 12.81,
       "maxNits": 10000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 3806.18
     },
     {
       "tier": "diamond",
       "pitchMm": 16,
       "maxNits": 20000,
-      "chip": "Nichia o Cree",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 2929.69
     },
     {
       "tier": "platinum",
       "pitchMm": 2.5,
       "maxNits": 6300,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 8467.66
     },
     {
       "tier": "platinum",
       "pitchMm": 2.9,
       "maxNits": 6500,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 7716.42
     },
     {
       "tier": "platinum",
       "pitchMm": 3,
       "maxNits": 6500,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 7554.39
     },
     {
       "tier": "platinum",
       "pitchMm": 3.91,
       "maxNits": 6800,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 6400
     },
     {
       "tier": "platinum",
       "pitchMm": 4.81,
       "maxNits": 7000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 5621.65
     },
     {
       "tier": "platinum",
       "pitchMm": 5.81,
       "maxNits": 7000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4994.78
     },
     {
       "tier": "platinum",
       "pitchMm": 6.67,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4581.31
     },
     {
       "tier": "platinum",
       "pitchMm": 7.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 4150.46
     },
     {
       "tier": "platinum",
       "pitchMm": 8.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 3848.96
     },
     {
       "tier": "platinum",
       "pitchMm": 9.81,
       "maxNits": 8000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 3598.45
     },
     {
       "tier": "platinum",
       "pitchMm": 10.81,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 3386.31
     },
     {
       "tier": "platinum",
       "pitchMm": 11.81,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 3203.87
     },
     {
       "tier": "platinum",
       "pitchMm": 12.81,
       "maxNits": 9000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 3044.95
     },
     {
       "tier": "platinum",
       "pitchMm": 16,
       "maxNits": 10000,
-      "chip": "NationStar o KingLight Gold Copper",
+      "chip": "Cree, Nichia o Kinglight Gold Wire",
       "prezzoMq": 2343.75
     },
     {
