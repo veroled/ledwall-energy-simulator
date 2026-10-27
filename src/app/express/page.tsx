@@ -4,14 +4,14 @@ import { ExpressSimulator } from '../../components/express/ExpressSimulator';
 export const metadata: Metadata = {
   title: 'Simulatore Consumi LEDwall: Calcolo Bolletta, kWh e APL | VeroLED',
   description:
-    'Simulatore consumi LEDwall online: calcola kW di picco, assorbimento medio orario con formula APL, spesa annuale in bolletta e risparmio con Common Cathode.',
+    'Simulatore consumi LEDwall: calcola kW di picco, assorbimento medio orario con formula APL, spesa annuale in bolletta e risparmio con Common Cathode.',
   alternates: {
     canonical: 'https://veroled.it/simulatore-consumi/express/',
   },
   openGraph: {
     title: 'Simulatore Consumi LEDwall: Calcolo Bolletta, kWh e APL | VeroLED',
     description:
-      'Simulatore consumi LEDwall online: calcola kW di picco, assorbimento medio orario con formula APL, spesa annuale in bolletta e risparmio con Common Cathode.',
+      'Simulatore consumi LEDwall: calcola kW di picco, assorbimento medio orario con formula APL, spesa annuale in bolletta e risparmio con Common Cathode.',
     url: 'https://veroled.it/simulatore-consumi/express/',
     type: 'website',
     siteName: 'VeroLED',
