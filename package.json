@@ -12,7 +12,7 @@
     "build:site": "NEXT_PUBLIC_BASE_PATH=/simulatore-consumi next build",
     "deploy:site": "bash scripts/deploy-site.sh",
     "sync:catalogo": "node scripts/sync-catalogo-nit.mjs",
-    "video:apl": "node scripts/prepara-video-apl.mjs",
+    "verifica-demo": "node scripts/verifica-demo.mjs",
     "aggiorna-ui": "node scripts/aggiorna-ui.mjs",
     "verifica-ui": "node scripts/verifica-ui.mjs"
   },

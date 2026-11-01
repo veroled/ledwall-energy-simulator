@@ -2,16 +2,16 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { analizzaVideoApl, caricaFrameFoto, aplDaFrames, type FitMode } from '../../core/apl-engine';
+import { fotogrammiDemo, VERSIONI_DEMO, type VersioneDemo } from '../../core/demo-veroled';
+import { preparaDemo } from './demo-risorse';
 import { ContentPreview, type PreviewSource } from './ContentPreview';
 import { Upload, CheckCircle2, AlertTriangle, RotateCcw } from 'lucide-react';
 
 const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: 'always' } as Intl.NumberFormatOptions);
 
-export interface DemoVideo {
-  url: string;
-  label: string;
-  /** APL misurato sul file (scripts/prepara-video-apl.mjs): vale solo se il browser non riesce ad analizzarlo */
-  fallbackAplPercent: number;
+/** La demo di uno slot: quale versione del contenuto VeroLED (src/core/demo-veroled.ts) */
+export interface DemoSlot {
+  versione: VersioneDemo;
 }
 
 export interface SlotInfo {
@@ -24,7 +24,7 @@ interface ContentSlotProps {
   id: 'A' | 'B';
   titolo: string;
   sottotitolo: string;
-  demo: DemoVideo;
+  demo: DemoSlot;
   ratioW: number;
   ratioH: number;
   resolutionLabel: string;
@@ -70,17 +70,21 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
   }, []);
 
   const manuale = manualAplPercent !== null;
-  const chiaveAttiva = upload ? upload.source.url : demo.url;
+  const etichettaDemo = VERSIONI_DEMO[demo.versione].etichetta;
+  // La demo si ridisegna alla misura dello schermo: la sua chiave cambia col formato, quella di un file no
+  const chiaveDemo = `demo:${demo.versione}:${ratioW}x${ratioH}`;
+  const chiaveAttiva = upload ? upload.source.url : chiaveDemo;
 
-  // Analisi del video dimostrativo: riparte quando cambia il formato (quindi il file) e non c'è un upload
+  // Misura della demo: 30 fotogrammi disegnati nel rapporto del LEDwall, a ogni cambio di formato.
+  // Finché la misura non c'è lo slot non dichiara niente (la pagina tiene APL_DEMO_PROVVISORIO per quell'istante).
   useEffect(() => {
     if (upload || manuale) return;
     let annullata = false;
-    analizzaVideoApl(demo.url)
-      .then((res) => { if (!annullata) setAnalisi({ chiave: demo.url, frames: res.frames }); })
-      .catch(() => { /* resta l'APL misurato a build time */ });
+    preparaDemo(demo.versione).then((scritta) => {
+      if (!annullata) setAnalisi({ chiave: chiaveDemo, frames: fotogrammiDemo(demo.versione, ratioW, ratioH, scritta) });
+    });
     return () => { annullata = true; };
-  }, [demo.url, upload, manuale]);
+  }, [chiaveDemo, demo.versione, ratioW, ratioH, upload, manuale]);
 
   const caricaFile = async (file: File) => {
     const video = file.type.startsWith('video/');
@@ -121,16 +125,16 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
     [analisi, chiaveAttiva, ratioW, ratioH, fit]
   );
 
-  const aplPercent = manuale ? (manualAplPercent as number) : misura ? misura.averageAplPercent : upload ? null : demo.fallbackAplPercent;
+  const aplPercent = manuale ? (manualAplPercent as number) : misura ? misura.averageAplPercent : null;
   const origine: SlotInfo['origine'] = manuale ? 'manual' : upload ? upload.tipo : 'demo';
-  const nome = manuale ? 'APL impostato a mano' : upload ? upload.nome : demo.label;
+  const nome = manuale ? 'APL impostato a mano' : upload ? upload.nome : etichettaDemo;
 
   useEffect(() => {
     if (aplPercent !== null) onInfo({ aplPercent, origine, nome });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aplPercent, origine, nome]);
 
-  const source: PreviewSource | null = manuale ? null : upload ? upload.source : { kind: 'video', url: demo.url };
+  const source: PreviewSource | null = manuale ? null : upload ? upload.source : { kind: 'demo', url: `demo:${demo.versione}`, versione: demo.versione };
   const inAnalisi = progress !== null;
 
   return (
@@ -187,8 +191,8 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
                 {manuale
                   ? 'Contenuto sostituito dall\'APL impostato a mano'
                   : aplPercent !== null
-                  ? `${upload ? 'Il tuo file' : demo.label} · luminosità media ${n(aplPercent, 1)}%${misura && analisi && analisi.frames.length > 1 ? ` (da ${n(misura.minAplPercent)}% a ${n(misura.maxAplPercent)}%)` : ''}`
-                  : 'analisi locale, nulla viene caricato online'}
+                  ? `${upload ? 'Il tuo file' : etichettaDemo} · luminosità media ${n(aplPercent, 1)}%${misura && analisi && analisi.frames.length > 1 ? ` (da ${n(misura.minAplPercent)}% a ${n(misura.maxAplPercent)}%)` : ''}`
+                  : upload ? 'analisi locale, nulla viene caricato online' : 'misura della demo in corso…'}
               </span>
             </div>
           )}
@@ -204,7 +208,7 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
       {upload && (
         <button type="button" onClick={ripristinaDemo} className="text-[11px] text-[var(--mute)] hover:text-white flex items-center space-x-1 cursor-pointer">
           <RotateCcw className="w-3 h-3" />
-          <span>Torna al video dimostrativo</span>
+          <span>Torna alla demo</span>
         </button>
       )}
     </div>

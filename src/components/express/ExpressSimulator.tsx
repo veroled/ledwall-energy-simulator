@@ -6,8 +6,8 @@ import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulato
 import { asset } from '../../config/paths';
 import { stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico, datoCatalogo, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
 import { RecommendationBanner } from './RecommendationBanner';
-import { ContentSlot, type DemoVideo, type SlotInfo } from './ContentSlot';
-import VIDEO_APL from '../../config/video-apl.json';
+import { ContentSlot, type DemoSlot, type SlotInfo } from './ContentSlot';
+import { APL_DEMO_PROVVISORIO } from '../../core/demo-veroled';
 import { WizardFooter } from '../wizard/WizardFooter';
 import {
   Play,
@@ -162,22 +162,19 @@ export const ExpressSimulator: React.FC = () => {
 
   const standbyWmq = hasStandby ? pStandby : 0;
 
-  // Video dimostrativi: la coppia con il rapporto di forma più vicino allo schermo, così riempie il riquadro senza ritagli
-  const formatoDemo = VIDEO_APL.formati.reduce((best, f) =>
-    Math.abs(Math.log((f.w / f.h) / (modulesW / modulesH))) < Math.abs(Math.log((best.w / best.h) / (modulesW / modulesH))) ? f : best
-  );
-  const demoA: DemoVideo = { url: asset(`/videos/apl-formati/${formatoDemo.chiaro.file}`), label: 'Demo · contenuto chiaro', fallbackAplPercent: formatoDemo.chiaro.aplPercent };
-  const demoB: DemoVideo = { url: asset(`/videos/apl-formati/${formatoDemo.ottimizzato.file}`), label: 'Demo · contenuto ottimizzato', fallbackAplPercent: formatoDemo.ottimizzato.aplPercent };
+  // La demo VeroLED, disegnata dal vivo alla misura dello schermo (src/core/demo-veroled.ts)
+  const demoA: DemoSlot = { versione: 'chiaro' };
+  const demoB: DemoSlot = { versione: 'ottimizzato' };
 
   // Stessa funzione per i due slot: cambia solo l'APL, la configurazione dello schermo è condivisa
   const profiloPer = (aplPercentSlot: number) =>
     softwareOff
       ? calcolaProfiloEnergetico(dimensions.areaM2, 0, 0, 0, operatingHoursDay, hasStandby, true, tariffEurKwh, pMax, pStandby)
       : calcolaProfiloEnergetico(dimensions.areaM2, aplPercentSlot / 100, liveLumDiurna / 100, nightDimmingPercent / 100, operatingHoursDay, hasStandby, hasNightDimming, tariffEurKwh, pMax, pStandby);
-  const profiloA = profiloPer(slotA?.aplPercent ?? demoA.fallbackAplPercent);
-  const profiloB = profiloPer(slotB?.aplPercent ?? demoB.fallbackAplPercent);
-  const aplA = slotA?.aplPercent ?? demoA.fallbackAplPercent;
-  const aplB = slotB?.aplPercent ?? demoB.fallbackAplPercent;
+  const profiloA = profiloPer(slotA?.aplPercent ?? APL_DEMO_PROVVISORIO.chiaro);
+  const profiloB = profiloPer(slotB?.aplPercent ?? APL_DEMO_PROVVISORIO.ottimizzato);
+  const aplA = slotA?.aplPercent ?? APL_DEMO_PROVVISORIO.chiaro;
+  const aplB = slotB?.aplPercent ?? APL_DEMO_PROVVISORIO.ottimizzato;
   // Differenza A − B con il segno vero: se il cliente carica in B un contenuto più chiaro, si dice
   const deltaAnnuoEur = Math.round(profiloA.annualCostEur) - Math.round(profiloB.annualCostEur);
   const deltaPercento = profiloA.annualCostEur > 0 ? Math.round((Math.abs(deltaAnnuoEur) / Math.max(profiloA.annualCostEur, profiloB.annualCostEur)) * 100) : 0;

@@ -2,14 +2,19 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { calcolaAplInquadrato, type FitMode } from '../../core/apl-engine';
+import { disegnaDemo, type VersioneDemo } from '../../core/demo-veroled';
+import { preparaDemo } from './demo-risorse';
 import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, AlertTriangle, MonitorPlay } from 'lucide-react';
 
 const n = (v: number, d = 0) => v.toLocaleString('it-IT', { maximumFractionDigits: d, minimumFractionDigits: d, useGrouping: 'always' } as Intl.NumberFormatOptions);
 
-export interface PreviewSource {
-  kind: 'video' | 'image';
-  url: string;
-}
+/**
+ * Cosa mostra il riquadro: il file del cliente (video o foto) oppure la demo VeroLED, che non è un
+ * file ma un disegno fatto alla misura dello schermo. `url` è la chiave del contenuto.
+ */
+export type PreviewSource =
+  | { kind: 'video' | 'image'; url: string }
+  | { kind: 'demo'; url: string; versione: VersioneDemo };
 
 interface ContentPreviewProps {
   source: PreviewSource | null;
@@ -36,6 +41,10 @@ interface ContentPreviewProps {
 
 const MAX_BOX_HEIGHT_PX = 230;
 const SAMPLE_INTERVAL_MS = 250;
+/** La demo non ha bisogno di più fotogrammi di un video: su un telefono è CPU risparmiata */
+const DEMO_FPS = 30;
+/** Con «riduci movimento» la demo resta ferma qui: la parola è a piena opacità */
+const DEMO_ISTANTE_FERMO = 1.5;
 
 const formatWatts = (w: number) => (w < 10000 ? `${n(w)} W` : `${n(w / 1000, 1)} kW`);
 
@@ -60,6 +69,9 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Stato della demo letto dal ciclo di disegno senza farlo ripartire: in pausa o no, e l'istante
+  const demoPausaRef = useRef(false);
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -70,7 +82,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
   const h = Math.max(1, ratioH);
 
   // Misura l'APL di ciò che il ledwall mostrerebbe davvero: stesso rapporto, stesso ritaglio
-  const sampleFrame = (media: HTMLVideoElement | HTMLImageElement, srcW: number, srcH: number) => {
+  const sampleFrame = (media: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement, srcW: number, srcH: number) => {
     const apl = calcolaAplInquadrato(media, srcW, srcH, w, h, fit);
     // Frame non ancora decodificato o canvas non leggibile: resta il valore dello store
     if (apl !== null) setLiveApl(apl);
@@ -86,6 +98,85 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, fit, w, h]);
 
+  // La demo: si disegna alla misura del riquadro (per la densità dello schermo), al massimo a 30
+  // fotogrammi al secondo, e solo quando il riquadro è visibile. Il tempo avanza solo mentre gira,
+  // quindi pausa e ripresa continuano dallo stesso punto.
+  const versioneDemo = source?.kind === 'demo' ? source.versione : null;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!versioneDemo || !canvas) return;
+    let annullato = false;
+    let raf = 0;
+    let scritta: HTMLImageElement | null = null;
+    let pronta = false;
+    let visibile = true;
+    let t = DEMO_ISTANTE_FERMO;
+    let ultimo: number | null = null;
+    const fermo = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    const disegna = () => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !pronta) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      const H = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== W) canvas.width = W;
+      if (canvas.height !== H) canvas.height = H;
+      disegnaDemo(ctx, t, W, H, versioneDemo, scritta);
+    };
+
+    const ciclo = (ora: number) => {
+      if (annullato) return;
+      raf = requestAnimationFrame(ciclo);
+      if (ultimo === null) ultimo = ora;
+      const dt = (ora - ultimo) / 1000;
+      if (dt < 1 / DEMO_FPS - 0.002) return;
+      ultimo = ora;
+      if (!demoPausaRef.current && visibile) {
+        // Una scheda rimasta in secondo piano non fa saltare l'animazione di minuti
+        t += Math.min(dt, 0.25);
+        disegna();
+      }
+    };
+
+    const ridimensiona = new ResizeObserver(() => disegna());
+    ridimensiona.observe(canvas);
+    const osserva = new IntersectionObserver((voci) => { visibile = voci.some((v) => v.isIntersecting); });
+    osserva.observe(canvas);
+
+    preparaDemo(versioneDemo).then((img) => {
+      if (annullato) return;
+      scritta = img;
+      pronta = true;
+      disegna();
+      if (fermo) {
+        demoPausaRef.current = true;
+        setPlaying(false);
+      } else {
+        setPlaying(!demoPausaRef.current);
+        raf = requestAnimationFrame(ciclo);
+      }
+    });
+
+    return () => {
+      annullato = true;
+      cancelAnimationFrame(raf);
+      ridimensiona.disconnect();
+      osserva.disconnect();
+    };
+  }, [versioneDemo]);
+
+  // Lettura dal vivo della demo: dal canvas stesso, cioè da quello che si vede
+  useEffect(() => {
+    if (source?.kind !== 'demo') return;
+    const timer = setInterval(() => {
+      const c = canvasRef.current;
+      if (c && c.width > 1) sampleFrame(c, c.width, c.height);
+    }, SAMPLE_INTERVAL_MS);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, w, h]);
+
   useEffect(() => {
     if (source?.kind !== 'image') return;
     const img = imageRef.current;
@@ -94,6 +185,11 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
   }, [source, fit, w, h]);
 
   const togglePlay = () => {
+    if (source?.kind === 'demo') {
+      demoPausaRef.current = !demoPausaRef.current;
+      setPlaying(!demoPausaRef.current);
+      return;
+    }
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) v.play().catch(() => setMediaError(true));
@@ -135,6 +231,15 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
               onClick={togglePlay}
               className="absolute inset-0 w-full h-full cursor-pointer"
               style={{ objectFit: fit }}
+            />
+          )}
+          {source?.kind === 'demo' && (
+            <canvas
+              ref={canvasRef}
+              onClick={togglePlay}
+              role="img"
+              aria-label="Contenuto dimostrativo VeroLED, disegnato alla misura del LEDwall"
+              className="absolute inset-0 w-full h-full cursor-pointer"
             />
           )}
           {source?.kind === 'image' && !mediaError && (
@@ -199,7 +304,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
 
         {source && !mediaError && (
           <div className="flex items-center space-x-1 flex-shrink-0">
-            {source.kind === 'video' && (
+            {(source.kind === 'video' || source.kind === 'demo') && (
               <>
                 <button
                   type="button"
@@ -209,6 +314,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
                 >
                   {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 </button>
+                {source.kind === 'video' && (
                 <button
                   type="button"
                   onClick={() => setMuted((m) => !m)}
@@ -217,8 +323,11 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
                 >
                   {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                 </button>
+                )}
               </>
             )}
+            {/* La demo è disegnata alla misura dello schermo: non c'è niente da adattare */}
+            {source.kind !== 'demo' && (
             <button
               type="button"
               onClick={() => onFitChange(fit === 'cover' ? 'contain' : 'cover')}
@@ -228,6 +337,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
               {fit === 'cover' ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               <span>{fit === 'cover' ? 'Adatta' : 'Riempi'}</span>
             </button>
+            )}
           </div>
         )}
       </div>
