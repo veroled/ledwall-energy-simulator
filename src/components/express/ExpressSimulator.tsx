@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
+import { useSimulatorStore, useSimulatorComputed, BASE_MAX_M, ALTEZZA_MAX_M } from '../../store/useSimulatorStore';
 import { asset } from '../../config/paths';
 import { stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico, datoCatalogo, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
 import { RecommendationBanner } from './RecommendationBanner';
@@ -315,7 +315,7 @@ export const ExpressSimulator: React.FC = () => {
                     <input
                       type="number"
                       min={1}
-                      max={40}
+                      max={BASE_MAX_M}
                       step={1}
                       value={modulesW}
                       onChange={(e) => setDimensioniMetri(parseInt(e.target.value || '1', 10), modulesH)}
@@ -325,7 +325,7 @@ export const ExpressSimulator: React.FC = () => {
                     <input
                       type="number"
                       min={1}
-                      max={20}
+                      max={ALTEZZA_MAX_M}
                       step={1}
                       value={modulesH}
                       onChange={(e) => setDimensioniMetri(modulesW, parseInt(e.target.value || '1', 10))}

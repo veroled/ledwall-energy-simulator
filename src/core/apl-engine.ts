@@ -54,8 +54,12 @@ export function calcolaAplInquadrato(
 ): number | null {
   if (!srcW || !srcH || ratioW <= 0 || ratioH <= 0) return null;
   const canvas = framingCanvas ?? (framingCanvas = document.createElement('canvas'));
-  canvas.width = SAMPLE_WIDTH_PX;
-  canvas.height = Math.max(8, Math.round((SAMPLE_WIDTH_PX * ratioH) / ratioW));
+  // 160 px di base; ma oltre il 20:1 l'altezza scenderebbe sotto gli 8 px minimi e il riquadro
+  // avrebbe un'altra forma: «cover» ritagliava il centro e un nastro da 100 m si misurava sui 20
+  // di mezzo. Lì si tiene l'altezza minima e si allunga la base, così la forma resta quella vera.
+  const altezza = Math.round((SAMPLE_WIDTH_PX * ratioH) / ratioW);
+  canvas.height = Math.max(8, altezza);
+  canvas.width = altezza >= 8 ? SAMPLE_WIDTH_PX : Math.round((8 * ratioW) / ratioH);
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return null;
   const r = fitRect(srcW, srcH, canvas.width, canvas.height, fit);

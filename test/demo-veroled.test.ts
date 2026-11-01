@@ -4,6 +4,8 @@ import path from 'path';
 import {
   disegnaDemo,
   fotogrammiDemo,
+  formaNastro,
+  misureFotogramma,
   DURATA_DEMO_SEC,
   FOTOGRAMMI_MISURA,
   TESTI_DEMO,
@@ -110,6 +112,49 @@ describe('demo VeroLED disegnata dal vivo', () => {
       expect(out).toHaveLength(FOTOGRAMMI_MISURA);
       expect(fatti[0].width / fatti[0].height).toBeCloseTo(rw / rh, 1);
     }
+  });
+});
+
+describe('nastri ultra lunghi (2×40, 100×1)', () => {
+  it('oltre il 5:1 lo schermo è un nastro, orizzontale o verticale', () => {
+    expect(formaNastro(4, 1)).toBeNull();
+    expect(formaNastro(5, 1)).toBe('orizzontale');
+    expect(formaNastro(100, 1)).toBe('orizzontale');
+    expect(formaNastro(2, 40)).toBe('verticale');
+    expect(formaNastro(3, 2)).toBeNull();
+  });
+
+  it('il nastro si richiude in 24 s a qualunque lunghezza', () => {
+    for (const [W, H] of [[4800, 48], [96, 1920]]) {
+      expect(disegno('chiaro', 5.5 + DURATA_DEMO_SEC, W, H)).toEqual(disegno('chiaro', 5.5, W, H));
+    }
+  });
+
+  it('il nastro scorre: due istanti diversi danno disegni diversi', () => {
+    expect(disegno('ottimizzato', 1, 4800, 48)).not.toEqual(disegno('ottimizzato', 2, 4800, 48));
+  });
+
+  it('sul verticale ci sono tutte le parole, scritte in orizzontale (nessuna rotazione nel contesto)', () => {
+    const testi = new Set<unknown>();
+    for (let t = 0; t < DURATA_DEMO_SEC; t += 1) disegno('chiaro', t, 96, 1920).filter((k) => k[0] === 'fillText').forEach((k) => testi.add(k[4]));
+    for (const p of TESTI_DEMO.parole) expect(testi.has(p)).toBe(true);
+    expect(testi.has(TESTI_DEMO.firma)).toBe(true);
+  });
+
+  it('la lente disegna solo il suo tratto, e lì è identica allo schermo intero', () => {
+    const intero = disegno('chiaro', 3, 4800, 48);
+    const r = registratore();
+    disegnaDemo(r.ctx, 3, 4800, 48, 'chiaro', {} as CanvasImageSource, { x: 0, y: 0, w: 288, h: 48 });
+    const lente = r.chiamate;
+    expect(lente.length).toBeLessThan(intero.length / 5);
+    // Ogni testo che la lente scrive, lo schermo intero lo scrive nello stesso punto
+    for (const k of lente.filter((c) => c[0] === 'fillText')) expect(intero).toContainEqual(k);
+  });
+
+  it('la misura ha la forma esatta dello schermo e un lato corto di almeno 48 px', () => {
+    expect(misureFotogramma(100, 1)).toEqual({ W: 4800, H: 48 });
+    expect(misureFotogramma(2, 40)).toEqual({ W: 48, H: 960 });
+    expect(misureFotogramma(3, 2)).toEqual({ W: 480, H: 320 });
   });
 });
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { calcolaAplInquadrato, type FitMode } from '../../core/apl-engine';
-import { disegnaDemo, type VersioneDemo } from '../../core/demo-veroled';
+import { disegnaDemo, formaNastro, misureFotogramma, type VersioneDemo } from '../../core/demo-veroled';
 import { preparaDemo } from './demo-risorse';
 import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, AlertTriangle, MonitorPlay } from 'lucide-react';
 
@@ -45,6 +45,12 @@ const SAMPLE_INTERVAL_MS = 250;
 const DEMO_FPS = 30;
 /** Con «riduci movimento» la demo resta ferma qui: la parola è a piena opacità */
 const DEMO_ISTANTE_FERMO = 1.5;
+/**
+ * Nei nastri (oltre il 5:1) lo schermo intero in proporzione è una riga di pochi pixel: sotto (o
+ * accanto) si mostra una LENTE, cioè un tratto ingrandito, lungo questi lati corti.
+ */
+const LENTE_ORIZZONTALE = 6;
+const LENTE_VERTICALE = 2.5;
 
 const formatWatts = (w: number) => (w < 10000 ? `${n(w)} W` : `${n(w / 1000, 1)} kW`);
 
@@ -70,6 +76,11 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lenteRef = useRef<HTMLCanvasElement>(null);
+  // L'istante e la scritta della demo, letti anche dalla misura dal vivo
+  const demoTRef = useRef(DEMO_ISTANTE_FERMO);
+  const demoScrittaRef = useRef<HTMLImageElement | null>(null);
+  const demoProntaRef = useRef(false);
   // Stato della demo letto dal ciclo di disegno senza farlo ripartire: in pausa o no, e l'istante
   const demoPausaRef = useRef(false);
 
@@ -102,27 +113,42 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
   // fotogrammi al secondo, e solo quando il riquadro è visibile. Il tempo avanza solo mentre gira,
   // quindi pausa e ripresa continuano dallo stesso punto.
   const versioneDemo = source?.kind === 'demo' ? source.versione : null;
+  const nastro = versioneDemo ? formaNastro(w, h) : null;
+  const lenteLati = nastro === 'orizzontale' ? Math.min(LENTE_ORIZZONTALE, w / h) : nastro === 'verticale' ? Math.min(LENTE_VERTICALE, h / w) : 0;
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!versioneDemo || !canvas) return;
     let annullato = false;
     let raf = 0;
-    let scritta: HTMLImageElement | null = null;
     let pronta = false;
     let visibile = true;
-    let t = DEMO_ISTANTE_FERMO;
     let ultimo: number | null = null;
     const fermo = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    const disegna = () => {
-      const ctx = canvas.getContext('2d');
-      if (!ctx || !pronta) return;
+    const misura = (c: HTMLCanvasElement) => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const W = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const H = Math.max(1, Math.round(canvas.clientHeight * dpr));
-      if (canvas.width !== W) canvas.width = W;
-      if (canvas.height !== H) canvas.height = H;
-      disegnaDemo(ctx, t, W, H, versioneDemo, scritta);
+      const cw = Math.max(1, Math.round(c.clientWidth * dpr));
+      const ch = Math.max(1, Math.round(c.clientHeight * dpr));
+      if (c.width !== cw) c.width = cw;
+      if (c.height !== ch) c.height = ch;
+      return { cw, ch, ctx: c.getContext('2d') };
+    };
+
+    const disegna = () => {
+      if (!pronta) return;
+      const t = demoTRef.current;
+      const scritta = demoScrittaRef.current;
+      const m = misura(canvas);
+      if (m.ctx) disegnaDemo(m.ctx, t, m.cw, m.ch, versioneDemo, scritta);
+      // La lente: lo stesso schermo a una scala più grande, di cui si disegna solo il primo tratto
+      const lente = lenteRef.current;
+      if (lente) {
+        const l = misura(lente);
+        if (!l.ctx) return;
+        const W = nastro === 'verticale' ? l.cw : (l.ch * w) / h;
+        const H = nastro === 'verticale' ? (l.cw * h) / w : l.ch;
+        disegnaDemo(l.ctx, t, W, H, versioneDemo, scritta, { x: 0, y: 0, w: l.cw, h: l.ch });
+      }
     };
 
     const ciclo = (ora: number) => {
@@ -134,7 +160,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
       ultimo = ora;
       if (!demoPausaRef.current && visibile) {
         // Una scheda rimasta in secondo piano non fa saltare l'animazione di minuti
-        t += Math.min(dt, 0.25);
+        demoTRef.current += Math.min(dt, 0.25);
         disegna();
       }
     };
@@ -146,7 +172,8 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
 
     preparaDemo(versioneDemo).then((img) => {
       if (annullato) return;
-      scritta = img;
+      demoScrittaRef.current = img;
+      demoProntaRef.current = true;
       pronta = true;
       disegna();
       if (fermo) {
@@ -164,14 +191,22 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
       ridimensiona.disconnect();
       osserva.disconnect();
     };
-  }, [versioneDemo]);
+  }, [versioneDemo, nastro, w, h]);
 
-  // Lettura dal vivo della demo: dal canvas stesso, cioè da quello che si vede
+  // Lettura dal vivo della demo: lo stesso istante che si vede, disegnato sullo schermo INTERO alla
+  // risoluzione della misura (misureFotogramma). Non dal canvas a schermo: in un nastro 100×1 quello
+  // è alto 3 px, e la lettura dal vivo e la tabella dicevano 46% e 51% sulla stessa pagina.
   useEffect(() => {
     if (source?.kind !== 'demo') return;
+    const fuori = document.createElement('canvas');
+    const { W, H } = misureFotogramma(w, h);
+    fuori.width = W;
+    fuori.height = H;
     const timer = setInterval(() => {
-      const c = canvasRef.current;
-      if (c && c.width > 1) sampleFrame(c, c.width, c.height);
+      const ctx = fuori.getContext('2d');
+      if (!ctx || !demoProntaRef.current) return;
+      disegnaDemo(ctx, demoTRef.current, W, H, source.versione, demoScrittaRef.current);
+      sampleFrame(fuori, W, H);
     }, SAMPLE_INTERVAL_MS);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,10 +247,10 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
       </div>
       )}
 
-      <div className="flex items-center justify-center py-1">
+      <div className={`flex justify-center py-1 ${nastro === 'orizzontale' ? 'flex-col items-stretch gap-2' : nastro === 'verticale' ? 'items-start gap-3' : 'items-center'}`}>
         <div
-          className="relative overflow-hidden rounded-[3px] bg-black ring-1 ring-[var(--s3)] shadow-[0_0_24px_rgba(18,183,106,0.08)]"
-          style={{ aspectRatio: `${w} / ${h}`, width: `min(100%, calc(${MAX_BOX_HEIGHT_PX}px * ${w} / ${h}))` }}
+          className="relative overflow-hidden rounded-[3px] bg-black ring-1 ring-[var(--s3)] shadow-[0_0_24px_rgba(18,183,106,0.08)] flex-shrink-0"
+          style={{ aspectRatio: `${w} / ${h}`, width: `min(100%, calc(${MAX_BOX_HEIGHT_PX}px * ${w} / ${h}))`, minHeight: nastro === 'orizzontale' ? 4 : undefined, minWidth: nastro === 'verticale' ? 4 : undefined }}
         >
           {source?.kind === 'video' && !mediaError && (
             <video
@@ -287,7 +322,42 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
               backgroundSize: `${100 / w}% ${100 / h}%`,
             }}
           />
+          {/* Il tratto che la lente ingrandisce */}
+          {nastro && (
+            <div
+              className="absolute left-0 top-0 pointer-events-none ring-1 ring-[var(--ok)]"
+              style={nastro === 'orizzontale' ? { width: `${(lenteLati * h * 100) / w}%`, height: '100%' } : { width: '100%', height: `${(lenteLati * w * 100) / h}%` }}
+            />
+          )}
         </div>
+        {nastro && (
+          <div className="min-w-0 space-y-1">
+            <div
+              className="relative overflow-hidden rounded-[3px] bg-black ring-1 ring-[var(--ok)]"
+              style={nastro === 'orizzontale'
+                ? { aspectRatio: `${lenteLati} / 1`, width: '100%' }
+                : { aspectRatio: `1 / ${lenteLati}`, height: MAX_BOX_HEIGHT_PX }}
+            >
+              <canvas
+                ref={lenteRef}
+                onClick={togglePlay}
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full cursor-pointer"
+              />
+              <div
+                className="absolute inset-0 pointer-events-none opacity-[0.10]"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, var(--text) 1px, transparent 1px), linear-gradient(to bottom, var(--text) 1px, transparent 1px)',
+                  backgroundSize: nastro === 'orizzontale' ? `${100 / (lenteLati * h)}% ${100 / h}%` : `${100 / w}% ${100 / (lenteLati * w)}%`,
+                }}
+              />
+            </div>
+            <span className="text-[10px] text-[var(--faint)] block tabular-nums">
+              Lente: i primi {n(lenteLati * (nastro === 'orizzontale' ? h : w), 0)} m di {n(nastro === 'orizzontale' ? w : h, 0)} m
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between gap-2">

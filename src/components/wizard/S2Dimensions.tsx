@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
+import { useSimulatorStore, useSimulatorComputed, BASE_MAX_M, ALTEZZA_MAX_M } from '../../store/useSimulatorStore';
 import { CABINET_FORMATS, CONFIG } from '../../config/config';
 import { CabinetCanvas } from '../canvas/CabinetCanvas';
 import { stimaPotenzaDaPassoNit, calcolaConsulenzaOttica, standbyWmqPerPasso, datoCatalogo, canoneNoleggio, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
@@ -971,7 +971,7 @@ export const S2Dimensions: React.FC = () => {
                         type="number"
                         step="0.1"
                         min="1"
-                        max="50"
+                        max={BASE_MAX_M}
                         value={dimensions.widthM}
                         onChange={(e) => setDimensioniMetri(parseFloat(e.target.value) || 1, dimensions.heightM)}
                         className="w-full p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-base focus:border-[var(--ok)] outline-none tabular-nums"
@@ -983,7 +983,7 @@ export const S2Dimensions: React.FC = () => {
                         type="number"
                         step="0.1"
                         min="1"
-                        max="30"
+                        max={ALTEZZA_MAX_M}
                         value={dimensions.heightM}
                         onChange={(e) => setDimensioniMetri(dimensions.widthM, parseFloat(e.target.value) || 1)}
                         className="w-full p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-base focus:border-[var(--ok)] outline-none tabular-nums"

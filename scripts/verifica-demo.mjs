@@ -26,7 +26,9 @@ const ts = require('typescript');
 const { chromium } = require('playwright');
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const FORMATI = [[1, 4], [1, 3], [1, 2], [2, 3], [1, 1], [3, 2], [5, 3], [2, 1], [3, 1], [4, 1], [10, 1]];
+// Dal palo 2×50 al nastro 150×1: i limiti della pagina (BASE_MAX_M, ALTEZZA_MAX_M), più i formati comuni
+const FORMATI = [[1, 25], [1, 20], [1, 10], [1, 5], [1, 4], [1, 2], [2, 3], [1, 1], [3, 2], [5, 3], [2, 1], [4, 1], [5, 1], [8, 1], [20, 1], [100, 1], [150, 1]];
+const SCARTO_MISURA = 1;
 const SCARTO_MINIMO = 20;
 const TOLLERANZA_PROVVISORIO = 10;
 
@@ -49,7 +51,24 @@ window.misura = async (versione, rw, rh) => {
   img.src = ${JSON.stringify(pathToFileURL(resolve(root, 'public')).href)} + VERSIONI_DEMO[versione].scritta;
   await img.decode();
   const frames = fotogrammiDemo(versione, rw, rh, img);
-  return aplDaFrames(frames, rw, rh, 'cover');
+  const m = aplDaFrames(frames, rw, rh, 'cover');
+  // La stessa media letta su TUTTI i pixel dei fotogrammi, senza passare dal campionamento: se il
+  // campionatore ritaglia (nei formati estremi teneva solo il centro) le due cifre si separano
+  let somma = 0;
+  for (const f of frames) somma += calcolaImageDataApl(f.getContext('2d').getImageData(0, 0, f.width, f.height));
+  return { ...m, pieno: somma / frames.length, lato: frames[0].width + 'x' + frames[0].height, forma: frames[0].width / frames[0].height };
+};
+// Il campionatore su un'immagine asimmetrica: 80 % bianco da un capo, il resto nero. Tutti i pixel
+// dicono 80 %; un campionatore che ritaglia il centro direbbe un'altra cifra.
+window.campionatore = (rw, rh) => {
+  const c = document.createElement('canvas');
+  const lungo = 2000, corto = Math.max(4, Math.round(lungo * Math.min(rw, rh) / Math.max(rw, rh)));
+  c.width = rw >= rh ? lungo : corto; c.height = rw >= rh ? corto : lungo;
+  const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+  x.fillStyle = '#fff';
+  if (rw >= rh) x.fillRect(0, 0, c.width * 0.8, c.height); else x.fillRect(0, 0, c.width, c.height * 0.8);
+  return aplDaFrames([c], rw, rh, 'cover').averageAplPercent;
 };
 window.impronta = async (versione, t) => {
   const c = document.createElement('canvas'); c.width = 300; c.height = 200;
@@ -81,6 +100,14 @@ try {
     const b = await p.evaluate(([w, h]) => window.misura('ottimizzato', w, h), [rw, rh]);
     const scarto = a.averageAplPercent - b.averageAplPercent;
     console.log(`${`${rw}:${rh}`.padEnd(8)}  ${a.averageAplPercent.toFixed(1).padStart(5)}%  ${b.averageAplPercent.toFixed(1).padStart(10)}%  ${scarto.toFixed(1).padStart(6)} punti`);
+    const forma = a.forma / (rw / rh);
+    if (Math.abs(forma - 1) > 0.02) errori.push(`${rw}:${rh}: i fotogrammi della misura sono ${a.lato}, cioè un altro formato (${((forma - 1) * 100).toFixed(0)}%)`);
+    const camp = await p.evaluate(([w, h]) => window.campionatore(w, h), [rw, rh]);
+    if (Math.abs(camp - 80) > SCARTO_MISURA) errori.push(`${rw}:${rh}: su un'immagine bianca all'80% il campionatore legge ${camp}%`);
+    for (const [v, m] of [['chiaro', a], ['ottimizzato', b]]) {
+      const d = Math.abs(m.averageAplPercent - m.pieno);
+      if (d > SCARTO_MISURA) errori.push(`${rw}:${rh} ${v}: il campionamento dice ${m.averageAplPercent}%, tutti i pixel ${m.pieno.toFixed(1)}% (${d.toFixed(1)} punti, fotogrammi ${m.lato})`);
+    }
     if (scarto < SCARTO_MINIMO) errori.push(`${rw}:${rh}: lo scarto è ${scarto.toFixed(1)} punti, ne servono almeno ${SCARTO_MINIMO}`);
     for (const [v, m] of [['chiaro', a], ['ottimizzato', b]]) {
       const d = Math.abs(provv[v] - m.averageAplPercent);

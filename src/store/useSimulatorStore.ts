@@ -112,6 +112,15 @@ export interface SimulatorState {
   resetToDefaults: () => void;
 }
 
+/**
+ * Limiti di base e altezza, in metri (decisi dal titolare il 01/11/2026): coprono i nastri da stadio
+ * fino a 100 m e oltre e i pali verticali fino a 40 m. Valgono per tutti i campi e per il calcolo:
+ * prima l'Express diceva 40×20, il wizard 50×30, e il calcolo non ne applicava nessuno.
+ */
+export const BASE_MAX_M = 150;
+export const ALTEZZA_MAX_M = 50;
+const limita = (v: number, max: number) => Math.max(1, Math.min(max, Number.isFinite(v) ? v : 1));
+
 export const useSimulatorStore = create<SimulatorState>()(
   persist(
     (set, get) => ({
@@ -197,8 +206,9 @@ export const useSimulatorStore = create<SimulatorState>()(
       setDimensioniMetri: (baseM, altezzaM) => {
         const s = get();
         const format = CABINET_FORMATS.find((f) => f.id === s.formatId) || CABINET_FORMATS[0];
-        const w = Math.max(1, Math.round((baseM * 1000) / format.widthMm));
-        const h = Math.max(1, Math.round((altezzaM * 1000) / format.heightMm));
+        // Arrotondato per difetto al limite: un cabinet in più lo supererebbe
+        const w = Math.max(1, Math.min(Math.floor((BASE_MAX_M * 1000) / format.widthMm), Math.round((limita(baseM, BASE_MAX_M) * 1000) / format.widthMm)));
+        const h = Math.max(1, Math.min(Math.floor((ALTEZZA_MAX_M * 1000) / format.heightMm), Math.round((limita(altezzaM, ALTEZZA_MAX_M) * 1000) / format.heightMm)));
         set({ modulesW: w, modulesH: h });
       },
 
@@ -207,8 +217,8 @@ export const useSimulatorStore = create<SimulatorState>()(
         const format = CABINET_FORMATS.find((f) => f.id === s.formatId) || CABINET_FORMATS[0];
         const pxW = format.widthMm / s.pitchMm;
         const pxH = format.heightMm / s.pitchMm;
-        const w = Math.max(1, Math.round(resX / pxW));
-        const h = Math.max(1, Math.round(resY / pxH));
+        const w = Math.max(1, Math.min(Math.floor((BASE_MAX_M * 1000) / format.widthMm), Math.round(resX / pxW)));
+        const h = Math.max(1, Math.min(Math.floor((ALTEZZA_MAX_M * 1000) / format.heightMm), Math.round(resY / pxH)));
         set({ modulesW: w, modulesH: h });
       },
 
