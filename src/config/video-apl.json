@@ -1,9 +1,6 @@
 {
-  "fonte": "scripts/prepara-video-apl.mjs",
-  "finestra": {
-    "inizioSec": 15,
-    "durataSec": 24
-  },
+  "fonte": "scripts/genera-video-demo.mjs",
+  "durataSec": 24,
   "formati": [
     {
       "formato": "1x4",
@@ -86,13 +83,17 @@
       "h": 2,
       "chiaro": {
         "file": "3x2_chiaro.mp4",
-        "aplPercent": 59.3,
-        "kb": 1596
+        "aplPercent": 52.4,
+        "minPercent": 51.4,
+        "maxPercent": 53.1,
+        "kb": 878
       },
       "ottimizzato": {
         "file": "3x2_ottimizzato.mp4",
-        "aplPercent": 29.7,
-        "kb": 1622
+        "aplPercent": 19.9,
+        "minPercent": 18.4,
+        "maxPercent": 20.9,
+        "kb": 882
       }
     },
     {
