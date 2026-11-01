@@ -23,7 +23,7 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
   const strokeDashoffset = arcLength - arcLength * ratio;
 
   // Colore solido e sobrio: verde standard, o rosso solo se sovraccarico (>90%)
-  const strokeColor = ratio > 0.9 ? '#F04438' : '#12B76A';
+  const strokeColor = ratio > 0.9 ? 'var(--alarm)' : 'var(--ok)';
 
   return (
     <div className="relative flex flex-col items-center justify-center p-4">
@@ -35,7 +35,7 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
             cy="50"
             r={radius}
             fill="transparent"
-            stroke="#1A2028"
+            stroke="var(--line)"
             strokeWidth="6"
             strokeDasharray={`${arcLength} ${circumference}`}
             strokeLinecap="round"
@@ -60,16 +60,16 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
           <span className="text-3xl font-semibold text-white tabular-nums tracking-tight">
             {currentKw.toFixed(2)}
           </span>
-          <span className="text-xs font-semibold text-[#9AA3AD] tracking-wider -mt-0.5">
+          <span className="text-xs font-semibold text-[var(--mute)] tracking-wider -mt-0.5">
             kW ATTIVI
           </span>
-          <span className="text-xs text-[#868D97] tabular-nums mt-0.5">
+          <span className="text-xs text-[var(--mute)] tabular-nums mt-0.5">
             {(ratio * 100).toFixed(0)}% del picco
           </span>
         </div>
       </div>
 
-      <div className="text-xs text-[#868D97] text-center -mt-1">
+      <div className="text-xs text-[var(--mute)] text-center -mt-1">
         {label}: <span className="text-white font-semibold tabular-nums">{maxKw.toFixed(2)} kW Max</span>
       </div>
     </div>

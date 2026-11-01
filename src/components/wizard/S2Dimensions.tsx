@@ -136,29 +136,29 @@ export const S2Dimensions: React.FC = () => {
       className="w-full max-w-5xl space-y-4"
     >
       <div className="text-center space-y-2">
-        <span className="text-xs font-semibold text-[#12B76A] tracking-wider uppercase">
+        <span className="text-xs font-semibold text-[var(--ok)] tracking-wider uppercase">
           Fase 2 di 9 · Parametri Fisici
         </span>
         <h2 className="text-2xl md:text-3xl font-semibold text-white">
           Come vuoi dimensionare lo schermo?
         </h2>
-        <p className="text-sm text-[#9AA3AD] max-w-2xl mx-auto">
+        <p className="text-sm text-[var(--mute)] max-w-2xl mx-auto">
           Scegli la modalità che preferisci: tutte le grandezze fisiche e ottiche sono sincronizzate in tempo reale.
         </p>
       </div>
 
       {/* Mode Selector Tabs */}
-      <div className="flex flex-wrap justify-center gap-1 border-b border-[#1A2028] pb-2">
+      <div className="flex flex-wrap justify-center gap-1 border-b border-[var(--line)] pb-2">
         <button
           type="button"
           onClick={() => setSizingMode('cabinet')}
           className={`px-4 py-2 rounded-lg text-xs font-medium flex items-center space-x-2 transition-colors cursor-pointer ${
             sizingMode === 'cabinet'
-              ? 'bg-[#10141D] text-white font-semibold border-b-2 border-[#12B76A]'
-              : 'text-[#868D97] hover:text-[#E8EDF2]'
+              ? 'bg-[var(--s1)] text-white font-semibold border-b-2 border-[var(--ok)]'
+              : 'text-[var(--mute)] hover:text-[var(--text)]'
           }`}
         >
-          <Grid3X3 className="w-3.5 h-3.5 text-[#9AA3AD]" />
+          <Grid3X3 className="w-3.5 h-3.5 text-[var(--mute)]" />
           <span>1. Cabinet Visuale</span>
         </button>
 
@@ -167,11 +167,11 @@ export const S2Dimensions: React.FC = () => {
           onClick={() => setSizingMode('dimensions')}
           className={`px-4 py-2 rounded-lg text-xs font-medium flex items-center space-x-2 transition-colors cursor-pointer ${
             sizingMode === 'dimensions'
-              ? 'bg-[#10141D] text-white font-semibold border-b-2 border-[#12B76A]'
-              : 'text-[#868D97] hover:text-[#E8EDF2]'
+              ? 'bg-[var(--s1)] text-white font-semibold border-b-2 border-[var(--ok)]'
+              : 'text-[var(--mute)] hover:text-[var(--text)]'
           }`}
         >
-          <Ruler className="w-3.5 h-3.5 text-[#9AA3AD]" />
+          <Ruler className="w-3.5 h-3.5 text-[var(--mute)]" />
           <span>2. Dimensioni (Metri)</span>
         </button>
 
@@ -180,11 +180,11 @@ export const S2Dimensions: React.FC = () => {
           onClick={() => setSizingMode('resolution')}
           className={`px-4 py-2 rounded-lg text-xs font-medium flex items-center space-x-2 transition-colors cursor-pointer ${
             sizingMode === 'resolution'
-              ? 'bg-[#10141D] text-white font-semibold border-b-2 border-[#12B76A]'
-              : 'text-[#868D97] hover:text-[#E8EDF2]'
+              ? 'bg-[var(--s1)] text-white font-semibold border-b-2 border-[var(--ok)]'
+              : 'text-[var(--mute)] hover:text-[var(--text)]'
           }`}
         >
-          <Monitor className="w-3.5 h-3.5 text-[#9AA3AD]" />
+          <Monitor className="w-3.5 h-3.5 text-[var(--mute)]" />
           <span>3. Risoluzione (Pixel)</span>
         </button>
 
@@ -193,28 +193,28 @@ export const S2Dimensions: React.FC = () => {
           onClick={() => setSizingMode('comparison')}
           className={`px-4 py-2 rounded-lg text-xs font-medium flex items-center space-x-2 transition-colors cursor-pointer ${
             sizingMode === 'comparison'
-              ? 'bg-[#0D2818] text-[#34D399] font-semibold border border-[#163826]'
-              : 'text-[#34D399] bg-[#0D2818]/40 border border-[#163826] hover:bg-[#0D2818]'
+              ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold border border-[rgb(var(--ok-rgb)/30%)]'
+              : 'text-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)]/40 border border-[rgb(var(--ok-rgb)/30%)] hover:bg-[rgb(var(--ok-rgb)/10%)]'
           }`}
         >
-          <GitCompare className="w-3.5 h-3.5 text-[#12B76A]" />
+          <GitCompare className="w-3.5 h-3.5 text-[var(--ok)]" />
           <span>4. Confronta Passi &amp; Nit</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Configuration Area */}
-        <div className="md:col-span-2 bg-[#0D1117] p-6 rounded-xl space-y-5 border border-[#1A2028] shadow-sm">
+        <div className="md:col-span-2 bg-[var(--s1)] p-6 rounded-xl space-y-5 border border-[var(--line)] shadow-sm">
           
           {/* TAB 4: COMPARATORE PASSI E LUMINOSITÀ */}
           {sizingMode === 'comparison' ? (
             <div className="space-y-4">
               {/* Barra Superiore con Opzioni */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#1A2028] pb-3 gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--line)] pb-3 gap-2">
                 <div className="flex items-center space-x-2 text-xs font-semibold text-white">
-                  <Zap className="w-4 h-4 text-[#12B76A] flex-shrink-0" />
+                  <Zap className="w-4 h-4 text-[var(--ok)] flex-shrink-0" />
                   <span>Confronto Passi &amp; Nit</span>
-                  <span className="text-xs text-[#868D97] font-normal">({dimensions.areaM2.toFixed(1)} m²)</span>
+                  <span className="text-xs text-[var(--mute)] font-normal">({dimensions.areaM2.toFixed(1)} m²)</span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -224,8 +224,8 @@ export const S2Dimensions: React.FC = () => {
                     onClick={() => setSyntheticMode(!syntheticMode)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors cursor-pointer ${
                       syntheticMode
-                        ? 'bg-[#0D2818] text-[#34D399] border border-[#163826]'
-                        : 'bg-[#10141D] text-[#E8EDF2] border border-[#1A2028] hover:bg-[#161F30]'
+                        ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)]'
+                        : 'bg-[var(--s1)] text-[var(--text)] border border-[var(--line)] hover:bg-[var(--s2)]'
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
@@ -242,8 +242,8 @@ export const S2Dimensions: React.FC = () => {
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors cursor-pointer ${
                       syncNits
-                        ? 'bg-[#10141D] text-white border border-[#2D3748]'
-                        : 'bg-[#07090C] text-[#868D97] border border-[#1A2028] hover:bg-[#10141D]'
+                        ? 'bg-[var(--s1)] text-white border border-[var(--s3)]'
+                        : 'bg-[var(--bg)] text-[var(--mute)] border border-[var(--line)] hover:bg-[var(--s1)]'
                     }`}
                   >
                     <span>{syncNits ? 'Stessi Nit' : 'Nit Liberi'}</span>
@@ -252,10 +252,10 @@ export const S2Dimensions: React.FC = () => {
               </div>
 
               {/* MODULO CONSULENZA OTTICA & GEOMETRIA DI INSTALLAZIONE */}
-              <div className="p-4 rounded-xl border border-[#1E293B] bg-[#0A0F17]/90 space-y-3.5 text-xs shadow-md">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1A2028] pb-2.5">
+              <div className="p-4 rounded-xl border border-[var(--s2)] bg-[var(--s1)]/90 space-y-3.5 text-xs shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--line)] pb-2.5">
                   <div className="flex items-center space-x-2">
-                    <Eye className="w-4 h-4 text-[#12B76A]" />
+                    <Eye className="w-4 h-4 text-[var(--ok)]" />
                     <span className="text-white font-semibold text-xs tracking-wide">
                       Consulenza Ottica &amp; Criterio Snellen (Acuità Visiva 1 Arcmin)
                     </span>
@@ -265,9 +265,9 @@ export const S2Dimensions: React.FC = () => {
                   <button
                     type="button"
                     onClick={applyBarbecuePreset}
-                    className="px-3 py-1.5 rounded-lg bg-[#0D2818] hover:bg-[#133D24] text-[#34D399] border border-[#163826] font-semibold text-[11px] flex items-center space-x-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-sm"
+                    className="px-3 py-1.5 rounded-lg bg-[rgb(var(--ok-rgb)/10%)] hover:bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)] font-semibold text-[11px] flex items-center space-x-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-sm"
                   >
-                    <Zap className="w-3.5 h-3.5 text-[#34D399]" />
+                    <Zap className="w-3.5 h-3.5 text-[var(--ok)]" />
                     <span>⚡ Carica Caso Reale: Barbecue S.r.l. (6×3m · Quota 5m · Vista 10m)</span>
                   </button>
                 </div>
@@ -275,7 +275,7 @@ export const S2Dimensions: React.FC = () => {
                 {/* Controlli Geometria: Quota e Distanza */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <div className="flex justify-between items-center text-[#868D97] mb-1">
+                    <div className="flex justify-between items-center text-[var(--mute)] mb-1">
                       <span>Quota della base dello schermo da terra:</span>
                       <strong className="text-white font-semibold tabular-nums">{installHeightM.toFixed(1)} m</strong>
                     </div>
@@ -292,7 +292,7 @@ export const S2Dimensions: React.FC = () => {
                       }}
                       className="w-full custom-slider"
                     />
-                    <div className="flex justify-between text-[10px] text-[#868D97] pt-0.5">
+                    <div className="flex justify-between text-[10px] text-[var(--mute)] pt-0.5">
                       <span>1 m (altezza uomo)</span>
                       <span>5 m (standard palo/palazzo)</span>
                       <span>15 m</span>
@@ -300,7 +300,7 @@ export const S2Dimensions: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex justify-between items-center text-[#868D97] mb-1">
+                    <div className="flex justify-between items-center text-[var(--mute)] mb-1">
                       <span>Distanza osservatore al suolo:</span>
                       <strong className="text-white font-semibold tabular-nums">{groundViewingDistM.toFixed(1)} m</strong>
                     </div>
@@ -317,7 +317,7 @@ export const S2Dimensions: React.FC = () => {
                       }}
                       className="w-full custom-slider"
                     />
-                    <div className="flex justify-between text-[10px] text-[#868D97] pt-0.5">
+                    <div className="flex justify-between text-[10px] text-[var(--mute)] pt-0.5">
                       <span>3 m (marciapiede)</span>
                       <span>10 m (carreggiata/incrocio)</span>
                       <span>35 m</span>
@@ -327,39 +327,39 @@ export const S2Dimensions: React.FC = () => {
 
                 {/* Risultati Calcolo Ottico */}
                 <div className="grid grid-cols-3 gap-2.5 pt-1">
-                  <div className="p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-center">
-                    <span className="text-[10px] text-[#868D97] block uppercase font-medium">Linea di Vista (Ipotenusa)</span>
+                  <div className="p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-center">
+                    <span className="text-[10px] text-[var(--mute)] block uppercase font-medium">Linea di Vista (Ipotenusa)</span>
                     <strong className="text-sm font-semibold text-white tabular-nums">
                       {opticalConsulting.lineOfSightDistM} m
                     </strong>
-                    <span className="text-[10px] text-[#868D97] block">al centro schermo · √((h + H/2)² + d²)</span>
+                    <span className="text-[10px] text-[var(--mute)] block">al centro schermo · √((h + H/2)² + d²)</span>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-center">
-                    <span className="text-[10px] text-[#868D97] block uppercase font-medium">Soglia Risoluzione Occhio</span>
-                    <strong className="text-sm font-semibold text-[#FDB022] tabular-nums">
+                  <div className="p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-center">
+                    <span className="text-[10px] text-[var(--mute)] block uppercase font-medium">Soglia Risoluzione Occhio</span>
+                    <strong className="text-sm font-semibold text-[var(--warn)] tabular-nums">
                       {opticalConsulting.minResolvablePitchMm} mm
                     </strong>
-                    <span className="text-[10px] text-[#868D97] block">1 arcmin (Snellen 20/20)</span>
+                    <span className="text-[10px] text-[var(--mute)] block">1 arcmin (Snellen 20/20)</span>
                   </div>
 
-                  <div className="p-2.5 rounded-lg bg-[#0D2818]/60 border border-[#163826] text-center">
-                    <span className="text-[10px] text-[#34D399] block uppercase font-medium">Passo Consigliato Sistema</span>
-                    <strong className="text-sm font-bold text-[#12B76A] tabular-nums">
+                  <div className="p-2.5 rounded-lg bg-[rgb(var(--ok-rgb)/10%)]/60 border border-[rgb(var(--ok-rgb)/30%)] text-center">
+                    <span className="text-[10px] text-[var(--ok)] block uppercase font-medium">Passo Consigliato Sistema</span>
+                    <strong className="text-sm font-bold text-[var(--ok)] tabular-nums">
                       P{opticalConsulting.recommendedPitchMm} mm
                     </strong>
-                    <span className="text-[10px] text-[#34D399] block">100% Retina Blended</span>
+                    <span className="text-[10px] text-[var(--ok)] block">100% Retina Blended</span>
                   </div>
                 </div>
 
                 {/* Alert Overkill Ottico se Passo Cliente è troppo fitto */}
                 {opticalConsulting.isClientPitchOverkill && (
-                  <div className="p-3 rounded-lg bg-[#2E200B]/60 border border-[#5E3F10] text-[#FDB022] space-y-1">
+                  <div className="p-3 rounded-lg bg-[rgb(var(--warn-rgb)/12%)]/60 border border-[rgb(var(--warn-rgb)/35%)] text-[var(--warn)] space-y-1">
                     <div className="flex items-center space-x-1.5 font-semibold text-xs">
-                      <AlertTriangle className="w-4 h-4 text-[#FDB022] flex-shrink-0" />
+                      <AlertTriangle className="w-4 h-4 text-[var(--warn)] flex-shrink-0" />
                       <span>Avviso Tecnico: Il passo scelto dal cliente (P{pitchA} mm) è in Overkill Ottico</span>
                     </div>
-                    <p className="text-[11px] text-[#E8EDF2] leading-relaxed">
+                    <p className="text-[11px] text-[var(--text)] leading-relaxed">
                       A <strong>{opticalConsulting.lineOfSightDistM} m</strong> di distanza effettiva, l&apos;occhio umano non è in grado di distinguere pixel inferiori a <strong>{opticalConsulting.minResolvablePitchMm} mm</strong>.
                       Con un P{pitchA} il cliente acquisterebbe <strong>{fmt(opticalConsulting.wastedPixelsCount)} pixel invisibili all&apos;occhio umano (+{opticalConsulting.wastedPixelsPercent}%)</strong>, aumentando inutilmente il canone di noleggio e spingendo i chip in saturazione termica a {fmt(effectiveNitsA)} nit.
                     </p>
@@ -370,22 +370,22 @@ export const S2Dimensions: React.FC = () => {
               {/* 2 Colonne a confronto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Schermo A */}
-                <div className="p-4 rounded-xl border border-[#1A2028] bg-[#07090C] space-y-3.5 text-xs">
+                <div className="p-4 rounded-xl border border-[var(--line)] bg-[var(--bg)] space-y-3.5 text-xs">
                   <div className="flex justify-between items-center text-white font-semibold">
                     <div className="flex items-center space-x-1.5">
                       <span>Display A · Scelto dal Cliente</span>
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${
                       opticalConsulting.isClientPitchOverkill
-                        ? 'bg-[#2E200B] text-[#FDB022] border-[#5E3F10]'
-                        : 'bg-[#10141D] text-[#9AA3AD] border-[#1A2028]'
+                        ? 'bg-[rgb(var(--warn-rgb)/12%)] text-[var(--warn)] border-[rgb(var(--warn-rgb)/35%)]'
+                        : 'bg-[var(--s1)] text-[var(--mute)] border-[var(--line)]'
                     }`}>
                       {opticalConsulting.isClientPitchOverkill ? '⚠️ Overkill Ottico' : 'Passo Fine'}
                     </span>
                   </div>
 
                   <div>
-                    <label className="text-xs text-[#868D97] block mb-1">Passo Pixel (Pitch):</label>
+                    <label className="text-xs text-[var(--mute)] block mb-1">Passo Pixel (Pitch):</label>
                     <select
                       value={rowA.pitchMm.toString()}
                       onChange={(e) => {
@@ -394,7 +394,7 @@ export const S2Dimensions: React.FC = () => {
                         const maxA = datoCatalogo(tier, newP)?.maxNits ?? compNitsA;
                         if (compNitsA > maxA) setCompNitsA(maxA);
                       }}
-                      className="w-full p-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white outline-none font-medium text-xs"
+                      className="w-full p-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white outline-none font-medium text-xs"
                     >
                       {righeTier.map((r) => (
                         <option key={r.pitchMm} value={r.pitchMm.toString()}>
@@ -405,11 +405,11 @@ export const S2Dimensions: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex justify-between items-center text-xs text-[#868D97] mb-1">
+                    <div className="flex justify-between items-center text-xs text-[var(--mute)] mb-1">
                       <span>Luminosità Richiesta:</span>
                       <div className="flex items-center space-x-1.5">
                         {effectiveNitsA >= limitA.maxNits && (
-                          <span className="text-[10px] text-[#FDB022] bg-[#2E200B] px-1.5 py-0.5 rounded border border-[#5E3F10] flex items-center space-x-0.5">
+                          <span className="text-[10px] text-[var(--warn)] bg-[rgb(var(--warn-rgb)/12%)] px-1.5 py-0.5 rounded border border-[rgb(var(--warn-rgb)/35%)] flex items-center space-x-0.5">
                             <Lock className="w-2.5 h-2.5 inline" />
                             <span>Tetto Termico</span>
                           </span>
@@ -430,30 +430,30 @@ export const S2Dimensions: React.FC = () => {
                       }}
                       className="w-full custom-slider"
                     />
-                    <div className="flex justify-between items-center text-[10px] text-[#868D97] pt-0.5 tabular-nums">
+                    <div className="flex justify-between items-center text-[10px] text-[var(--mute)] pt-0.5 tabular-nums">
                       <span>3.000 nit</span>
-                      <span className="text-[#9AA3AD] font-medium">Tetto: {fmt(limitA.maxNits)} nit ({limitA.chipType.split(' ')[0]})</span>
+                      <span className="text-[var(--mute)] font-medium">Tetto: {fmt(limitA.maxNits)} nit ({limitA.chipType.split(' ')[0]})</span>
                     </div>
 
                     {pitchA <= 2.6 && effectiveNitsA >= 4500 && (
-                      <div className="mt-2 p-2 rounded bg-[#2E200B]/40 border border-[#5E3F10] text-[11px] text-[#FDB022]">
+                      <div className="mt-2 p-2 rounded bg-[rgb(var(--warn-rgb)/12%)]/40 border border-[rgb(var(--warn-rgb)/35%)] text-[11px] text-[var(--warn)]">
                         ⚠️ <strong>Saturazione Termica:</strong> Su P{pitchA}mm a {fmt(effectiveNitsA)} nit i chip operano al 100% di sforzo PWM. Tj elevata con rischio deperimento precoce e thermal droop.
                       </div>
                     )}
                   </div>
 
                   {/* Dettagli Densità e Totale Pixel */}
-                  <div className="p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] space-y-1 text-[11px]">
-                    <div className="flex justify-between text-[#868D97]">
+                  <div className="p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] space-y-1 text-[11px]">
+                    <div className="flex justify-between text-[var(--mute)]">
                       <span>Densità Pixel:</span>
                       <strong className="text-white font-medium tabular-nums">{fmt(compResA.pixelM2)} px/m²</strong>
                     </div>
-                    <div className="flex justify-between text-[#868D97]">
+                    <div className="flex justify-between text-[var(--mute)]">
                       <span>Totale Pixel Schermo:</span>
                       <strong className="text-white font-medium tabular-nums">{fmt(opticalConsulting.totalPixelsClient)} px</strong>
                     </div>
                     {opticalConsulting.isClientPitchOverkill && (
-                      <div className="flex justify-between text-[#FDB022] font-medium pt-0.5 border-t border-[#1A2028]">
+                      <div className="flex justify-between text-[var(--warn)] font-medium pt-0.5 border-t border-[var(--line)]">
                         <span>Pixel Invisibili (Spreco):</span>
                         <span className="tabular-nums">+{fmt(opticalConsulting.wastedPixelsCount)} px ({opticalConsulting.wastedPixelsPercent}%)</span>
                       </div>
@@ -462,16 +462,16 @@ export const S2Dimensions: React.FC = () => {
 
                   {/* Dettagli Tecnici Completi se non sintetico */}
                   {!syntheticMode && (
-                    <div className="pt-2 border-t border-[#1A2028] space-y-1.5 text-xs">
-                      <div className="flex justify-between text-[#868D97]">
+                    <div className="pt-2 border-t border-[var(--line)] space-y-1.5 text-xs">
+                      <div className="flex justify-between text-[var(--mute)]">
                         <span>Package / Diodi:</span>
                         <strong className="text-white font-medium">{limitA.chipType}</strong>
                       </div>
-                      <div className="flex justify-between text-[#868D97]">
+                      <div className="flex justify-between text-[var(--mute)]">
                         <span>Potenza Max:</span>
-                        <strong className="text-[#F87171] font-medium tabular-nums">{compResA.pMaxWmq} W/m²</strong>
+                        <strong className="text-[var(--alarm)] font-medium tabular-nums">{compResA.pMaxWmq} W/m²</strong>
                       </div>
-                      <div className="flex justify-between text-[#868D97]">
+                      <div className="flex justify-between text-[var(--mute)]">
                         <span>Potenza Media (30% APL):</span>
                         <strong className="text-white font-medium tabular-nums">{compResA.pMedioWmq} W/m²</strong>
                       </div>
@@ -479,14 +479,14 @@ export const S2Dimensions: React.FC = () => {
                   )}
 
                   {/* Canone Noleggio Operativo 24 Mesi Stimato */}
-                  <div className="p-3 rounded-lg bg-[#10141D] border border-[#1A2028] text-center space-y-0.5">
-                    <span className="text-[10px] text-[#868D97] uppercase tracking-wider block font-medium">
+                  <div className="p-3 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-center space-y-0.5">
+                    <span className="text-[10px] text-[var(--mute)] uppercase tracking-wider block font-medium">
                       Canone Noleggio Operativo (24 Mesi · da listino)
                     </span>
                     <div className="text-lg font-semibold text-white tabular-nums tracking-tight">
-                      {canoneA ? <>{fmt(canoneA.rataMensileEur)} €<span className="text-xs text-[#868D97] font-normal"> / mese</span></> : <span className="text-sm text-[#9AA3AD]">prezzo non a listino</span>}
+                      {canoneA ? <>{fmt(canoneA.rataMensileEur)} €<span className="text-xs text-[var(--mute)] font-normal"> / mese</span></> : <span className="text-sm text-[var(--mute)]">prezzo non a listino</span>}
                     </div>
-                    <span className="text-[11px] text-[#868D97] tabular-nums block">
+                    <span className="text-[11px] text-[var(--mute)] tabular-nums block">
                       Elettricità: ~{fmt(compResA.annualCostEur / 12)} € / mese ({fmt(compResA.annualCostEur)} €/anno)
                     </span>
                   </div>
@@ -497,25 +497,25 @@ export const S2Dimensions: React.FC = () => {
                       setPitchMm(rowA.pitchMm);
                       setSizingMode('cabinet');
                     }}
-                    className="w-full py-2 rounded-lg bg-[#10141D] hover:bg-[#161F30] border border-[#1A2028] text-[#E8EDF2] font-medium text-xs transition-colors cursor-pointer"
+                    className="w-full py-2 rounded-lg bg-[var(--s1)] hover:bg-[var(--s2)] border border-[var(--line)] text-[var(--text)] font-medium text-xs transition-colors cursor-pointer"
                   >
                     Seleziona Passo P{pitchA}
                   </button>
                 </div>
 
                 {/* Schermo B */}
-                <div className="p-4 rounded-xl border border-[#163826] bg-[#0D1E16]/30 space-y-3.5 text-xs">
-                  <div className="flex justify-between items-center text-[#12B76A] font-semibold">
+                <div className="p-4 rounded-xl border border-[rgb(var(--ok-rgb)/30%)] bg-[rgb(var(--ok-rgb)/10%)]/30 space-y-3.5 text-xs">
+                  <div className="flex justify-between items-center text-[var(--ok)] font-semibold">
                     <div className="flex items-center space-x-1.5">
                       <span>Display B · Proposto dal Sistema</span>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-[#0D2818] text-[#34D399] border border-[#163826] font-medium">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)] font-medium">
                       Consigliato: P{opticalConsulting.recommendedPitchMm}
                     </span>
                   </div>
 
                   <div>
-                    <label className="text-xs text-[#868D97] block mb-1">Passo Pixel (Pitch):</label>
+                    <label className="text-xs text-[var(--mute)] block mb-1">Passo Pixel (Pitch):</label>
                     <select
                       value={rowB.pitchMm.toString()}
                       onChange={(e) => {
@@ -524,7 +524,7 @@ export const S2Dimensions: React.FC = () => {
                         const maxB = datoCatalogo(tier, newP)?.maxNits ?? compNitsB;
                         if (compNitsB > maxB) setCompNitsB(maxB);
                       }}
-                      className="w-full p-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white outline-none font-medium text-xs"
+                      className="w-full p-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white outline-none font-medium text-xs"
                     >
                       {righeTier.map((r) => (
                         <option key={r.pitchMm} value={r.pitchMm.toString()}>
@@ -535,23 +535,23 @@ export const S2Dimensions: React.FC = () => {
                   </div>
 
                   <div>
-                    <div className="flex justify-between items-center text-xs text-[#868D97] mb-1">
+                    <div className="flex justify-between items-center text-xs text-[var(--mute)] mb-1">
                       <span>Luminosità Garantita:</span>
                       <div className="flex items-center space-x-1.5">
                         {effectiveNitsB >= limitB.maxNits ? (
-                          <span className="text-[10px] text-[#FDB022] bg-[#2E200B] px-1.5 py-0.5 rounded border border-[#5E3F10] font-medium">
+                          <span className="text-[10px] text-[var(--warn)] bg-[rgb(var(--warn-rgb)/12%)] px-1.5 py-0.5 rounded border border-[rgb(var(--warn-rgb)/35%)] font-medium">
                             Tetto {tierLabel}: {fmt(limitB.maxNits)} nit
                           </span>
                         ) : effectiveNitsB >= 10000 ? (
-                          <span className="text-[10px] text-[#34D399] bg-[#0D2818] px-1.5 py-0.5 rounded border border-[#163826] font-medium">
+                          <span className="text-[10px] text-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] px-1.5 py-0.5 rounded border border-[rgb(var(--ok-rgb)/30%)] font-medium">
                             High-Power DOOH
                           </span>
                         ) : syncNits && effectiveNitsB === effectiveNitsA ? (
-                          <span className="text-[10px] text-[#9AA3AD] bg-[#10141D] px-1.5 py-0.5 rounded border border-[#1A2028]">
+                          <span className="text-[10px] text-[var(--mute)] bg-[var(--s1)] px-1.5 py-0.5 rounded border border-[var(--line)]">
                             Pari ad A
                           </span>
                         ) : null}
-                        <strong className="text-[#12B76A] font-semibold tabular-nums">{fmt(effectiveNitsB)} nit</strong>
+                        <strong className="text-[var(--ok)] font-semibold tabular-nums">{fmt(effectiveNitsB)} nit</strong>
                       </div>
                     </div>
                     <input
@@ -569,10 +569,10 @@ export const S2Dimensions: React.FC = () => {
                       }}
                       className="w-full custom-slider"
                     />
-                    <div className="flex justify-between items-center text-[10px] text-[#868D97] pt-0.5 tabular-nums">
+                    <div className="flex justify-between items-center text-[10px] text-[var(--mute)] pt-0.5 tabular-nums">
                       <span>3.000 nit</span>
                       <span>10.000 nit</span>
-                      <span className="text-[#12B76A] font-medium">
+                      <span className="text-[var(--ok)] font-medium">
                         {`Max ${tierLabel}: ${fmt(limitB.maxNits)} nit`}
                       </span>
                     </div>
@@ -586,7 +586,7 @@ export const S2Dimensions: React.FC = () => {
                             setCompNitsB(6000);
                             setSyncNits(false);
                           }}
-                          className="px-2.5 py-1 rounded text-xs bg-[#0D2818] text-[#34D399] hover:bg-[#133D24] border border-[#163826] font-semibold cursor-pointer"
+                          className="px-2.5 py-1 rounded text-xs bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] hover:bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] font-semibold cursor-pointer"
                         >
                           Applica Consigliato (P{opticalConsulting.recommendedPitchMm})
                         </button>
@@ -600,8 +600,8 @@ export const S2Dimensions: React.FC = () => {
                         }}
                         className={`px-2.5 py-1 rounded text-xs transition-colors cursor-pointer ${
                           syncNits || effectiveNitsB === effectiveNitsA
-                            ? 'bg-[#0D2818] text-[#34D399] border border-[#163826] font-semibold'
-                            : 'bg-[#10141D] text-[#868D97] hover:text-white border border-[#1A2028]'
+                            ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)] font-semibold'
+                            : 'bg-[var(--s1)] text-[var(--mute)] hover:text-white border border-[var(--line)]'
                         }`}
                       >
                         = Stessi Nit ({fmt(effectiveNitsA)})
@@ -609,23 +609,23 @@ export const S2Dimensions: React.FC = () => {
                     </div>
 
                     {pitchB === opticalConsulting.recommendedPitchMm && (
-                      <div className="mt-2 p-2 rounded bg-[#0D2818]/40 border border-[#163826] text-[11px] text-[#34D399]">
+                      <div className="mt-2 p-2 rounded bg-[rgb(var(--ok-rgb)/10%)]/40 border border-[rgb(var(--ok-rgb)/30%)] text-[11px] text-[var(--ok)]">
                         ✅ <strong>100% Retina Blended:</strong> A {opticalConsulting.lineOfSightDistM}m di distanza i pixel sono fusi otticamente. I diodi lavorano a riposo ({compResB.sforzoPercent}% sforzo) garantendo 6.000+ nit stabili per anni.
                       </div>
                     )}
                   </div>
 
                   {/* Dettagli Densità e Totale Pixel */}
-                  <div className="p-2.5 rounded-lg bg-[#10141D] border border-[#163826] space-y-1 text-[11px]">
-                    <div className="flex justify-between text-[#868D97]">
+                  <div className="p-2.5 rounded-lg bg-[var(--s1)] border border-[rgb(var(--ok-rgb)/30%)] space-y-1 text-[11px]">
+                    <div className="flex justify-between text-[var(--mute)]">
                       <span>Densità Pixel:</span>
                       <strong className="text-white font-medium tabular-nums">{fmt(compResB.pixelM2)} px/m²</strong>
                     </div>
-                    <div className="flex justify-between text-[#868D97]">
+                    <div className="flex justify-between text-[var(--mute)]">
                       <span>Totale Pixel Schermo:</span>
                       <strong className="text-white font-medium tabular-nums">{fmt(opticalConsulting.totalPixelsRecommended)} px</strong>
                     </div>
-                    <div className="flex justify-between text-[#34D399] font-medium pt-0.5 border-t border-[#163826]">
+                    <div className="flex justify-between text-[var(--ok)] font-medium pt-0.5 border-t border-[rgb(var(--ok-rgb)/30%)]">
                       <span>Efficienza Ottica:</span>
                       <span>100% Pixel Utili e Distinguibili</span>
                     </div>
@@ -633,16 +633,16 @@ export const S2Dimensions: React.FC = () => {
 
                   {/* Dettagli Tecnici Completi */}
                   {!syntheticMode && (
-                    <div className="pt-2 border-t border-[#1A2028] space-y-1.5 text-xs">
-                      <div className="flex justify-between text-[#868D97]">
+                    <div className="pt-2 border-t border-[var(--line)] space-y-1.5 text-xs">
+                      <div className="flex justify-between text-[var(--mute)]">
                         <span>Package / Diodi:</span>
                         <strong className="text-white font-medium">{limitB.chipType}</strong>
                       </div>
-                      <div className="flex justify-between text-[#868D97]">
+                      <div className="flex justify-between text-[var(--mute)]">
                         <span>Potenza Max:</span>
-                        <strong className="text-[#12B76A] font-medium tabular-nums">{compResB.pMaxWmq} W/m²</strong>
+                        <strong className="text-[var(--ok)] font-medium tabular-nums">{compResB.pMaxWmq} W/m²</strong>
                       </div>
-                      <div className="flex justify-between text-[#868D97]">
+                      <div className="flex justify-between text-[var(--mute)]">
                         <span>Potenza Media (30% APL):</span>
                         <strong className="text-white font-medium tabular-nums">{compResB.pMedioWmq} W/m²</strong>
                       </div>
@@ -650,14 +650,14 @@ export const S2Dimensions: React.FC = () => {
                   )}
 
                   {/* Canone Noleggio Operativo 24 Mesi Stimato */}
-                  <div className="p-3 rounded-lg bg-[#10141D] border border-[#163826] text-center space-y-0.5">
-                    <span className="text-[10px] text-[#34D399] uppercase tracking-wider block font-semibold">
+                  <div className="p-3 rounded-lg bg-[var(--s1)] border border-[rgb(var(--ok-rgb)/30%)] text-center space-y-0.5">
+                    <span className="text-[10px] text-[var(--ok)] uppercase tracking-wider block font-semibold">
                       Canone Noleggio Operativo (24 Mesi · da listino)
                     </span>
-                    <div className="text-lg font-bold text-[#12B76A] tabular-nums tracking-tight">
-                      {canoneB ? <>{fmt(canoneB.rataMensileEur)} €<span className="text-xs text-[#868D97] font-normal"> / mese</span></> : <span className="text-sm text-[#9AA3AD]">prezzo non a listino</span>}
+                    <div className="text-lg font-bold text-[var(--ok)] tabular-nums tracking-tight">
+                      {canoneB ? <>{fmt(canoneB.rataMensileEur)} €<span className="text-xs text-[var(--mute)] font-normal"> / mese</span></> : <span className="text-sm text-[var(--mute)]">prezzo non a listino</span>}
                     </div>
-                    <span className="text-[11px] text-[#12B76A] font-medium tabular-nums block">
+                    <span className="text-[11px] text-[var(--ok)] font-medium tabular-nums block">
                       Elettricità: ~{fmt(compResB.annualCostEur / 12)} € / mese ({fmt(compResB.annualCostEur)} €/anno)
                     </span>
                   </div>
@@ -668,7 +668,7 @@ export const S2Dimensions: React.FC = () => {
                       setPitchMm(rowB.pitchMm);
                       setSizingMode('cabinet');
                     }}
-                    className="w-full py-2 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs transition-colors cursor-pointer shadow-sm"
+                    className="w-full py-2 rounded-lg bg-[var(--pieno-fondo)] hover:bg-[var(--pieno-fondo-hover)] text-[var(--pieno-testo)] font-semibold text-xs transition-colors cursor-pointer shadow-sm"
                   >
                     Seleziona Passo P{pitchB}
                   </button>
@@ -676,17 +676,17 @@ export const S2Dimensions: React.FC = () => {
               </div>
 
               {/* Box Verdetto Sintetico & Business Case Locazione 24 Mesi */}
-              <div className="p-4 rounded-xl bg-[#07090C] border border-[#1A2028] space-y-3.5 shadow-sm">
+              <div className="p-4 rounded-xl bg-[var(--bg)] border border-[var(--line)] space-y-3.5 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-[#12B76A]"></span>
+                    <span className="w-2 h-2 rounded-full bg-[var(--pieno-fondo)]"></span>
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
                       {syntheticMode ? 'Sintesi Risparmio & Verdetto Ottico (RFP 24 Mesi)' : 'Verdetto Fotometrico & TCO Locazione Operativa'}
                     </span>
                   </div>
 
                   {mostraRisparmio && (
-                    <span className="text-xs px-3 py-1 rounded-full bg-[#0D2818] text-[#34D399] font-bold border border-[#163826] self-start sm:self-auto tabular-nums">
+                    <span className="text-xs px-3 py-1 rounded-full bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-bold border border-[rgb(var(--ok-rgb)/30%)] self-start sm:self-auto tabular-nums">
                       Risparmio Netto Totale 24 Mesi: +{fmt(risparmioTotale24 ?? 0)} €
                     </span>
                   )}
@@ -694,43 +694,43 @@ export const S2Dimensions: React.FC = () => {
 
                 {/* Griglia Riepilogo Risparmio 24 Mesi */}
                 {mostraRisparmio && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg bg-[#10141D] border border-[#163826]">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg bg-[var(--s1)] border border-[rgb(var(--ok-rgb)/30%)]">
                     <div className="space-y-0.5 text-center sm:text-left">
-                      <span className="text-[10px] text-[#868D97] uppercase font-medium">Risparmio Canone Noleggio</span>
-                      <div className="text-base font-bold text-[#34D399] tabular-nums">
+                      <span className="text-[10px] text-[var(--mute)] uppercase font-medium">Risparmio Canone Noleggio</span>
+                      <div className="text-base font-bold text-[var(--ok)] tabular-nums">
                         +{fmt((opticalConsulting.monthlyRentalSavingsEur ?? 0) * 24)} €
                       </div>
-                      <span className="text-[10px] text-[#868D97]">+{fmt(opticalConsulting.monthlyRentalSavingsEur ?? 0)} € al mese per 24 mesi</span>
+                      <span className="text-[10px] text-[var(--mute)]">+{fmt(opticalConsulting.monthlyRentalSavingsEur ?? 0)} € al mese per 24 mesi</span>
                     </div>
 
                     <div className="space-y-0.5 text-center sm:text-left">
-                      <span className="text-[10px] text-[#868D97] uppercase font-medium">Risparmio Energia Elettrica</span>
-                      <div className="text-base font-bold text-[#34D399] tabular-nums">
+                      <span className="text-[10px] text-[var(--mute)] uppercase font-medium">Risparmio Energia Elettrica</span>
+                      <div className="text-base font-bold text-[var(--ok)] tabular-nums">
                         +{fmt(opticalConsulting.deltaAnnualEnergyCostEur * 2)} €
                       </div>
-                      <span className="text-[10px] text-[#868D97]">+{fmt(opticalConsulting.deltaAnnualEnergyCostEur)} €/anno a catodo comune</span>
+                      <span className="text-[10px] text-[var(--mute)]">+{fmt(opticalConsulting.deltaAnnualEnergyCostEur)} €/anno a catodo comune</span>
                     </div>
 
-                    <div className="space-y-0.5 text-center sm:text-left border-t sm:border-t-0 sm:border-l border-[#1A2028] pt-2 sm:pt-0 sm:pl-3">
-                      <span className="text-[10px] text-[#12B76A] uppercase font-bold">Vantaggio Economico Totale</span>
-                      <div className="text-lg font-extrabold text-[#12B76A] tabular-nums">
+                    <div className="space-y-0.5 text-center sm:text-left border-t sm:border-t-0 sm:border-l border-[var(--line)] pt-2 sm:pt-0 sm:pl-3">
+                      <span className="text-[10px] text-[var(--ok)] uppercase font-bold">Vantaggio Economico Totale</span>
+                      <div className="text-lg font-extrabold text-[var(--ok)] tabular-nums">
                         +{fmt(risparmioTotale24 ?? 0)} €
                       </div>
-                      <span className="text-[10px] text-[#868D97]">Qualità visiva identica, TCO ottimizzato</span>
+                      <span className="text-[10px] text-[var(--mute)]">Qualità visiva identica, TCO ottimizzato</span>
                     </div>
                   </div>
                 )}
 
-                <p className="text-sm text-[#E8EDF2] leading-relaxed">
+                <p className="text-sm text-[var(--text)] leading-relaxed">
                   {opticalConsulting.scientificVerdict}
                 </p>
 
                 {/* Selettore spiegazione scientifica / dettagli tecnici */}
-                <div className="pt-2 border-t border-[#1A2028] flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="pt-2 border-t border-[var(--line)] flex flex-wrap items-center justify-between gap-2 text-xs">
                   <button
                     type="button"
                     onClick={() => setShowDeepScientific(!showDeepScientific)}
-                    className="text-[#12B76A] hover:text-[#0E9F5D] flex items-center space-x-1 cursor-pointer font-medium transition-colors"
+                    className="text-[var(--ok)] hover:text-[var(--ok)] flex items-center space-x-1 cursor-pointer font-medium transition-colors"
                   >
                     {showDeepScientific ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     <span>{showDeepScientific ? 'Nascondi approfondimento scientifico' : 'Approfondimento: Criterio di Snellen, 1 Arcmin e Saturazione Termica'}</span>
@@ -739,7 +739,7 @@ export const S2Dimensions: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setSyntheticMode(!syntheticMode)}
-                    className="text-[#868D97] hover:text-white underline cursor-pointer transition-colors"
+                    className="text-[var(--mute)] hover:text-white underline cursor-pointer transition-colors"
                   >
                     {syntheticMode ? 'Mostra tutti i dati tecnici (W/m², pixel, correnti)' : 'Torna alla vista sintetica'}
                   </button>
@@ -747,31 +747,31 @@ export const S2Dimensions: React.FC = () => {
 
                 {/* Spiegazione Scientifica Espandibile */}
                 {showDeepScientific && (
-                  <div className="p-3.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-xs text-[#E8EDF2] leading-relaxed space-y-3">
+                  <div className="p-3.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-xs text-[var(--text)] leading-relaxed space-y-3">
                     <div className="flex items-center space-x-2 text-white font-semibold">
-                      <AlertCircle className="w-4 h-4 text-[#12B76A] flex-shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-[var(--ok)] flex-shrink-0" />
                       <span>Limiti dei semiconduttori, thermal droop e tecnologia Gold Wire</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                      <div className="p-2.5 rounded bg-[#07090C] border border-[#1A2028] space-y-1">
+                      <div className="p-2.5 rounded bg-[var(--bg)] border border-[var(--line)] space-y-1">
                         <strong className="text-white block">1. Perché il P3.91 non supera 6.500 nit:</strong>
-                        <p className="text-[#9AA3AD]">
+                        <p className="text-[var(--mute)]">
                           Un P3.91 ospita <strong>65.410 pixel/m²</strong> (196.230 micro-diodi SMD1921). Con una tale densità, il calore della giunzione non può essere dissipato sul PCB: superare 6.500 nit innalza la temperatura oltre i <strong>115°C</strong>, provocando <em>Thermal Droop</em> irreversibile, perdita di luminosità e carbonizzazione della resina.
                         </p>
                       </div>
-                      <div className="p-2.5 rounded bg-[#07090C] border border-[#1A2028] space-y-1">
-                        <strong className="text-[#12B76A] block">2. Dissipazione &amp; Catodo Comune (P8 / P6.67):</strong>
-                        <p className="text-[#9AA3AD]">
+                      <div className="p-2.5 rounded bg-[var(--bg)] border border-[var(--line)] space-y-1">
+                        <strong className="text-[var(--ok)] block">2. Dissipazione &amp; Catodo Comune (P8 / P6.67):</strong>
+                        <p className="text-[var(--mute)]">
                           Il P8 ha solo <strong>15.625 pixel/m²</strong> e alloggia chip generosi <strong>SMD2727/SMD3535</strong> con ampie pad termiche di saldatura al rame.
                           Alimentato a <strong>Catodo Comune (2.8V per il rosso)</strong>, elimina le dispersioni parassite garantendo oltre 10.000 nit con temperature d&apos;esercizio controllate.
                         </p>
                       </div>
-                      <div className="p-2.5 rounded bg-[#2E200B]/50 border border-[#5E3F10] space-y-1 sm:col-span-2">
-                        <strong className="text-[#FDB022] flex items-center space-x-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-[#FDB022]" />
+                      <div className="p-2.5 rounded bg-[rgb(var(--warn-rgb)/12%)]/50 border border-[rgb(var(--warn-rgb)/35%)] space-y-1 sm:col-span-2">
+                        <strong className="text-[var(--warn)] flex items-center space-x-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-[var(--warn)]" />
                           <span>3. Perché con la tecnologia Gold Wire si raggiungono i 12.000 nit?</span>
                         </strong>
-                        <p className="text-[#E8EDF2]">
+                        <p className="text-[var(--text)]">
                           I moduli outdoor VeroLED Ultra-High Brightness impiegano fili di legatura die-to-pad in <strong>oro puro al 99.99% (Gold Wire Bonding)</strong>. A differenza delle legature economiche in rame o alluminio, l&apos;oro non si ossida per umidità, non crea micro-fratture per shock termico e consente di pilotare correnti continue senza delaminazione.
                           Questo consente ai chip di raggiungere <strong>12.000 nit stabili</strong>, mantenendo una visibilità cristallina e un contrasto assoluto anche sotto irraggiamento solare zenitale a oltre 100.000 lux.
                         </p>
@@ -786,15 +786,15 @@ export const S2Dimensions: React.FC = () => {
             <>
               {/* Passo Pixel & Target Nits Operativi Outdoor */}
               <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-[#07090C] border border-[#1A2028]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-[var(--bg)] border border-[var(--line)]">
                   <div className="flex items-center space-x-2">
-                    <Sun className="w-4 h-4 text-[#F59E0B] flex-shrink-0" />
+                    <Sun className="w-4 h-4 text-[var(--warn)] flex-shrink-0" />
                     <div>
                       <div className="text-xs font-semibold text-white flex items-center space-x-1.5">
                         <span>Luminosità Operativa Outdoor:</span>
-                        <span className="text-[#34D399] font-mono font-bold">{fmt(targetOutdoorNits)} Nit</span>
+                        <span className="text-[var(--ok)] font-mono font-bold">{fmt(targetOutdoorNits)} Nit</span>
                       </div>
-                      <div className="text-[10px] text-[#868D97]">Standard di calcolo per confrontare lo sforzo dei semiconduttori</div>
+                      <div className="text-[10px] text-[var(--mute)]">Standard di calcolo per confrontare lo sforzo dei semiconduttori</div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
@@ -805,8 +805,8 @@ export const S2Dimensions: React.FC = () => {
                         onClick={() => useSimulatorStore.getState().setTargetOutdoorNits(nitVal)}
                         className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                           targetOutdoorNits === nitVal
-                            ? 'bg-[#12B76A] text-white font-bold shadow-sm'
-                            : 'bg-[#10141D] text-[#9AA3AD] border border-[#1A2028] hover:text-white'
+                            ? 'bg-[var(--pieno-fondo)] text-[var(--pieno-testo)] font-bold shadow-sm'
+                            : 'bg-[var(--s1)] text-[var(--mute)] border border-[var(--line)] hover:text-white'
                         }`}
                       >
                         {fmt(nitVal)} Nit
@@ -817,10 +817,10 @@ export const S2Dimensions: React.FC = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-semibold text-[#868D97] uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-[var(--mute)] uppercase tracking-wide">
                       Passo Pixel (Pitch) &amp; Sforzo Semiconduttore:
                     </label>
-                    <span className="text-[10px] text-[#868D97]">
+                    <span className="text-[10px] text-[var(--mute)]">
                       % = carico termico per erogare {fmt(targetOutdoorNits)} Nit
                     </span>
                   </div>
@@ -832,8 +832,8 @@ export const S2Dimensions: React.FC = () => {
                         onClick={() => setTier(t.id)}
                         className={`px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
                           tier === t.id
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#9AA3AD] hover:text-white'
+                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--mute)] hover:text-white'
                         }`}
                       >
                         {t.name} <span className="font-mono text-[10px] opacity-70">{t.wire}</span>
@@ -855,28 +855,28 @@ export const S2Dimensions: React.FC = () => {
                           title={!dato ? `P${p} ${tierLabel}: tetto di nit non ancora censito per questa combinazione` : `P${p} ${tierLabel}: fino a ${fmt(dato.maxNits)} nit · ${dato.chip}`}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
                             isSelected
-                              ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
-                              : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                              ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold shadow-sm'
+                              : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                           }`}
                         >
                           <span>P{p} mm</span>
                           <span
                             className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
                               !dato
-                                ? 'bg-[#1A2028] text-[#9AA3AD]'
+                                ? 'bg-[var(--line)] text-[var(--mute)]'
                                 : !reachable
-                                ? 'bg-[#2E200B] text-[#FBBF24]'
+                                ? 'bg-[rgb(var(--warn-rgb)/12%)] text-[var(--warn)]'
                                 : pEst.sforzoPercent >= 90
                                 ? isSelected
-                                  ? 'bg-[#7F1D1D] text-[#FCA5A5]'
-                                  : 'bg-[#3D1414] text-[#F87171]'
+                                  ? 'bg-[rgb(var(--alarm-rgb)/35%)] text-[var(--alarm)]'
+                                  : 'bg-[rgb(var(--alarm-rgb)/12%)] text-[var(--alarm)]'
                                 : pEst.sforzoPercent >= 65
                                 ? isSelected
-                                  ? 'bg-[#78350F] text-[#FDE68A]'
-                                  : 'bg-[#2E200B] text-[#FBBF24]'
+                                  ? 'bg-[rgb(var(--warn-rgb)/35%)] text-[var(--warn)]'
+                                  : 'bg-[rgb(var(--warn-rgb)/12%)] text-[var(--warn)]'
                                 : isSelected
-                                ? 'bg-[#163826] text-[#A7F3D0]'
-                                : 'bg-[#0D2818] text-[#34D399]'
+                                ? 'bg-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)]'
+                                : 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)]'
                             }`}
                           >
                             {!dato ? 'n.d.' : reachable ? `${pEst.sforzoPercent}%` : `max ${fmt(dato.maxNits)}`}
@@ -889,14 +889,14 @@ export const S2Dimensions: React.FC = () => {
                     const datoScelto = datoCatalogo(tier, pitchMm);
                     if (!datoScelto) {
                       return (
-                        <p className="mt-2 p-2.5 rounded-lg bg-[#0F1A2A] border border-[#1E3A5F] text-[11px] text-[#93C5FD] leading-relaxed">
+                        <p className="mt-2 p-2.5 rounded-lg bg-[var(--s2)] border border-[#1E3A5F] text-[11px] text-[var(--focus)] leading-relaxed">
                           Tetto di nit non ancora censito per il P{pitchMm} {tierLabel}: il passo resta una scelta valida, ma non possiamo verificare che regga {fmt(targetOutdoorNits)} nit. È un dato che manca nel listino, non un limite del prodotto.
                         </p>
                       );
                     }
                     if (targetOutdoorNits > datoScelto.maxNits) {
                       return (
-                        <p className="mt-2 p-2.5 rounded-lg bg-[#2A1111] border border-[#5B1F1F] text-[11px] text-[#FCA5A5] leading-relaxed">
+                        <p className="mt-2 p-2.5 rounded-lg bg-[rgb(var(--alarm-rgb)/12%)] border border-[rgb(var(--alarm-rgb)/35%)] text-[11px] text-[var(--alarm)] leading-relaxed">
                           {fmt(targetOutdoorNits)} nit superano il tetto del P{pitchMm} {tierLabel}: {fmt(datoScelto.maxNits)} nit ({datoScelto.chip}). Questo valore non è erogabile: abbassa i nit o cambia Selection, altrimenti il report finale resta bloccato.
                         </p>
                       );
@@ -907,22 +907,22 @@ export const S2Dimensions: React.FC = () => {
 
                 {/* Banner esplicativo sforzo e thermal droop */}
                 {hardwareEstimate.sforzoPercent >= 90 ? (
-                  <div className="p-2.5 rounded-lg bg-[#3D1414]/60 border border-[#7F1D1D] text-[11px] text-[#FCA5A5] flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 text-[#F87171] flex-shrink-0" />
+                  <div className="p-2.5 rounded-lg bg-[rgb(var(--alarm-rgb)/12%)]/60 border border-[rgb(var(--alarm-rgb)/35%)] text-[11px] text-[var(--alarm)] flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-[var(--alarm)] flex-shrink-0" />
                     <span>
                       <strong>Sforzo estremo ({hardwareEstimate.sforzoPercent}%) per erogare {fmt(targetOutdoorNits)} Nit:</strong> I micro-diodi {hardwareEstimate.tecnologiaChip.split(' ')[0]} lavorano a saturazione termica (Tj &gt; 90°C). Il severo <em>Thermal Droop</em> abbatte l&apos;efficienza a {hardwareEstimate.efficienzaLmPerW} lm/W ({hardwareEstimate.pMaxWmq} W/m² max), richiedendo fino al triplo di potenza rispetto a un passo a grana generosa.
                     </span>
                   </div>
                 ) : hardwareEstimate.sforzoPercent >= 65 ? (
-                  <div className="p-2.5 rounded-lg bg-[#2E200B]/60 border border-[#78350F] text-[11px] text-[#FDE68A] flex items-center space-x-2">
-                    <Zap className="w-4 h-4 text-[#FBBF24] flex-shrink-0" />
+                  <div className="p-2.5 rounded-lg bg-[rgb(var(--warn-rgb)/12%)]/60 border border-[rgb(var(--warn-rgb)/35%)] text-[11px] text-[var(--warn)] flex items-center space-x-2">
+                    <Zap className="w-4 h-4 text-[var(--warn)] flex-shrink-0" />
                     <span>
                       <strong>Sforzo intermedio ({hardwareEstimate.sforzoPercent}%) a {fmt(targetOutdoorNits)} Nit:</strong> Diodi compatti {hardwareEstimate.tecnologiaChip.split(' ')[0]} con resa media ({hardwareEstimate.efficienzaLmPerW} lm/W, {hardwareEstimate.pMaxWmq} W/m² max). Consumo doppio rispetto a P10.
                     </span>
                   </div>
                 ) : (
-                  <div className="p-2.5 rounded-lg bg-[#0D2818]/60 border border-[#163826] text-[11px] text-[#A7F3D0] flex items-center space-x-2">
-                    <Sparkles className="w-4 h-4 text-[#34D399] flex-shrink-0" />
+                  <div className="p-2.5 rounded-lg bg-[rgb(var(--ok-rgb)/10%)]/60 border border-[rgb(var(--ok-rgb)/30%)] text-[11px] text-[var(--ok)] flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-[var(--ok)] flex-shrink-0" />
                     <span>
                       <strong>Chip generoso a riposo (Sforzo {hardwareEstimate.sforzoPercent}% a {fmt(targetOutdoorNits)} Nit):</strong> Ampia camera ottica, minima corrente If e temperatura bassa (Tj &lt; 45°C). Massima resa ({hardwareEstimate.efficienzaLmPerW} lm/W, {hardwareEstimate.pMaxWmq} W/m² max): consuma solo una frazione rispetto a un passo fine!
                     </span>
@@ -934,7 +934,7 @@ export const S2Dimensions: React.FC = () => {
               {sizingMode === 'cabinet' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#868D97] mb-2 uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-[var(--mute)] mb-2 uppercase tracking-wide">
                       Formato Cabinet Modulare:
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -945,12 +945,12 @@ export const S2Dimensions: React.FC = () => {
                           onClick={() => setFormatId(f.id)}
                           className={`p-3 rounded-lg text-left text-xs border transition-colors cursor-pointer ${
                             formatId === f.id
-                              ? 'border-[#12B76A] bg-[#0D2818] text-white'
-                              : 'border-[#1A2028] bg-[#10141D] text-[#9AA3AD] hover:border-[#2D3748]'
+                              ? 'border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-white'
+                              : 'border-[var(--line)] bg-[var(--s1)] text-[var(--mute)] hover:border-[var(--s3)]'
                           }`}
                         >
                           <div className="font-semibold text-white">Cabinet {f.name}</div>
-                          <div className="text-xs text-[#868D97] mt-0.5">Peso: ~{f.weightKg} kg/cabinet</div>
+                          <div className="text-xs text-[var(--mute)] mt-0.5">Peso: ~{f.weightKg} kg/cabinet</div>
                         </button>
                       ))}
                     </div>
@@ -966,7 +966,7 @@ export const S2Dimensions: React.FC = () => {
                 <div className="space-y-4 pt-1 text-xs">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[#868D97] mb-1 font-medium">Larghezza Base (m):</label>
+                      <label className="block text-[var(--mute)] mb-1 font-medium">Larghezza Base (m):</label>
                       <input
                         type="number"
                         step="0.1"
@@ -974,11 +974,11 @@ export const S2Dimensions: React.FC = () => {
                         max="50"
                         value={dimensions.widthM}
                         onChange={(e) => setDimensioniMetri(parseFloat(e.target.value) || 1, dimensions.heightM)}
-                        className="w-full p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-base focus:border-[#12B76A] outline-none tabular-nums"
+                        className="w-full p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-base focus:border-[var(--ok)] outline-none tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[#868D97] mb-1 font-medium">Altezza (m):</label>
+                      <label className="block text-[var(--mute)] mb-1 font-medium">Altezza (m):</label>
                       <input
                         type="number"
                         step="0.1"
@@ -986,11 +986,11 @@ export const S2Dimensions: React.FC = () => {
                         max="30"
                         value={dimensions.heightM}
                         onChange={(e) => setDimensioniMetri(dimensions.widthM, parseFloat(e.target.value) || 1)}
-                        className="w-full p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-base focus:border-[#12B76A] outline-none tabular-nums"
+                        className="w-full p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-base focus:border-[var(--ok)] outline-none tabular-nums"
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-[#868D97]">
+                  <p className="text-xs text-[var(--mute)]">
                     La dimensione viene automaticamente mappata sul numero intero di cabinet modulari (Cabinet {format.name}).
                   </p>
                 </div>
@@ -1001,29 +1001,29 @@ export const S2Dimensions: React.FC = () => {
                 <div className="space-y-4 pt-1 text-xs">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[#868D97] mb-1 font-medium">Pixel Orizzontali:</label>
+                      <label className="block text-[var(--mute)] mb-1 font-medium">Pixel Orizzontali:</label>
                       <input
                         type="number"
                         step="32"
                         min="128"
                         value={dimensions.resolutionX}
                         onChange={(e) => setRisoluzionePx(parseInt(e.target.value, 10) || 128, dimensions.resolutionY)}
-                        className="w-full p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-base focus:border-[#12B76A] outline-none tabular-nums"
+                        className="w-full p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-base focus:border-[var(--ok)] outline-none tabular-nums"
                       />
                     </div>
                     <div>
-                      <label className="block text-[#868D97] mb-1 font-medium">Pixel Verticali:</label>
+                      <label className="block text-[var(--mute)] mb-1 font-medium">Pixel Verticali:</label>
                       <input
                         type="number"
                         step="32"
                         min="128"
                         value={dimensions.resolutionY}
                         onChange={(e) => setRisoluzionePx(dimensions.resolutionX, parseInt(e.target.value, 10) || 128)}
-                        className="w-full p-2.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-base focus:border-[#12B76A] outline-none tabular-nums"
+                        className="w-full p-2.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-base focus:border-[var(--ok)] outline-none tabular-nums"
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-[#868D97]">
+                  <p className="text-xs text-[var(--mute)]">
                     In base al passo P{pitchMm} mm, la matrice pixel calcola la dimensione fisica corrispondente.
                   </p>
                 </div>
@@ -1033,21 +1033,21 @@ export const S2Dimensions: React.FC = () => {
         </div>
 
         {/* Calculated Summary Panel con APL e CONSUMI IN TEMPO REALE */}
-        <div className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm flex flex-col justify-between space-y-4">
+        <div className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm flex flex-col justify-between space-y-4">
           <div className="space-y-4">
             {/* 1. SEZIONE APL IN TEMPO REALE (DIRETTAMENTE SOPRA I CONSUMI) */}
-            <div className="p-3 rounded-lg bg-[#070A0F] border border-[#1B2536] space-y-2">
+            <div className="p-3 rounded-lg bg-[var(--bg)] border border-[var(--s2)] space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#12B76A] animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-[var(--pieno-fondo)] animate-pulse" />
                   <span className="text-[11px] font-bold text-white uppercase tracking-wider">APL Istantaneo Video</span>
                 </div>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
                   liveApl > 60
                     ? 'bg-[#3E1A08] text-[#FB923C] border border-[#7C2D12]'
                     : liveApl > 35
-                    ? 'bg-[#2E230B] text-[#FBBF24] border border-[#78350F]'
-                    : 'bg-[#0D2818] text-[#34D399] border border-[#1B4D2E]'
+                    ? 'bg-[rgb(var(--warn-rgb)/12%)] text-[var(--warn)] border border-[rgb(var(--warn-rgb)/35%)]'
+                    : 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)]'
                 }`}>
                   {liveApl > 60 ? 'Alto APL (Day/White)' : liveApl > 35 ? 'Medio APL' : 'Basso APL (Dark)'}
                 </span>
@@ -1056,53 +1056,53 @@ export const S2Dimensions: React.FC = () => {
               {/* Percentuale APL Grande e Barra di Progresso */}
               <div className="flex items-baseline justify-between">
                 <span className="text-2xl font-black tabular-nums tracking-tight text-white">
-                  {liveApl.toFixed(1)} <span className="text-xs font-semibold text-[#868D97]">%</span>
+                  {liveApl.toFixed(1)} <span className="text-xs font-semibold text-[var(--mute)]">%</span>
                 </span>
-                <span className="text-[11px] text-[#9AA3AD] font-medium">
+                <span className="text-[11px] text-[var(--mute)] font-medium">
                   {liveApl > 60 ? '+45% impatto termico' : liveApl < 25 ? 'Ottimizzazione -40%' : 'Consumo nominale'}
                 </span>
               </div>
 
-              <div className="w-full h-2 rounded-full bg-[#131B2A] overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-[var(--s2)] overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-200"
                   style={{
                     width: `${Math.min(100, Math.max(5, liveApl))}%`,
                     background: liveApl > 60
-                      ? 'linear-gradient(90deg, #F59E0B, #EF4444)'
+                      ? 'linear-gradient(90deg, var(--warn), var(--alarm))'
                       : liveApl > 35
-                      ? 'linear-gradient(90deg, #10B981, #F59E0B)'
-                      : 'linear-gradient(90deg, #059669, #10B981)',
+                      ? 'linear-gradient(90deg, var(--ok), var(--warn))'
+                      : 'linear-gradient(90deg, var(--ok), var(--ok))',
                   }}
                 />
               </div>
             </div>
 
             {/* 2. CONSUMI IN TEMPO REALE (DIRETTAMENTE SOTTO L'APL) */}
-            <div className="p-3 rounded-lg bg-[#070A0F] border border-[#1B2536] space-y-2.5">
+            <div className="p-3 rounded-lg bg-[var(--bg)] border border-[var(--s2)] space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1.5">
-                  <Zap className="w-3.5 h-3.5 text-[#F59E0B]" />
+                  <Zap className="w-3.5 h-3.5 text-[var(--warn)]" />
                   <span className="text-[11px] font-bold text-white uppercase tracking-wider">Consumo in Tempo Reale</span>
                 </div>
                 <div className="flex items-center space-x-1.5 text-[10px]">
-                  <span className="text-[#34D399] font-mono">Max {pMaxWmq} W/m²</span>
-                  <span className="text-[#868D97] font-mono">@ {fmt(targetOutdoorNits)} nit</span>
-                  <span className="text-[#868D97] font-mono">· CEI 64-8</span>
+                  <span className="text-[var(--ok)] font-mono">Max {pMaxWmq} W/m²</span>
+                  <span className="text-[var(--mute)] font-mono">@ {fmt(targetOutdoorNits)} nit</span>
+                  <span className="text-[var(--mute)] font-mono">· CEI 64-8</span>
                 </div>
               </div>
 
               <div className="flex items-baseline justify-between">
                 <div>
-                  <span className="text-3xl font-black tabular-nums tracking-tight text-[#38BDF8]">
+                  <span className="text-3xl font-black tabular-nums tracking-tight text-[var(--focus)]">
                     {livePowerKw < 10 ? fmt(Math.round(livePowerKw * 1000)) : livePowerKw.toFixed(2)}
                   </span>
-                  <span className="text-sm font-semibold text-[#9AA3AD] ml-1">
+                  <span className="text-sm font-semibold text-[var(--mute)] ml-1">
                     {livePowerKw < 10 ? 'W' : 'kW'}
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] text-[#868D97]">Specifico:</div>
+                  <div className="text-[11px] text-[var(--mute)]">Specifico:</div>
                   <div className="text-xs font-semibold text-white tabular-nums">
                     {Math.round(livePowerWmq)} W/m²
                   </div>
@@ -1112,77 +1112,77 @@ export const S2Dimensions: React.FC = () => {
               {/* Indicatore di sforzo termico e resa fotometrica */}
               <div className="flex items-center justify-between pt-0.5 text-[10px]">
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-[#868D97]">Sforzo Chip:</span>
+                  <span className="text-[var(--mute)]">Sforzo Chip:</span>
                   <span
                     className={`px-1.5 py-0.5 rounded font-mono font-bold border ${
                       hardwareEstimate.sforzoPercent >= 90
-                        ? 'bg-[#3D1414] text-[#F87171] border-[#7F1D1D]'
+                        ? 'bg-[rgb(var(--alarm-rgb)/12%)] text-[var(--alarm)] border-[rgb(var(--alarm-rgb)/35%)]'
                         : hardwareEstimate.sforzoPercent >= 65
-                        ? 'bg-[#2E200B] text-[#FBBF24] border-[#78350F]'
-                        : 'bg-[#0D2818] text-[#34D399] border-[#163826]'
+                        ? 'bg-[rgb(var(--warn-rgb)/12%)] text-[var(--warn)] border-[rgb(var(--warn-rgb)/35%)]'
+                        : 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border-[rgb(var(--ok-rgb)/30%)]'
                     }`}
                   >
                     {hardwareEstimate.sforzoPercent}%
                   </span>
                 </div>
-                <span className="text-[#868D97] font-mono">
-                  Resa: <strong className="text-[#E8EDF2]">{hardwareEstimate.efficienzaLmPerW} lm/W</strong>
+                <span className="text-[var(--mute)] font-mono">
+                  Resa: <strong className="text-[var(--text)]">{hardwareEstimate.efficienzaLmPerW} lm/W</strong>
                 </span>
               </div>
 
               {/* Griglia 3 metriche sub-energetiche */}
               <div className="grid grid-cols-3 gap-1.5 pt-1 text-[11px]">
-                <div className="p-1.5 rounded bg-[#0D1117] border border-[#161F2E]">
-                  <div className="text-[9px] text-[#868D97] uppercase tracking-wide">Trifase 400V</div>
+                <div className="p-1.5 rounded bg-[var(--s1)] border border-[var(--s2)]">
+                  <div className="text-[9px] text-[var(--mute)] uppercase tracking-wide">Trifase 400V</div>
                   <div className="font-semibold text-white tabular-nums mt-0.5">{liveCurrentAmp.toFixed(1)} A</div>
                 </div>
-                <div className="p-1.5 rounded bg-[#0D1117] border border-[#161F2E]">
-                  <div className="text-[9px] text-[#868D97] uppercase tracking-wide">Costo Ora</div>
-                  <div className="font-semibold text-[#34D399] tabular-nums mt-0.5">€ {liveHourlyCostEur.toFixed(2)}</div>
+                <div className="p-1.5 rounded bg-[var(--s1)] border border-[var(--s2)]">
+                  <div className="text-[9px] text-[var(--mute)] uppercase tracking-wide">Costo Ora</div>
+                  <div className="font-semibold text-[var(--ok)] tabular-nums mt-0.5">€ {liveHourlyCostEur.toFixed(2)}</div>
                 </div>
-                <div className="p-1.5 rounded bg-[#0D1117] border border-[#161F2E]">
-                  <div className="text-[9px] text-[#868D97] uppercase tracking-wide">Proiez. Anno</div>
+                <div className="p-1.5 rounded bg-[var(--s1)] border border-[var(--s2)]">
+                  <div className="text-[9px] text-[var(--mute)] uppercase tracking-wide">Proiez. Anno</div>
                   <div className="font-semibold text-white tabular-nums mt-0.5">€ {fmt(liveAnnualCostEur)}</div>
                 </div>
               </div>
             </div>
 
             {/* 3. RIEPILOGO PARAMETRI FISICI & MECCANICI */}
-            <div className="space-y-1.5 text-xs pt-1 border-t border-[#1A2028]">
-              <div className="text-[10px] font-bold text-[#868D97] uppercase tracking-wider pb-1">
+            <div className="space-y-1.5 text-xs pt-1 border-t border-[var(--line)]">
+              <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider pb-1">
                 Specifiche Schermo
               </div>
-              <div className="flex justify-between py-1 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Superficie:</span>
+              <div className="flex justify-between py-1 border-b border-[var(--s2)]">
+                <span className="text-[var(--mute)]">Superficie:</span>
                 <span className="text-white font-semibold tabular-nums">{dimensions.areaM2.toFixed(2)} m² ({dimensions.widthM.toFixed(1)}×{dimensions.heightM.toFixed(1)}m)</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Totale Cabinet:</span>
-                <span className="text-[#12B76A] font-semibold tabular-nums">
+              <div className="flex justify-between py-1 border-b border-[var(--s2)]">
+                <span className="text-[var(--mute)]">Totale Cabinet:</span>
+                <span className="text-[var(--ok)] font-semibold tabular-nums">
                   {dimensions.totalCabinets} pz ({modulesW} col × {modulesH} righe)
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Passo Pixel:</span>
+              <div className="flex justify-between py-1 border-b border-[var(--s2)]">
+                <span className="text-[var(--mute)]">Passo Pixel:</span>
                 <span className="text-white font-semibold tabular-nums text-right">
                   P{pitchMm} mm ({hardwareEstimate.tecnologiaChip.split(' ')[0]} · Sforzo {hardwareEstimate.sforzoPercent}% · max {pMaxWmq} W/m²)
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Risoluzione Totale:</span>
+              <div className="flex justify-between py-1 border-b border-[var(--s2)]">
+                <span className="text-[var(--mute)]">Risoluzione Totale:</span>
                 <span className="text-white font-semibold tabular-nums">
                   {dimensions.resolutionX} × {dimensions.resolutionY} px
                 </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-[#161F30]">
-                <span className="text-[#868D97]">Totale Diodi LED:</span>
-                <span className="text-[#38BDF8] font-bold tabular-nums">
+              <div className="flex justify-between py-1 border-b border-[var(--s2)]">
+                <span className="text-[var(--mute)]">Totale Diodi LED:</span>
+                <span className="text-[var(--focus)] font-bold tabular-nums">
                   {fmt(dimensions.resolutionX * dimensions.resolutionY)} SMD
                 </span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-[#868D97]">Peso Stimato:</span>
-                <span className="text-[#E8EDF2] tabular-nums">~{dimensions.weightKg} kg</span>
+                <span className="text-[var(--mute)]">Peso Stimato:</span>
+                <span className="text-[var(--text)] tabular-nums">~{dimensions.weightKg} kg</span>
               </div>
             </div>
           </div>
@@ -1190,7 +1190,7 @@ export const S2Dimensions: React.FC = () => {
           <button
             type="button"
             onClick={nextStep}
-            className="w-full py-3 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs tracking-wider flex items-center justify-center space-x-2 transition-colors shadow-sm cursor-pointer"
+            className="w-full py-3 rounded-lg bg-[var(--pieno-fondo)] hover:bg-[var(--pieno-fondo-hover)] text-[var(--pieno-testo)] font-semibold text-xs tracking-wider flex items-center justify-center space-x-2 transition-colors shadow-sm cursor-pointer"
           >
             <span>Continua e Vai all&apos;APL</span>
             <ArrowRight className="w-4 h-4" />

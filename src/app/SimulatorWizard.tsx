@@ -56,7 +56,7 @@ export function SimulatorWizard() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#07090C] flex items-center justify-center text-xs font-medium text-[#9AA3AD]">
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-xs font-medium text-[var(--mute)]">
         <span>Inizializzazione simulatore...</span>
       </div>
     );
@@ -90,7 +90,7 @@ export function SimulatorWizard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#07090C] selection:bg-[#12B76A] selection:text-[#07090C]">
+    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg)] selection:bg-[var(--ok)] selection:text-[var(--bg)]">
       <WizardHeader />
       <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">

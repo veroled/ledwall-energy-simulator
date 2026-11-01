@@ -134,13 +134,13 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
   const inAnalisi = progress !== null;
 
   return (
-    <div className="p-3.5 rounded-xl bg-[#10141D] border border-[#1A2028] space-y-3 min-w-0">
+    <div className="p-3.5 rounded-xl bg-[var(--s1)] border border-[var(--line)] space-y-3 min-w-0">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-xs font-semibold text-white flex items-center space-x-2">
-          <span className={`w-5 h-5 rounded-md text-[11px] flex items-center justify-center font-bold ${id === 'A' ? 'bg-[#0D2818] text-[#34D399] border border-[#163826]' : 'bg-[#1A2028] text-[#E8EDF2] border border-[#2D3748]'}`}>{id}</span>
+          <span className={`w-5 h-5 rounded-md text-[11px] flex items-center justify-center font-bold ${id === 'A' ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)]' : 'bg-[var(--line)] text-[var(--text)] border border-[var(--s3)]'}`}>{id}</span>
           <span>{titolo}</span>
         </span>
-        <span className="text-[10px] text-[#868D97] truncate">{sottotitolo}</span>
+        <span className="text-[10px] text-[var(--mute)] truncate">{sottotitolo}</span>
       </div>
 
       <ContentPreview
@@ -169,21 +169,21 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
           className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) caricaFile(f); e.target.value = ''; }}
         />
-        <div className={`px-3 py-2.5 rounded-lg border border-dashed text-center transition-colors ${dragOver ? 'border-[#12B76A] bg-[#0D2818]' : 'border-[#2D3748] bg-[#0D1117] hover:bg-[#161F30]'}`}>
+        <div className={`px-3 py-2.5 rounded-lg border border-dashed text-center transition-colors ${dragOver ? 'border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)]' : 'border-[var(--s3)] bg-[var(--s1)] hover:bg-[var(--s2)]'}`}>
           {inAnalisi ? (
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-[#12B76A] block">Analisi 30 frame · {progress}%</span>
-              <div className="w-full h-1 bg-[#1A2028] rounded-full overflow-hidden">
-                <div className="h-full bg-[#12B76A] transition-all duration-200" style={{ width: `${progress}%` }} />
+              <span className="text-[11px] font-medium text-[var(--ok)] block">Analisi 30 frame · {progress}%</span>
+              <div className="w-full h-1 bg-[var(--line)] rounded-full overflow-hidden">
+                <div className="h-full bg-[var(--pieno-fondo)] transition-all duration-200" style={{ width: `${progress}%` }} />
               </div>
             </div>
           ) : (
             <div className="space-y-0.5">
-              <span className="text-[11px] font-medium text-[#E8EDF2] flex items-center justify-center space-x-1.5">
-                {upload ? <CheckCircle2 className="w-3.5 h-3.5 text-[#12B76A] flex-shrink-0" /> : <Upload className="w-3.5 h-3.5 text-[#9AA3AD] flex-shrink-0" />}
+              <span className="text-[11px] font-medium text-[var(--text)] flex items-center justify-center space-x-1.5">
+                {upload ? <CheckCircle2 className="w-3.5 h-3.5 text-[var(--ok)] flex-shrink-0" /> : <Upload className="w-3.5 h-3.5 text-[var(--mute)] flex-shrink-0" />}
                 <span className="truncate max-w-[220px]">{upload ? upload.nome : `Carica il tuo video o la tua foto nello slot ${id}`}</span>
               </span>
-              <span className="text-[10px] text-[#667085] block tabular-nums">
+              <span className="text-[10px] text-[var(--faint)] block tabular-nums">
                 {manuale
                   ? 'Contenuto sostituito dall\'APL impostato a mano'
                   : aplPercent !== null
@@ -196,13 +196,13 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
       </label>
 
       {errore && (
-        <p className="text-[11px] text-[#F87171] flex items-start space-x-1.5">
+        <p className="text-[11px] text-[var(--alarm)] flex items-start space-x-1.5">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
           <span>{errore}</span>
         </p>
       )}
       {upload && (
-        <button type="button" onClick={ripristinaDemo} className="text-[11px] text-[#9AA3AD] hover:text-white flex items-center space-x-1 cursor-pointer">
+        <button type="button" onClick={ripristinaDemo} className="text-[11px] text-[var(--mute)] hover:text-white flex items-center space-x-1 cursor-pointer">
           <RotateCcw className="w-3 h-3" />
           <span>Torna al video dimostrativo</span>
         </button>

@@ -108,17 +108,17 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
     <div className="space-y-2">
       {!compatta && (
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[#868D97] font-medium flex items-center space-x-1.5">
-          <MonitorPlay className="w-3.5 h-3.5 text-[#12B76A]" />
+        <span className="text-[var(--mute)] font-medium flex items-center space-x-1.5">
+          <MonitorPlay className="w-3.5 h-3.5 text-[var(--ok)]" />
           <span>Anteprima sul tuo LEDwall</span>
         </span>
-        <span className="text-[#667085] tabular-nums">{n(ratioW)}×{n(ratioH)} m · {resolutionLabel}</span>
+        <span className="text-[var(--faint)] tabular-nums">{n(ratioW)}×{n(ratioH)} m · {resolutionLabel}</span>
       </div>
       )}
 
       <div className="flex items-center justify-center py-1">
         <div
-          className="relative overflow-hidden rounded-[3px] bg-black ring-1 ring-[#2D3748] shadow-[0_0_24px_rgba(18,183,106,0.08)]"
+          className="relative overflow-hidden rounded-[3px] bg-black ring-1 ring-[var(--s3)] shadow-[0_0_24px_rgba(18,183,106,0.08)]"
           style={{ aspectRatio: `${w} / ${h}`, width: `min(100%, calc(${MAX_BOX_HEIGHT_PX}px * ${w} / ${h}))` }}
         >
           {source?.kind === 'video' && !mediaError && (
@@ -155,7 +155,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
             >
               <span
                 className="text-[10px] leading-tight font-medium flex items-center space-x-1"
-                style={{ color: mediaError ? '#F87171' : grey > 140 ? '#07090C' : '#E8EDF2' }}
+                style={{ color: mediaError ? 'var(--alarm)' : grey > 140 ? 'var(--bg)' : 'var(--text)' }}
               >
                 {mediaError ? (
                   <>
@@ -170,7 +170,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
           )}
           {softwareOff && (
             <div className="absolute inset-0 bg-black flex items-center justify-center text-center px-2">
-              <span className="text-[10px] leading-tight font-medium text-[#667085]">Spento da software</span>
+              <span className="text-[10px] leading-tight font-medium text-[var(--faint)]">Spento da software</span>
             </div>
           )}
           {/* Giunzioni dei cabinet da 1 m: danno la scala, sul muro vero non si vedono */}
@@ -178,7 +178,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
             className="absolute inset-0 pointer-events-none opacity-[0.10]"
             style={{
               backgroundImage:
-                'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+                'linear-gradient(to right, var(--text) 1px, transparent 1px), linear-gradient(to bottom, var(--text) 1px, transparent 1px)',
               backgroundSize: `${100 / w}% ${100 / h}%`,
             }}
           />
@@ -187,13 +187,13 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
 
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <span className="text-[10px] uppercase text-[#868D97] font-medium flex items-center space-x-1.5">
-            {isLive && playing && !softwareOff && <span className="w-1.5 h-1.5 rounded-full bg-[#12B76A] animate-pulse" />}
+          <span className="text-[10px] uppercase text-[var(--mute)] font-medium flex items-center space-x-1.5">
+            {isLive && playing && !softwareOff && <span className="w-1.5 h-1.5 rounded-full bg-[var(--pieno-fondo)] animate-pulse" />}
             <span>{softwareOff ? 'Solo elettronica' : isLive ? 'Adesso sullo schermo' : semplice ? 'Con questo contenuto' : 'APL impostato'}</span>
           </span>
           <span className="text-sm font-semibold text-white tabular-nums block">
             {formatWatts(wattsForApl(shownApl))}
-            <span className="text-[11px] text-[#9AA3AD] font-normal ml-1.5">{softwareOff ? 'LED spenti' : semplice ? `luminosità media ${n(shownApl, 0)}%` : `APL ${n(shownApl, 0)}%`}</span>
+            <span className="text-[11px] text-[var(--mute)] font-normal ml-1.5">{softwareOff ? 'LED spenti' : semplice ? `luminosità media ${n(shownApl, 0)}%` : `APL ${n(shownApl, 0)}%`}</span>
           </span>
         </div>
 
@@ -205,7 +205,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
                   type="button"
                   onClick={togglePlay}
                   title={playing ? 'Pausa' : 'Riproduci'}
-                  className="p-1.5 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] cursor-pointer"
+                  className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] hover:bg-[var(--s2)] text-[var(--text)] cursor-pointer"
                 >
                   {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 </button>
@@ -213,7 +213,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
                   type="button"
                   onClick={() => setMuted((m) => !m)}
                   title={muted ? 'Attiva audio' : 'Disattiva audio'}
-                  className="p-1.5 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] cursor-pointer"
+                  className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] hover:bg-[var(--s2)] text-[var(--text)] cursor-pointer"
                 >
                   {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                 </button>
@@ -223,7 +223,7 @@ const ContentPreviewInner: React.FC<ContentPreviewProps> = ({
               type="button"
               onClick={() => onFitChange(fit === 'cover' ? 'contain' : 'cover')}
               title={fit === 'cover' ? 'Mostra tutto il contenuto (bande nere)' : 'Riempi lo schermo (ritaglia)'}
-              className="px-2 py-1.5 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] text-[11px] font-medium flex items-center space-x-1 cursor-pointer"
+              className="px-2 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] hover:bg-[var(--s2)] text-[var(--text)] text-[11px] font-medium flex items-center space-x-1 cursor-pointer"
             >
               {fit === 'cover' ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               <span>{fit === 'cover' ? 'Adatta' : 'Riempi'}</span>

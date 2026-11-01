@@ -1,67 +1,63 @@
 @import "tailwindcss";
+/*
+ * Lo stile viene dalla base comune veroled-ui (copia controllata in src/ui, vedi ui.lock.json e
+ * scripts/verifica-ui.mjs): la stessa del CMS. Qui si traducono i token per Tailwind, per nome e
+ * non per valore, cosi' un colore cambiato nella base cambia anche qui e i temi restano veri.
+ */
+@import "../ui/font/font.css";
+@import "../ui/tokens.css";
+/*
+ * ⛔ Dentro un layer, e non e' un dettaglio: le regole fuori dai layer battono sempre quelle di
+ *    Tailwind, che stanno tutte in layer. Importato cosi' com'e', «button { font: inherit;
+ *    color: inherit }» della base vinceva su ogni text-xs e text-white dei pulsanti — scritte
+ *    ingrandite e il report PDF in blu su bianco. In «base» la base fa da fondamenta, e le
+ *    classi di Tailwind scritte sugli elementi decidono.
+ */
+@import "../ui/componenti.css" layer(base);
 
-@theme {
-  --color-brand: #12B76A;
-  --color-brand-hover: #0E9F5D;
-  --color-brand-light: #0D2818;
-  --color-brand-border: #163826;
-  --color-brand-text: #34D399;
-  --color-surface: #0D1117;
-  --color-surface-subtle: #07090C;
-  --color-surface-card: #0D1117;
-  --color-border-subtle: #1A2028;
-  --color-border-hover: #2D3748;
-  --color-txt-primary: #FFFFFF;
-  --color-txt-body: #E8EDF2;
-  --color-txt-secondary: #9AA3AD;
-  --color-txt-muted: #868D97;
-  --color-alert-red: #F04438;
-  --color-alert-surface: #2A1215;
-  --color-alert-text: #F87171;
-  --color-alert-border: #4E1D24;
-}
-
-:root {
-  --bg: #07090C;
-  --bg-elevated: #0D1117;
-  --bg-deep: #04060A;
-  --text: #E8EDF2;
-  --text-muted: #9AA3AD;
-  --text-subtle: #868D97;
-  --brand: #12B76A;
-  --border: #1A2028;
+@theme inline {
+  --font-sans: var(--font);
+  --font-mono: var(--font);
+  --radius-md: var(--r-min);
+  --radius-lg: var(--r-min);
+  --radius-xl: var(--r-tile);
+  --radius-2xl: var(--r-hero);
+  --color-fondo: var(--bg);
+  --color-superficie: var(--s1);
+  --color-testo: var(--text);
+  --color-attenuato: var(--mute);
+  --color-linea: var(--line);
+  --color-ok: var(--ok);
+  --color-avviso: var(--warn);
+  --color-allarme: var(--alarm);
 }
 
 body {
-  background-color: #07090C;
-  color: #E8EDF2;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Scrollbar dark ufficiale VeroLED */
+/* Barre di scorrimento coi colori del tema */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(18, 183, 106, 0.4) rgba(7, 9, 12, 0.7);
+  scrollbar-color: var(--line) var(--bg);
 }
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #07090C;
+  background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1A2028;
+  background: var(--line);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #12B76A;
+  background: var(--ok);
 }
 
 /* Slider B2B sobrio dark: traccia scura 4px, thumb solido, zero glow */
@@ -71,7 +67,7 @@ body {
   width: 100%;
   height: 4px;
   border-radius: 2px;
-  background: #1A2028;
+  background: var(--line);
   outline: none;
 }
 
@@ -81,24 +77,24 @@ body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #E8EDF2;
-  border: 2px solid #12B76A;
+  background: var(--text);
+  border: 2px solid var(--ok);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .custom-slider::-webkit-slider-thumb:hover {
-  background: #FFFFFF;
-  border-color: #0E9F5D;
+  background: var(--text);
+  border-color: var(--ok);
 }
 
 .custom-slider::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #E8EDF2;
-  border: 2px solid #12B76A;
+  background: var(--text);
+  border: 2px solid var(--ok);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   cursor: pointer;
 }

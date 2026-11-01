@@ -71,17 +71,17 @@ export const LoadCurveChart: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-64 bg-[#0D1117] p-4 rounded-xl border border-[#1A2028] shadow-sm flex flex-col">
+    <div className="w-full h-64 bg-[var(--s1)] p-4 rounded-xl border border-[var(--line)] shadow-sm flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
         <div className="space-y-0.5">
           <span className="text-xs font-semibold text-white block">
             Curva di Carico 24h (Potenza kW assorbita)
           </span>
-          <span className="text-xs text-[#9AA3AD] block">
-            <span className="text-[#F87171] font-medium">Scenario A (Non Gestito)</span>: 100% fisso · <span className="text-[#12B76A] font-medium">Scenario B (Fleet Monitor)</span>: sensore Lux VeroLED
+          <span className="text-xs text-[var(--mute)] block">
+            <span className="text-[var(--alarm)] font-medium">Scenario A (Non Gestito)</span>: 100% fisso · <span className="text-[var(--ok)] font-medium">Scenario B (Fleet Monitor)</span>: sensore Lux VeroLED
           </span>
         </div>
-        <span className="text-xs font-medium text-[#E8EDF2] bg-[#10141D] border border-[#1A2028] px-2 py-1 rounded-md self-start sm:self-auto tabular-nums">
+        <span className="text-xs font-medium text-[var(--text)] bg-[var(--s1)] border border-[var(--line)] px-2 py-1 rounded-md self-start sm:self-auto tabular-nums">
           Acceso: {profile.dayHours}h · Standby: {profile.nightHours}h
         </span>
       </div>
@@ -91,33 +91,33 @@ export const LoadCurveChart: React.FC = () => {
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="gradScenarioA" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#F04438" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#F04438" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="var(--alarm)" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="var(--alarm)" stopOpacity={0.0} />
               </linearGradient>
               <linearGradient id="gradScenarioB" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#12B76A" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#12B76A" stopOpacity={0.0} />
+                <stop offset="5%" stopColor="var(--ok)" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="var(--ok)" stopOpacity={0.0} />
               </linearGradient>
             </defs>
             <XAxis
               dataKey="time"
-              stroke="#868D97"
+              stroke="var(--mute)"
               fontSize={10}
               tickLine={false}
               interval={3}
             />
-            <YAxis stroke="#868D97" fontSize={10} tickLine={false} unit=" kW" />
+            <YAxis stroke="var(--mute)" fontSize={10} tickLine={false} unit=" kW" />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#0D1117',
-                borderColor: '#1A2028',
+                backgroundColor: 'var(--s1)',
+                borderColor: 'var(--line)',
                 borderRadius: '8px',
                 fontSize: '11px',
                 fontFamily: 'Inter, sans-serif',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                color: '#FFFFFF',
+                color: 'var(--text)',
               }}
-              itemStyle={{ color: '#E8EDF2' }}
+              itemStyle={{ color: 'var(--text)' }}
             />
             <Legend
               wrapperStyle={{ fontSize: '11px', fontFamily: 'Inter, sans-serif', paddingTop: '4px' }}
@@ -125,7 +125,7 @@ export const LoadCurveChart: React.FC = () => {
             <Area
               type="monotone"
               dataKey="Scenario A (Non Gestito)"
-              stroke="#F04438"
+              stroke="var(--alarm)"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#gradScenarioA)"
@@ -133,7 +133,7 @@ export const LoadCurveChart: React.FC = () => {
             <Area
               type="monotone"
               dataKey="Scenario B (Fleet Monitor)"
-              stroke="#12B76A"
+              stroke="var(--ok)"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#gradScenarioB)"

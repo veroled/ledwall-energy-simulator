@@ -1,0 +1,257 @@
+/*
+ * veroled-ui — i token. Base comune del CMS (veroled-platform), di VeroLED Core e degli strumenti
+ * pubblici VeroLED (simulatore consumi).
+ * Si modifica SOLO nel repository veroled/veroled-ui. Ogni progetto ne tiene una copia controllata
+ * con hash (ui.lock.json): una copia ritoccata a mano fa fallire la sua verifica.
+ */
+/*
+ * I COLORI STANNO TUTTI QUI, in due blocchi: uno per tema. I **nomi** non cambiano mai, solo i
+ * valori — chi scrive una regola usa `var(--text)` e non sa in che tema si trova. Un nome che
+ * esiste in un tema e non nell'altro e' un testo invisibile su una pagina sola, e non se ne
+ * accorge nessuno finche' qualcuno non apre proprio quella: per questo c'e' una prova che
+ * conta i nomi dei due blocchi e pretende che siano gli stessi.
+ *
+ * `.hero` sta nel blocco scuro insieme alla radice, e non e' una svista: e' un'**isola scura**
+ * che resta tale in tutti e due i temi, perche' e' una cornice fotografica (regola 0.3 — lo
+ * screenshot e' la prova di cosa c'e' sul display e non si trucca; un hero chiaro vorrebbe dire
+ * una sfumatura sopra l'immagine). Rimettendo addosso all'isola i token scuri, tutto quello che
+ * ci sta dentro continua a leggere gli stessi nomi e legge i valori giusti.
+ *
+ * La barra laterale era la seconda isola, finche' la scritta ufficiale esisteva solo bianca.
+ * Dal 31/10/2026 c'e' anche la nera, stesso disegno (`public/brand/scritta-nera.svg`, la prova
+ * in test/stile.test.ts lo controlla): la barra segue il tema come tutto il resto, e mostra la
+ * scritta del colore giusto — il marchio non si ricolora (regola 3.9), si sceglie il file.
+ *
+ * Quale tema si veda lo decide il JavaScript, che scrive `data-theme` sulla radice: «sistema»
+ * non e' un terzo tema, e' una domanda al sistema operativo (vedi `src/web/tema.ts`).
+ *
+ * Le tinte che servono anche trasparenti stanno **in componenti**: la stessa tinta a dosi
+ * diverse si scrive `rgb(var(--alarm-rgb) / 15%)`, non una seconda volta per esteso.
+ */
+:root,
+:root[data-theme="scuro"],
+.hero {
+  color-scheme: dark;
+
+  --bg-rgb: 0 0 0;
+  --s1-rgb: 19 19 20;
+  --text-rgb: 232 234 237;
+  --ok-rgb: 109 213 140;
+  --warn-rgb: 246 196 83;
+  --alarm-rgb: 255 107 95;
+  --sim-rgb: 180 167 255;
+
+  --bg: rgb(var(--bg-rgb));
+  --s1: rgb(var(--s1-rgb));
+  --s2: #1e1f20;
+  --s3: #2a2b2d;
+  --line: #2f3033;
+  --text: rgb(var(--text-rgb));
+  --mute: #9aa0a6;
+  --faint: #6b7076;
+
+  --ok: rgb(var(--ok-rgb));
+  --warn: rgb(var(--warn-rgb));
+  --alarm: rgb(var(--alarm-rgb));
+  --sim: rgb(var(--sim-rgb));
+  --focus: #8ab4f8;
+
+  /*
+   * La famiglia dell'allarme: ha piu' nomi perche' ha piu' mestieri. --alarm e' il punto;
+   * --alarm-riga e --alarm-testo sono testo d'allarme su un fondo quieto (la riga dell'agente
+   * e il banner); --alarm-fondo con --alarm-fondo-testo sono l'avviso temporaneo, che non puo'
+   * pesare meno di una conferma; --alarm-segno e il suo testo sono il «!» dentro l'avviso.
+   */
+  --alarm-riga: #ffb3ab;
+  --alarm-testo: #ffd9d5;
+  --alarm-fondo: #ffdad4;
+  --alarm-fondo-testo: #4a0f0a;
+  /* L'avviso temporaneo: giallo pieno, come l'allarme e' rosso pieno. Un fondo al 9% come nel
+     riquadro fisso qui peserebbe meno della conferma bianca, e la scala si rovescerebbe. */
+  --warn-fondo: #ffe08a;
+  --warn-fondo-testo: #3a2a00;
+  --alarm-segno: #b3261e;
+  --alarm-segno-testo: #fff;
+
+  --avatar-anello: #3d6fd8;
+  --crea-piu: #bfc3c8;
+
+  /*
+   * Il comando pieno: il contrario della pagina. Nello scuro e' bianco su nero, nel chiaro
+   * nero su bianco — e si chiama «pieno» e non «bianco» perche' un nome che dice la tinta
+   * diventa una bugia al primo tema nuovo.
+   */
+  --pieno-fondo: #fff;
+  --pieno-testo: #000;
+  --pieno-fondo-hover: #e8eaed;
+
+  /* La cornice di un media: nera in tutti e due i temi, come l'hero e per lo stesso motivo. */
+  --media-fondo: #000;
+  --ombra: rgb(0 0 0 / 50%);
+}
+
+/*
+ * Tema chiaro. Ogni valore e' stato misurato contro il fondo su cui finisce davvero: il testo
+ * sta a 17,1:1 sulla pagina (lo scuro: 17,4), --mute a 6,4 (7,9), --faint a 4,3 (4,2), e le
+ * cinque tinte di stato fra 4,9 e 7,2. La regola non e' «almeno 4,5»: e' «**il chiaro non sta
+ * peggio dello scuro**», che e' quello che l'e2e misura pagina per pagina.
+ */
+:root[data-theme="chiaro"] {
+  color-scheme: light;
+
+  --bg-rgb: 255 255 255;
+  --s1-rgb: 242 243 245;
+  --text-rgb: 27 28 30;
+  --ok-rgb: 23 128 61;
+  --warn-rgb: 158 99 0;
+  --alarm-rgb: 197 34 31;
+  --sim-rgb: 90 61 199;
+
+  --s2: #e8eaed;
+  --s3: #dadce0;
+  --line: #c4c7ca;
+  --mute: #5a5f65;
+  --faint: #767b81;
+
+  --focus: #1558d6;
+
+  --alarm-riga: #a50e0e;
+  --alarm-testo: #7f1d1a;
+  /* Sul chiaro l'avviso d'allarme non puo' essere una scatola chiara su una pagina chiara:
+     sparirebbe accanto alla conferma. Rosso pieno, testo bianco, 7,9:1. */
+  --alarm-fondo: #a50e0e;
+  --alarm-fondo-testo: #fff;
+  /* Sul chiaro vale lo stesso dell'allarme: una scatola chiara su una pagina chiara non si
+     vede. Ambra scura con testo bianco — piu' leggera del rosso, e distinguibile da esso. */
+  --warn-fondo: #8a5300;
+  --warn-fondo-testo: #fff;
+  --alarm-segno: #fff;
+  --alarm-segno-testo: #a50e0e;
+
+  --avatar-anello: #1558d6;
+  --crea-piu: #5f6368;
+
+  --pieno-fondo: #202124;
+  --pieno-testo: #fff;
+  --pieno-fondo-hover: #3c4043;
+
+  --ombra: rgb(0 0 0 / 25%);
+}
+
+/*
+ * Darkroom: il terzo tema, per VeroLED Core durante le misure. Il CMS non lo offre.
+ *
+ * Non e' un tema scuro piu' elegante: e' uno strumento. La luce del monitor del PC si riflette sul
+ * ledwall e finisce nella misura del colorimetro, soprattutto su nero, grigio al 10% e uniformita'.
+ * Per questo e' NEUTRO (grigi, nessuna tinta che sposti la cromaticita' misurata) e scuro con dei
+ * tetti misurati, che test/stile.test.ts ricalcola dai valori qui sotto (decisione del 31/10/2026):
+ *   - luminanza relativa dei colori <= 0,22; di fondi e linee <= 0,01;
+ *   - ogni token piu' scuro dello stesso token del tema scuro (per le coppie testo su fondo pieno
+ *     conta la luce massima della coppia: nel tema scuro sono testo scuro su fondo chiaro);
+ *   - testo e stati >= 4,5:1 sul fondo, testi secondari >= 3:1.
+ * Gli stati sono desaturati ma riconoscibili, e come ovunque hanno sempre punto e parola.
+ */
+:root[data-theme="darkroom"] {
+  color-scheme: dark;
+
+  --bg-rgb: 0 0 0;
+  --s1-rgb: 5 5 5;
+  --text-rgb: 124 124 124;
+  --ok-rgb: 100 135 108;
+  --warn-rgb: 136 125 92;
+  --alarm-rgb: 160 110 104;
+  --sim-rgb: 130 125 153;
+
+  --s2: #0a0a0a;
+  --s3: #101010;
+  --line: #191919;
+  --mute: #686868;
+  --faint: #5a5a5a;
+
+  --focus: #72808f;
+
+  --alarm-riga: #a06e68;
+  --alarm-testo: #937874;
+  --alarm-fondo: #140d0c;
+  --alarm-fondo-testo: #937874;
+  /* L'avviso nello stesso modo dell'allarme: fondo quasi nero appena caldo, testo col tono
+     dello stato. 4,6:1, sotto i tetti di luce della Darkroom (ricalcolati dalla prova). */
+  --warn-fondo: #13110a;
+  --warn-fondo-testo: #887d5c;
+  --alarm-segno: #a06e68;
+  --alarm-segno-testo: #000;
+
+  --avatar-anello: #66717d;
+  --crea-piu: #5a5a5a;
+
+  /* Al passaggio del mouse il pulsante pieno si scurisce invece di schiarirsi: piu' chiaro, il
+     suo testo scendeva sotto 4,5:1 (4,43 con #181818, misurato dalla prova). */
+  --pieno-fondo: #121212;
+  --pieno-testo: #7f7f7f;
+  --pieno-fondo-hover: #0d0d0d;
+
+  --ombra: rgb(0 0 0 / 50%);
+}
+
+/* Le misure, che col tema non c'entrano niente: una scala sola per tutti e tre. */
+:root {
+  --font: "Google Sans Flex Variable", "Google Sans", system-ui, sans-serif;
+
+  /*
+   * I raggi: cinque, e quattro hanno un nome. Prima erano undici valori — 2, 3, 9, 10, 11, 12,
+   * 14, 16, 22, 28, 999 — due dei quali avevano un nome e nove no: un riquadro da 14 accanto a
+   * uno da 16 non si legge come una scelta. Le pillole restano 999px/50% scritti per esteso:
+   * una pillola non ha un raggio, ha i lati tondi.
+   */
+  --r-micro: 2px;
+  --r-min: 12px;
+  --r-tile: 16px;
+  --r-hero: 24px;
+
+  --top-h: 76px;
+  /*
+   * Le due misure che danno all'hero una forma sola: quanto e' alto, e quanto e' larga la
+   * colonna del testo. L'area dell'immagine comincia dove finisce la colonna del testo, cosi'
+   * il testo non entra mai dentro allo screenshot. Vedi la sezione "hero" piu' sotto.
+   */
+  --hero-h: min(68vh, 720px);
+  --hero-testo: clamp(380px, 50%, 720px);
+
+  /*
+   * L'entrata della pagina: durata, passo fra un pezzo e il successivo, e la curva. Stanno qui
+   * perche' sono misure, non colori, e perche' un ritardo scritto dentro a una regola non si
+   * confronta con gli altri.
+   */
+  --entrata-durata: 600ms;
+  --entrata-passo: 60ms;
+  --entrata-curva: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  /*
+   * Scala di spaziatura. Prima i margini erano numeri scelti uno per volta — 34, 28, 22, 18,
+   * 14, 10, 6, 4 — e due cose che dovevano stare allineate finivano a 4 px di distanza senza
+   * che nessuno se ne accorgesse. Da qui in avanti margin, padding e gap vengono solo da qui.
+   * Attenzione: --s1/--s2/--s3 sono i colori delle superfici, non spaziature.
+   */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 40px;
+  --sp-8: 64px;
+
+  /*
+   * I nove gradini dei caratteri, gli stessi che test/stile.test.ts accetta (CARATTERI).
+   * Dichiarati qui perche' Core li usi per nome; la prova controlla che i due elenchi coincidano.
+   */
+  --fs-1: 12px;
+  --fs-2: 13px;
+  --fs-3: 14px;
+  --fs-4: 15px;
+  --fs-5: 16px;
+  --fs-6: 20px;
+  --fs-7: 24px;
+  --fs-8: 34px;
+  --fs-9: 40px;
+}

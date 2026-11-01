@@ -154,7 +154,7 @@ export const ExpressSimulator: React.FC = () => {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#07090C] flex items-center justify-center text-xs font-medium text-[#9AA3AD]">
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-xs font-medium text-[var(--mute)]">
         Inizializzazione simulatore...
       </div>
     );
@@ -187,18 +187,18 @@ export const ExpressSimulator: React.FC = () => {
     calcolaPotenzaWmq({ apl: apl / 100, lum: softwareOff ? 0 : liveLumDiurna / 100, pMax, pStandby: standbyWmq }) * dimensions.areaM2;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07090C] selection:bg-[#12B76A] selection:text-[#07090C]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg)] selection:bg-[var(--ok)] selection:text-[var(--bg)]">
       {/* Header express */}
-      <header className="sticky top-0 z-50 bg-[#0D1117] border-b border-[#1A2028]">
+      <header className="sticky top-0 z-50 bg-[var(--s1)] border-b border-[var(--line)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 select-none">
-            <img src={asset('/img/logo-veroled-white.png')} alt="VEROLED" className="h-6 w-auto object-contain" />
-            <span className="text-xs text-[#9AA3AD] font-medium border-l border-[#1A2028] pl-3 hidden sm:inline-block">
+            <img src={asset('/brand/scritta-bianca.svg')} alt="VEROLED" className="h-6 w-auto object-contain" />
+            <span className="text-xs text-[var(--mute)] font-medium border-l border-[var(--line)] pl-3 hidden sm:inline-block">
               Calcolo Express
             </span>
           </Link>
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-1 rounded-full bg-[#0D2818] border border-[#163826] text-[11px] font-medium text-[#34D399] hidden md:flex items-center space-x-1.5">
+            <span className="px-2.5 py-1 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[11px] font-medium text-[var(--ok)] hidden md:flex items-center space-x-1.5">
               <Zap className="w-3 h-3" />
               <span>{tecnico ? 'Modalità tecnica · tutti i parametri' : 'Due dati · risultati live'}</span>
             </span>
@@ -207,7 +207,7 @@ export const ExpressSimulator: React.FC = () => {
               onClick={() => setExpressTecnico(!tecnico)}
               aria-pressed={tecnico}
               className={`px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                tecnico ? 'border-[#12B76A] bg-[#0D2818] text-[#34D399]' : 'border-[#1A2028] bg-[#10141D] text-[#9AA3AD] hover:text-white hover:border-[#2D3748]'
+                tecnico ? 'border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)]' : 'border-[var(--line)] bg-[var(--s1)] text-[var(--mute)] hover:text-white hover:border-[var(--s3)]'
               }`}
             >
               <Settings2 className="w-3.5 h-3.5" />
@@ -216,9 +216,9 @@ export const ExpressSimulator: React.FC = () => {
             <Link
               href="/"
               onClick={() => goToWizard(0)}
-              className="px-3.5 py-1.5 rounded-lg border border-[#1A2028] bg-[#10141D] text-xs font-semibold text-[#E8EDF2] hover:bg-[#161F30] hover:border-[#2D3748] transition-colors flex items-center space-x-1.5"
+              className="px-3.5 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] text-xs font-semibold text-[var(--text)] hover:bg-[var(--s2)] hover:border-[var(--s3)] transition-colors flex items-center space-x-1.5"
             >
-              <LayoutList className="w-3.5 h-3.5 text-[#9AA3AD]" />
+              <LayoutList className="w-3.5 h-3.5 text-[var(--mute)]" />
               <span>Wizard completo</span>
             </Link>
           </div>
@@ -230,17 +230,17 @@ export const ExpressSimulator: React.FC = () => {
           {/* Colonna configurazione + risultati */}
           <div className="space-y-5 min-w-0">
             {/* 1. Schermo */}
-            <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-5">
+            <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-5">
               <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">1</span>
-                <Monitor className="w-4 h-4 text-[#12B76A]" />
+                <span className="w-5 h-5 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)] text-[11px] flex items-center justify-center font-bold">1</span>
+                <Monitor className="w-4 h-4 text-[var(--ok)]" />
                 <span>{tecnico ? 'Il tuo LEDwall' : 'Quanto è grande'}</span>
               </div>
 
               {tecnico && (<>
               {/* Selection: il tetto di nit è del componente montato, cioè della combinazione Selection × passo */}
               <div className="space-y-2">
-                <span className="text-xs text-[#868D97] font-medium">Selection VeroLED <span className="text-[#667085]">(qualità dei chip: a parità di passo cambia il tetto di nit)</span></span>
+                <span className="text-xs text-[var(--mute)] font-medium">Selection VeroLED <span className="text-[var(--faint)]">(qualità dei chip: a parità di passo cambia il tetto di nit)</span></span>
                 <div className="flex flex-wrap gap-2">
                   {TIERS.map((t) => {
                     const sel = tier === t.id;
@@ -251,12 +251,12 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setTier(t.id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center space-x-1.5 ${
                           sel
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold shadow-sm'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                         }`}
                       >
                         <span>{t.name}</span>
-                        <span className="text-[10px] font-mono text-[#868D97]">{t.wire}</span>
+                        <span className="text-[10px] font-mono text-[var(--mute)]">{t.wire}</span>
                       </button>
                     );
                   })}
@@ -265,7 +265,7 @@ export const ExpressSimulator: React.FC = () => {
 
               {/* Passo */}
               <div className="space-y-2">
-                <span className="text-xs text-[#868D97] font-medium">Passo pixel</span>
+                <span className="text-xs text-[var(--mute)] font-medium">Passo pixel</span>
                 <div className="flex flex-wrap gap-2">
                   {PASSI_CATALOGO.map((p) => {
                     const dato = datoCatalogo(tier, p);
@@ -274,7 +274,7 @@ export const ExpressSimulator: React.FC = () => {
                     // quanti nit regge, e il controllo severo sta sul valore di nit, non sul bottone.
                     const oltreTetto = dato !== null && targetOutdoorNits > dato.maxNits;
                     const est = dato && !oltreTetto ? stimaPotenzaDaPassoNit(p, targetOutdoorNits, undefined, undefined, undefined, true, dato) : null;
-                    const stress = !est ? '' : est.sforzoPercent >= 90 ? 'text-[#F87171]' : est.sforzoPercent >= 65 ? 'text-[#FBBF24]' : 'text-[#34D399]';
+                    const stress = !est ? '' : est.sforzoPercent >= 90 ? 'text-[var(--alarm)]' : est.sforzoPercent >= 65 ? 'text-[var(--warn)]' : 'text-[var(--ok)]';
                     return (
                       <button
                         key={p}
@@ -287,23 +287,23 @@ export const ExpressSimulator: React.FC = () => {
                         }
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
                           selected
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold shadow-sm'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold shadow-sm'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                         }`}
                       >
                         <span>P{p}</span>
                         {!dato ? (
-                          <span className="text-[10px] font-mono text-[#868D97]">n.d.</span>
+                          <span className="text-[10px] font-mono text-[var(--mute)]">n.d.</span>
                         ) : est ? (
                           <span className={`text-[10px] font-mono ${stress}`}>{est.sforzoPercent}%</span>
                         ) : (
-                          <span className="text-[10px] font-mono text-[#FBBF24]">max {n(dato.maxNits)}</span>
+                          <span className="text-[10px] font-mono text-[var(--warn)]">max {n(dato.maxNits)}</span>
                         )}
                       </button>
                     );
                   })}
                 </div>
-                <p className="text-[11px] text-[#868D97]">
+                <p className="text-[11px] text-[var(--mute)]">
                   Tutti i passi sono selezionabili: il passo si sceglie per la distanza di visione, la Selection decide quanti nit regge. La percentuale è lo sforzo dei chip {tierLabel} a {n(targetOutdoorNits)} nit (quota del tetto di listino di quella combinazione); «max» indica un tetto più basso dei nit impostati; «n.d.» un tetto non ancora censito nel listino, che non stimiamo né prendiamo da un&apos;altra Selection.
                 </p>
               </div>
@@ -313,7 +313,7 @@ export const ExpressSimulator: React.FC = () => {
               {/* Dimensioni */}
               <div className={`grid grid-cols-1 gap-4 ${tecnico ? 'sm:grid-cols-2' : ''}`}>
                 <div className="space-y-2">
-                  <span className="text-xs text-[#868D97] font-medium">Dimensioni (base × altezza, metri)</span>
+                  <span className="text-xs text-[var(--mute)] font-medium">Dimensioni (base × altezza, metri)</span>
                   <div className="flex items-center space-x-2">
                     <input
                       type="number"
@@ -322,9 +322,9 @@ export const ExpressSimulator: React.FC = () => {
                       step={1}
                       value={modulesW}
                       onChange={(e) => setDimensioniMetri(parseInt(e.target.value || '1', 10), modulesH)}
-                      className="w-full px-3 py-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-sm tabular-nums focus:border-[#12B76A] outline-none"
+                      className="w-full px-3 py-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-sm tabular-nums focus:border-[var(--ok)] outline-none"
                     />
-                    <span className="text-[#868D97] text-sm">×</span>
+                    <span className="text-[var(--mute)] text-sm">×</span>
                     <input
                       type="number"
                       min={1}
@@ -332,9 +332,9 @@ export const ExpressSimulator: React.FC = () => {
                       step={1}
                       value={modulesH}
                       onChange={(e) => setDimensioniMetri(modulesW, parseInt(e.target.value || '1', 10))}
-                      className="w-full px-3 py-2 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-sm tabular-nums focus:border-[#12B76A] outline-none"
+                      className="w-full px-3 py-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-sm tabular-nums focus:border-[var(--ok)] outline-none"
                     />
-                    <span className="text-[#868D97] text-xs whitespace-nowrap">m</span>
+                    <span className="text-[var(--mute)] text-xs whitespace-nowrap">m</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {SIZE_PRESETS.map((s) => {
@@ -345,7 +345,7 @@ export const ExpressSimulator: React.FC = () => {
                           type="button"
                           onClick={() => setDimensioniMetri(s.w, s.h)}
                           className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
-                            sel ? 'bg-[#0D2818] text-[#34D399] border border-[#163826]' : 'bg-[#10141D] text-[#9AA3AD] border border-[#1A2028] hover:text-white'
+                            sel ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)]' : 'bg-[var(--s1)] text-[var(--mute)] border border-[var(--line)] hover:text-white'
                           }`}
                         >
                           {s.w}×{s.h} m
@@ -353,7 +353,7 @@ export const ExpressSimulator: React.FC = () => {
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-[#868D97] tabular-nums">
+                  <p className="text-[11px] text-[var(--mute)] tabular-nums">
                     {n(dimensions.areaM2, 0)} m² · {dimensions.totalCabinets} cabinet · {n(dimensions.resolutionX)}×{n(dimensions.resolutionY)} px
                   </p>
                 </div>
@@ -362,8 +362,8 @@ export const ExpressSimulator: React.FC = () => {
                 {tecnico && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
-                      <Sun className="w-3.5 h-3.5 text-[#FBBF24]" />
+                    <span className="text-xs text-[var(--mute)] font-medium flex items-center space-x-1.5">
+                      <Sun className="w-3.5 h-3.5 text-[var(--warn)]" />
                       <span>Luminosità di picco</span>
                     </span>
                     <span className="text-sm font-semibold text-white tabular-nums">{softwareOff ? '0 nit · spento' : `${n(targetOutdoorNits)} nit`}</span>
@@ -381,15 +381,15 @@ export const ExpressSimulator: React.FC = () => {
                     />
                     {tettoPos !== null && !softwareOff && (
                       <span
-                        className={`absolute top-0 h-4 w-0.5 rounded pointer-events-none ${nitsOverLimit ? 'bg-[#F87171]' : 'bg-[#34D399]'}`}
+                        className={`absolute top-0 h-4 w-0.5 rounded pointer-events-none ${nitsOverLimit ? 'bg-[var(--alarm)]' : 'bg-[var(--ok)]'}`}
                         style={{ left: `calc(8px + (100% - 16px) * ${tettoPos / 100})` }}
                         title={`Tetto P${pitchMm} ${tierLabel}: ${n(datoScelto?.maxNits ?? 0)} nit`}
                       />
                     )}
                   </div>
-                  <div className="flex justify-between text-[10px] text-[#868D97]">
+                  <div className="flex justify-between text-[10px] text-[var(--mute)]">
                     <span className="whitespace-nowrap">2.500</span>
-                    <span className={`text-center ${nitsOverLimit ? 'text-[#F87171]' : 'text-[#34D399]'}`}>
+                    <span className={`text-center ${nitsOverLimit ? 'text-[var(--alarm)]' : 'text-[var(--ok)]'}`}>
                       {datoScelto ? `▏tetto P${pitchMm} ${tierLabel}: ${n(datoScelto.maxNits)}` : 'tetto non censito'}
                     </span>
                     <span className="whitespace-nowrap">{n(nitSliderMax)}</span>
@@ -400,38 +400,38 @@ export const ExpressSimulator: React.FC = () => {
                     aria-pressed={softwareOff}
                     className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-center space-x-1.5 ${
                       softwareOff
-                        ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                        : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                        ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
+                        : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                     }`}
                   >
                     <Power className="w-3.5 h-3.5" />
                     <span>Spento da software · {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m²</span>
                   </button>
                   {softwareOff ? (
-                    <p className="text-[11px] text-[#868D97]">
+                    <p className="text-[11px] text-[var(--mute)]">
                       Schermo nero ma alimentato: il P{pitchMm} assorbe {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m² di sola elettronica, 24 ore su 24. Si azzera solo staccando la linea con un relè.
                     </p>
                   ) : datoMancante ? (
-                    <p className="text-[11px] text-[#93C5FD] flex items-start space-x-1.5">
+                    <p className="text-[11px] text-[var(--focus)] flex items-start space-x-1.5">
                       <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                       <span>Tetto di nit non ancora censito per il P{pitchMm} {tierLabel}: il passo resta valido come scelta, ma non possiamo verificare che regga {n(targetOutdoorNits)} nit. È un dato che manca nel listino, non un limite del prodotto.</span>
                     </p>
                   ) : nitsOverLimit ? (
-                    <div className="p-2.5 rounded-lg bg-[#2A1111] border border-[#5B1F1F] space-y-2">
-                      <p className="text-[11px] text-[#FCA5A5] flex items-start space-x-1.5">
+                    <div className="p-2.5 rounded-lg bg-[rgb(var(--alarm-rgb)/12%)] border border-[rgb(var(--alarm-rgb)/35%)] space-y-2">
+                      <p className="text-[11px] text-[var(--alarm)] flex items-start space-x-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                         <span>{n(targetOutdoorNits)} nit superano il tetto del P{pitchMm} {tierLabel}: {n(datoScelto.maxNits)} nit ({datoScelto.chip}). Questo valore non è erogabile: finché resta, risultati e report non sono validi.</span>
                       </p>
                       <button
                         type="button"
                         onClick={() => setTargetOutdoorNits(Math.floor(datoScelto.maxNits / 500) * 500)}
-                        className="w-full px-3 py-1.5 rounded-lg bg-[#F87171] hover:bg-[#EF4444] text-[#1A0B0B] text-xs font-semibold cursor-pointer transition-colors"
+                        className="w-full px-3 py-1.5 rounded-lg bg-[var(--alarm)] hover:bg-[var(--alarm)] text-[rgb(var(--alarm-rgb)/12%)] text-xs font-semibold cursor-pointer transition-colors"
                       >
                         Riporta a {n(Math.floor(datoScelto.maxNits / 500) * 500)} nit
                       </button>
                     </div>
                   ) : (
-                    <p className="text-[11px] text-[#868D97]">Tetto di listino del P{pitchMm} {tierLabel}: {n(datoScelto.maxNits)} nit · {datoScelto.chip}</p>
+                    <p className="text-[11px] text-[var(--mute)]">Tetto di listino del P{pitchMm} {tierLabel}: {n(datoScelto.maxNits)} nit · {datoScelto.chip}</p>
                   )}
                 </div>
                 )}
@@ -440,9 +440,9 @@ export const ExpressSimulator: React.FC = () => {
               {tecnico && (<>
               {/* Distanza di visione */}
               <div className="space-y-2">
-                <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
-                  <Eye className="w-3.5 h-3.5 text-[#12B76A]" />
-                  <span>Da dove lo guardano? <span className="text-[#667085]">(distanza a terra dal piede dello schermo)</span></span>
+                <span className="text-xs text-[var(--mute)] font-medium flex items-center space-x-1.5">
+                  <Eye className="w-3.5 h-3.5 text-[var(--ok)]" />
+                  <span>Da dove lo guardano? <span className="text-[var(--faint)]">(distanza a terra dal piede dello schermo)</span></span>
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {DISTANCE_PRESETS.map((d) => {
@@ -454,8 +454,8 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setGroundViewingDistM(d.d)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
                           sel
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                         }`}
                       >
                         {d.label}
@@ -469,17 +469,17 @@ export const ExpressSimulator: React.FC = () => {
                       max={200}
                       value={groundViewingDistM}
                       onChange={(e) => setGroundViewingDistM(parseFloat(e.target.value || '1'))}
-                      className="w-20 px-2 py-1.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-xs tabular-nums focus:border-[#12B76A] outline-none"
+                      className="w-20 px-2 py-1.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-xs tabular-nums focus:border-[var(--ok)] outline-none"
                     />
-                    <span className="text-[11px] text-[#868D97]">m</span>
+                    <span className="text-[11px] text-[var(--mute)]">m</span>
                   </div>
                 </div>
               </div>
 
               {/* Quota della base: con la distanza a terra dà la linea di vista reale */}
               <div className="space-y-2">
-                <span className="text-xs text-[#868D97] font-medium flex items-center space-x-1.5">
-                  <ArrowUpFromLine className="w-3.5 h-3.5 text-[#12B76A]" />
+                <span className="text-xs text-[var(--mute)] font-medium flex items-center space-x-1.5">
+                  <ArrowUpFromLine className="w-3.5 h-3.5 text-[var(--ok)]" />
                   <span>A che altezza è la base dello schermo?</span>
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -492,8 +492,8 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setInstallHeightM(b.h)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
                           sel
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                            : 'border border-[#1A2028] bg-[#10141D] text-[#E8EDF2] hover:border-[#12B76A]'
+                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                         }`}
                       >
                         {b.label}
@@ -507,12 +507,12 @@ export const ExpressSimulator: React.FC = () => {
                       max={150}
                       value={installHeightM}
                       onChange={(e) => setInstallHeightM(parseFloat(e.target.value || '0'))}
-                      className="w-20 px-2 py-1.5 rounded-lg bg-[#10141D] border border-[#1A2028] text-white text-xs tabular-nums focus:border-[#12B76A] outline-none"
+                      className="w-20 px-2 py-1.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-xs tabular-nums focus:border-[var(--ok)] outline-none"
                     />
-                    <span className="text-[11px] text-[#868D97]">m</span>
+                    <span className="text-[11px] text-[var(--mute)]">m</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-[#868D97] tabular-nums">
+                <p className="text-[11px] text-[var(--mute)] tabular-nums">
                   Schermo da {n(installHeightM, 1)} a {n(installHeightM + dimensions.heightM, 1)} m di quota · linea di vista al centro{' '}
                   <span className="text-white font-medium">{n(alternative.lineOfSightDistM, 1)} m</span> ({n(alternative.lineOfSightBaseM, 1)} m alla base, {n(alternative.lineOfSightTopM, 1)} m in cima) · da lì l&apos;occhio fonde i pixel fino al P{n(alternative.minResolvablePitchMm, 1)}
                 </p>
@@ -521,12 +521,12 @@ export const ExpressSimulator: React.FC = () => {
             </section>
 
             {/* 2. Contenuto: due slot indipendenti a confronto sullo stesso schermo */}
-            <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-4">
+            <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-4">
               <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">2</span>
-                <Play className="w-4 h-4 text-[#12B76A]" />
+                <span className="w-5 h-5 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)] text-[11px] flex items-center justify-center font-bold">2</span>
+                <Play className="w-4 h-4 text-[var(--ok)]" />
                 <span>Cosa trasmetti</span>
-                <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline">· stesso schermo, due contenuti: il contenuto pesa più del 70% della bolletta</span>
+                <span className="text-[11px] text-[var(--mute)] font-normal hidden sm:inline">· stesso schermo, due contenuti: il contenuto pesa più del 70% della bolletta</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -560,9 +560,9 @@ export const ExpressSimulator: React.FC = () => {
               </div>
 
               {tecnico && (
-                <div className="p-3 rounded-lg bg-[#10141D] border border-[#1A2028] space-y-2">
+                <div className="p-3 rounded-lg bg-[var(--s1)] border border-[var(--line)] space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-[#868D97] font-medium">Slot A senza file: imposta l&apos;APL a mano</span>
+                    <span className="text-xs text-[var(--mute)] font-medium">Slot A senza file: imposta l&apos;APL a mano</span>
                     <span className="text-sm font-semibold text-white tabular-nums">{manualAplA !== null ? `${n(manualAplA)}%` : 'dal contenuto'}</span>
                   </div>
                   <input
@@ -582,15 +582,15 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setManualAplA(c.apl)}
                         className={`py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
                           manualAplA === c.apl
-                            ? 'border border-[#12B76A] bg-[#0D2818] text-[#34D399] font-semibold'
-                            : 'border border-[#1A2028] bg-[#0D1117] text-[#E8EDF2] hover:border-[#12B76A]'
+                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
                         }`}
                       >
                         {c.label} · {c.apl}%
                       </button>
                     ))}
                     {manualAplA !== null && (
-                      <button type="button" onClick={() => setManualAplA(null)} className="py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer border border-[#1A2028] bg-[#0D1117] text-[#9AA3AD] hover:text-white">
+                      <button type="button" onClick={() => setManualAplA(null)} className="py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer border border-[var(--line)] bg-[var(--s1)] text-[var(--mute)] hover:text-white">
                         Torna al contenuto
                       </button>
                     )}
@@ -600,20 +600,20 @@ export const ExpressSimulator: React.FC = () => {
             </section>
 
             {/* 3. Consumi */}
-            <section className="bg-[#0D1117] p-5 rounded-xl border border-[#1A2028] shadow-sm space-y-4">
+            <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                  <span className="w-5 h-5 rounded-full bg-[#0D2818] border border-[#163826] text-[#34D399] text-[11px] flex items-center justify-center font-bold">3</span>
-                  <Zap className="w-4 h-4 text-[#12B76A]" />
+                  <span className="w-5 h-5 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)] text-[11px] flex items-center justify-center font-bold">3</span>
+                  <Zap className="w-4 h-4 text-[var(--ok)]" />
                   <span>Quanto consuma</span>
-                  <span className="text-[11px] text-[#868D97] font-normal hidden sm:inline tabular-nums">
+                  <span className="text-[11px] text-[var(--mute)] font-normal hidden sm:inline tabular-nums">
                     · {softwareOff ? 'a schermo spento da software, tutto il giorno' : 'lo stesso schermo con i due contenuti'}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAdvanced((v) => !v)}
-                  className="text-[11px] text-[#9AA3AD] hover:text-white flex items-center space-x-1 cursor-pointer"
+                  className="text-[11px] text-[var(--mute)] hover:text-white flex items-center space-x-1 cursor-pointer"
                 >
                   <Settings2 className="w-3.5 h-3.5" />
                   <span>{operatingHoursDay} h/giorno · {n(tariffEurKwh, 2)} €/kWh</span>
@@ -622,27 +622,27 @@ export const ExpressSimulator: React.FC = () => {
               </div>
 
               {showAdvanced && (
-                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-[#10141D] border border-[#1A2028]">
+                <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-[var(--s1)] border border-[var(--line)]">
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-[11px] text-[#868D97]">
+                    <div className="flex justify-between text-[11px] text-[var(--mute)]">
                       <span>Ore accese al giorno</span>
                       <span className="text-white tabular-nums">{operatingHoursDay} h</span>
                     </div>
                     <input type="range" min={1} max={24} value={operatingHoursDay} onChange={(e) => setSchedule(parseInt(e.target.value, 10))} className="w-full custom-slider cursor-pointer" />
                   </div>
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-[11px] text-[#868D97]">
+                    <div className="flex justify-between text-[11px] text-[var(--mute)]">
                       <span>Tariffa energia</span>
                       <span className="text-white tabular-nums">{n(tariffEurKwh, 2)} €/kWh</span>
                     </div>
                     <input type="range" min={0.10} max={0.60} step={0.01} value={tariffEurKwh} onChange={(e) => setTariffRate(parseFloat(e.target.value))} className="w-full custom-slider cursor-pointer" />
                   </div>
-                  <p className="col-span-2 text-[11px] text-[#667085]">Di notte lo schermo scende al 10% (norma CEI). Spento da software il P{pitchMm} assorbe comunque {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m².</p>
+                  <p className="col-span-2 text-[11px] text-[var(--faint)]">Di notte lo schermo scende al 10% (norma CEI). Spento da software il P{pitchMm} assorbe comunque {n(standbyWmq, Number.isInteger(standbyWmq) ? 0 : 1)} W/m².</p>
                 </div>
               )}
 
               {nitsOverLimit && datoScelto && !softwareOff && (
-                <p className="p-3 rounded-lg bg-[#2A1111] border border-[#5B1F1F] text-[11px] text-[#FCA5A5] flex items-start space-x-2">
+                <p className="p-3 rounded-lg bg-[rgb(var(--alarm-rgb)/12%)] border border-[rgb(var(--alarm-rgb)/35%)] text-[11px] text-[var(--alarm)] flex items-start space-x-2">
                   <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   <span>
                     Risultati non validi: il P{pitchMm} {tierLabel} non eroga {n(targetOutdoorNits)} nit. I consumi qui sotto sono quelli al suo tetto di {n(datoScelto.maxNits)} nit, non alla luminosità che hai chiesto. Abbassa i nit o cambia Selection.
@@ -650,7 +650,7 @@ export const ExpressSimulator: React.FC = () => {
                 </p>
               )}
               {datoMancante && !softwareOff && (
-                <p className="p-3 rounded-lg bg-[#0F1A2A] border border-[#1E3A5F] text-[11px] text-[#93C5FD] flex items-start space-x-2">
+                <p className="p-3 rounded-lg bg-[var(--s2)] border border-[#1E3A5F] text-[11px] text-[var(--focus)] flex items-start space-x-2">
                   <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                   <span>
                     Tetto non ancora censito per il P{pitchMm} {tierLabel}: i consumi qui sotto sono una stima sul solo passo a {n(targetOutdoorNits)} nit, senza la verifica che questa combinazione ci arrivi.
@@ -660,19 +660,19 @@ export const ExpressSimulator: React.FC = () => {
 
               {/* Su schermi stretti la colonna di destra finisce in fondo: la differenza si ripete qui, in evidenza */}
               {!softwareOff && deltaAnnuoEur !== 0 && (
-                <div className="lg:hidden p-3 rounded-lg bg-[#0A1610] border border-[#163826]">
+                <div className="lg:hidden p-3 rounded-lg bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)]">
                   <span className="text-xl font-semibold text-white tabular-nums">{n(Math.abs(deltaAnnuoEur))} €</span>
-                  <span className="text-xs text-[#9AA3AD] ml-1.5">all&apos;anno di differenza · {deltaAnnuoEur > 0 ? 'B' : 'A'} spende il {deltaPercento}% in meno</span>
+                  <span className="text-xs text-[var(--mute)] ml-1.5">all&apos;anno di differenza · {deltaAnnuoEur > 0 ? 'B' : 'A'} spende il {deltaPercento}% in meno</span>
                 </div>
               )}
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left tabular-nums">
                   <thead>
-                    <tr className="text-[10px] uppercase text-[#868D97]">
+                    <tr className="text-[10px] uppercase text-[var(--mute)]">
                       <th className="py-2 pr-3 font-medium"></th>
-                      <th className="py-2 px-3 font-medium text-[#34D399]">A · {slotA?.origine === 'demo' || !slotA ? 'contenuto chiaro' : 'il tuo contenuto'}</th>
-                      <th className="py-2 pl-3 font-medium text-[#E8EDF2]">B · {slotB?.origine === 'demo' || !slotB ? 'contenuto ottimizzato' : 'il tuo confronto'}</th>
+                      <th className="py-2 px-3 font-medium text-[var(--ok)]">A · {slotA?.origine === 'demo' || !slotA ? 'contenuto chiaro' : 'il tuo contenuto'}</th>
+                      <th className="py-2 pl-3 font-medium text-[var(--text)]">B · {slotB?.origine === 'demo' || !slotB ? 'contenuto ottimizzato' : 'il tuo confronto'}</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm text-white">
@@ -682,33 +682,33 @@ export const ExpressSimulator: React.FC = () => {
                       ['Energia al giorno', `${n(profiloA.totalDailyKwh, 1)} kWh`, `${n(profiloB.totalDailyKwh, 1)} kWh`],
                       ['Bolletta al mese', `${n(profiloA.monthlyCostEur)} €`, `${n(profiloB.monthlyCostEur)} €`],
                     ] as const).map(([voce, a, b]) => (
-                      <tr key={voce} className="border-t border-[#1A2028]">
-                        <td className="py-2 pr-3 text-xs text-[#9AA3AD]">{voce}</td>
+                      <tr key={voce} className="border-t border-[var(--line)]">
+                        <td className="py-2 pr-3 text-xs text-[var(--mute)]">{voce}</td>
                         <td className="py-2 px-3 font-medium">{a}</td>
                         <td className="py-2 pl-3 font-medium">{b}</td>
                       </tr>
                     ))}
-                    <tr className="border-t border-[#1A2028]">
-                      <td className="py-3 pr-3 text-xs text-[#9AA3AD]">Bolletta all&apos;anno</td>
-                      <td className="py-3 px-3 text-xl font-semibold">{n(profiloA.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></td>
-                      <td className="py-3 pl-3 text-xl font-semibold">{n(profiloB.annualCostEur)}<span className="text-xs text-[#9AA3AD] ml-1">€</span></td>
+                    <tr className="border-t border-[var(--line)]">
+                      <td className="py-3 pr-3 text-xs text-[var(--mute)]">Bolletta all&apos;anno</td>
+                      <td className="py-3 px-3 text-xl font-semibold">{n(profiloA.annualCostEur)}<span className="text-xs text-[var(--mute)] ml-1">€</span></td>
+                      <td className="py-3 pl-3 text-xl font-semibold">{n(profiloB.annualCostEur)}<span className="text-xs text-[var(--mute)] ml-1">€</span></td>
                     </tr>
                   </tbody>
                 </table>
-                <p className="text-[11px] text-[#868D97] pt-1 tabular-nums">
+                <p className="text-[11px] text-[var(--mute)] pt-1 tabular-nums">
                   Picco dello schermo {n(pMax)} W/m² · {n(profiloA.annualKwh)} kWh/anno con A, {n(profiloB.annualKwh)} con B · {n((profiloA.annualKwh * 0.305) / 1000, 2)} t CO₂/anno con A
                 </p>
               </div>
 
               {!tecnico && (
-                <div className="p-3 rounded-lg bg-[#10141D] border border-[#1A2028] flex flex-col sm:flex-row sm:items-center gap-3">
-                  <p className="text-[11px] text-[#9AA3AD] leading-relaxed flex-1">
+                <div className="p-3 rounded-lg bg-[var(--s1)] border border-[var(--line)] flex flex-col sm:flex-row sm:items-center gap-3">
+                  <p className="text-[11px] text-[var(--mute)] leading-relaxed flex-1">
                     Calcolato su un <span className="text-white font-medium">LEDwall standard di mercato</span> (P{pitchMm} {tierLabel}) alla sua luminosità di listino, {n(targetOutdoorNits)} nit.
                     Passo, qualità dei chip e luminosità cambiano il consumo: se vuoi scoprire quanto consuma la tua configurazione, contattaci.
                   </p>
                   <a
                     href={CONTATTI_URL}
-                    className="px-4 py-2 rounded-lg border border-[#12B76A] text-[#34D399] hover:bg-[#0D2818] font-semibold text-xs whitespace-nowrap text-center transition-colors"
+                    className="px-4 py-2 rounded-lg border border-[var(--ok)] text-[var(--ok)] hover:bg-[rgb(var(--ok-rgb)/10%)] font-semibold text-xs whitespace-nowrap text-center transition-colors"
                   >
                     Contattaci
                   </a>
@@ -719,7 +719,7 @@ export const ExpressSimulator: React.FC = () => {
                 {nitsOverLimit && !softwareOff ? (
                   <span
                     title="I nit impostati superano il tetto della combinazione: il report non si può generare"
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#1A2028] text-[#667085] font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-[var(--line)] text-[var(--faint)] font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 cursor-not-allowed"
                   >
                     <FileText className="w-4 h-4" />
                     <span>Report bloccato: nit oltre il tetto</span>
@@ -728,7 +728,7 @@ export const ExpressSimulator: React.FC = () => {
                   <Link
                     href="/"
                     onClick={() => goToWizard(9)}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-[#12B76A] hover:bg-[#0E9F5D] text-white font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 transition-colors shadow-sm"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-[var(--pieno-fondo)] hover:bg-[var(--pieno-fondo-hover)] text-[var(--pieno-testo)] font-semibold text-xs tracking-wide flex items-center justify-center space-x-2 transition-colors shadow-sm"
                   >
                     <FileText className="w-4 h-4" />
                     <span>Scarica il report PDF</span>
@@ -737,9 +737,9 @@ export const ExpressSimulator: React.FC = () => {
                 <Link
                   href="/"
                   onClick={() => goToWizard(7)}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-[#1A2028] bg-[#10141D] hover:bg-[#161F30] text-[#E8EDF2] font-semibold text-xs flex items-center justify-center space-x-2 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] hover:bg-[var(--s2)] text-[var(--text)] font-semibold text-xs flex items-center justify-center space-x-2 transition-colors"
                 >
-                  <LayoutList className="w-4 h-4 text-[#9AA3AD]" />
+                  <LayoutList className="w-4 h-4 text-[var(--mute)]" />
                   <span>Approfondisci nel wizard</span>
                 </Link>
               </div>
@@ -748,39 +748,39 @@ export const ExpressSimulator: React.FC = () => {
 
           {/* Anteprima live + banner consiglio (sticky su desktop) */}
           <div className="lg:sticky lg:top-24 space-y-5">
-            <section className="bg-[#0A1610] p-5 rounded-xl border border-[#163826] shadow-sm space-y-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#34D399] flex items-center space-x-2">
+            <section className="bg-[rgb(var(--ok-rgb)/10%)] p-5 rounded-xl border border-[rgb(var(--ok-rgb)/30%)] shadow-sm space-y-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ok)] flex items-center space-x-2">
                 <Zap className="w-3.5 h-3.5" />
                 <span>Quanto pesa il contenuto</span>
               </span>
               {softwareOff ? (
-                <p className="text-sm text-[#E8EDF2]">A schermo spento da software il contenuto non conta: resta solo l&apos;elettronica.</p>
+                <p className="text-sm text-[var(--text)]">A schermo spento da software il contenuto non conta: resta solo l&apos;elettronica.</p>
               ) : deltaAnnuoEur === 0 ? (
-                <p className="text-sm text-[#E8EDF2]">I due contenuti costano uguale: {n(profiloA.annualCostEur)} € all&apos;anno.</p>
+                <p className="text-sm text-[var(--text)]">I due contenuti costano uguale: {n(profiloA.annualCostEur)} € all&apos;anno.</p>
               ) : (
                 <>
                   <div>
                     <span className="text-3xl font-semibold text-white tabular-nums">{n(Math.abs(deltaAnnuoEur))} €</span>
-                    <span className="text-sm text-[#9AA3AD] ml-1.5">all&apos;anno di differenza</span>
+                    <span className="text-sm text-[var(--mute)] ml-1.5">all&apos;anno di differenza</span>
                   </div>
-                  <p className="text-xs text-[#C9D1D9] leading-relaxed">
+                  <p className="text-xs text-[var(--text)] leading-relaxed">
                     Sullo stesso schermo, il contenuto <b>{deltaAnnuoEur > 0 ? 'B' : 'A'}</b> spende il <b>{deltaPercento}% in meno</b> del contenuto <b>{deltaAnnuoEur > 0 ? 'A' : 'B'}</b>:
                     {' '}{n(Math.min(profiloA.annualCostEur, profiloB.annualCostEur))} € contro {n(Math.max(profiloA.annualCostEur, profiloB.annualCostEur))} € di bolletta annua.
                   </p>
                 </>
               )}
               <div className="space-y-1.5 pt-1">
-                {([['A', profiloA.annualCostEur, 'bg-[#34D399]'], ['B', profiloB.annualCostEur, 'bg-[#E8EDF2]']] as const).map(([id, costo, colore]) => (
-                  <div key={id} className="flex items-center space-x-2 text-[11px] text-[#9AA3AD] tabular-nums">
+                {([['A', profiloA.annualCostEur, 'bg-[var(--ok)]'], ['B', profiloB.annualCostEur, 'bg-[var(--text)]']] as const).map(([id, costo, colore]) => (
+                  <div key={id} className="flex items-center space-x-2 text-[11px] text-[var(--mute)] tabular-nums">
                     <span className="w-3 font-semibold text-white">{id}</span>
-                    <div className="flex-1 h-2 rounded-full bg-[#1A2028] overflow-hidden">
+                    <div className="flex-1 h-2 rounded-full bg-[var(--line)] overflow-hidden">
                       <div className={`h-full rounded-full ${colore}`} style={{ width: `${Math.max(3, (costo / Math.max(profiloA.annualCostEur, profiloB.annualCostEur, 1)) * 100)}%` }} />
                     </div>
                     <span className="w-16 text-right">{n(costo)} €</span>
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-[#868D97] leading-relaxed">
+              <p className="text-[11px] text-[var(--mute)] leading-relaxed">
                 Carica il tuo spot nello slot A o B per confrontarlo: fondi scuri e colori in risalto costano meno di fondi bianchi, a parità di schermo.
               </p>
             </section>

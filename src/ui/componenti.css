@@ -1,0 +1,232 @@
+/*
+ * veroled-ui — i componenti condivisi da CMS, Core e strumenti pubblici: solo classi, nessuna pagina.
+ * Ogni regola usa i token per nome (tokens.css). Le regole proprie di un progetto restano nel
+ * progetto (il CMS in src/web/styles.css, Core nel suo app.css).
+ * Si modifica SOLO nel repository veroled/veroled-ui.
+ */
+
+/* ---------- fondamenta ---------- */
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--focus); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Per i lettori di schermo soltanto: quello che si vede lo dice gia' la pagina. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.mute { color: var(--mute); }
+.faint { color: var(--faint); }
+
+/* ---------- barra laterale ---------- */
+/* ---------- impalcatura: barra laterale come Flow ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.app.collapsed { grid-template-columns: 76px minmax(0, 1fr); }
+/* Il fondo resta dichiarato: e' quello della pagina, nel tema in cui si e'. Quando la barra era
+   un'isola scura, un fondo ereditato aveva dato testo bianco su bianco (1,21:1 misurato dall'e2e). */
+.side-nav { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: var(--sp-4); gap: var(--sp-1); background: var(--bg); }
+.wordmark { display: flex; align-items: center; gap: var(--sp-4); height: 44px; padding: 0 var(--sp-4); margin-bottom: var(--sp-4); }
+/*
+ * Il marchio ufficiale sono due immagini, non testo: niente font-size ne' color, che qui non
+ * governano piu' niente. Se ne vede **una per volta**: da barra aperta la sola scritta, alta
+ * 20 px e larga quanto vuole la proporzione del file (6,34:1 -> 127 px, dentro ai 216 che
+ * restano nella barra da 248); da compressa la sola V, nel riquadro da 22 px delle icone.
+ * La scritta parte dall'asse delle icone (32) perche' il `padding` del marchio e' quello delle
+ * voci e davanti non c'e' piu' niente: nessun margine negativo, nessun numero scritto a mano.
+ * Le scritte sono due, bianca e nera: si vede quella del tema (bianca sullo scuro).
+ */
+.wordmark .v { display: none; width: 22px; height: 22px; flex: none; }
+.wordmark .scritta { height: 20px; width: auto; flex: none; }
+.wordmark .scritta.su-chiaro { display: none; }
+:root[data-theme="chiaro"] .wordmark .scritta.su-chiaro { display: block; }
+:root[data-theme="chiaro"] .wordmark .scritta.su-scuro { display: none; }
+.app.collapsed .wordmark .v { display: block; }
+/* La scritta non e' una `.lbl` (vedi `Shell.tsx`), quindi la regola che nasconde le etichette
+   da compressa non la riguarda: va detto qui, o da rail resterebbero la V e la scritta. */
+.app.collapsed .wordmark .scritta,
+:root[data-theme] .app.collapsed .wordmark .scritta { display: none; }
+.side-nav a, .side-nav .nav-btn {
+  display: flex; align-items: center; gap: var(--sp-4); height: 48px; padding: 0 var(--sp-4); border-radius: var(--r-min);
+  color: var(--text); font-size: 15px; font-weight: 500; text-decoration: none; white-space: nowrap; background: none; border: 0; cursor: pointer; width: 100%; text-align: left;
+}
+.side-nav a:hover, .side-nav .nav-btn:hover { background: var(--s1); text-decoration: none; }
+.side-nav a.active { background: var(--s3); }
+.side-nav svg { width: 22px; height: 22px; flex: none; }
+.side-nav hr { border: 0; border-top: 1px solid var(--s3); margin: var(--sp-2) 0; width: 100%; }
+.side-nav .bottom { margin-top: auto; display: grid; gap: var(--sp-1); }
+.side-nav .agent { display: flex; align-items: center; gap: var(--sp-4); height: 48px; padding: 0 var(--sp-4); font-size: 14px; color: var(--mute); white-space: nowrap; }
+.side-nav .agent i { width: 22px; display: grid; place-items: center; }
+.side-nav .agent i::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--faint)); }
+.side-nav .agent[data-t="ok"] { --c: var(--ok); }
+.side-nav .agent[data-t="alarm"] { --c: var(--alarm); color: var(--alarm-riga); }
+.side-nav .agent[data-t="warn"] { --c: var(--warn); }
+.app.collapsed .side-nav .lbl { display: none; }
+.app.collapsed .side-nav { padding: var(--sp-4) var(--sp-3); }
+/* Ridotta a rail, la barra tiene solo le icone: che stiano in mezzo, non dove le lascerebbe
+   il padding delle voci intere. Il marchio compreso: col suo padding la V restava a 28 dove le
+   sei icone stanno a 27, un pixel fuori squadra che si vedeva senza saper dire perche'. */
+.app.collapsed .side-nav a, .app.collapsed .side-nav .nav-btn, .app.collapsed .side-nav .agent, .app.collapsed .side-nav .wordmark { justify-content: center; padding: 0; }
+/* Sull'asse delle icone, non dodici px piu' a sinistra per conto suo. */
+.foot-note { font-size: 12px; color: var(--faint); padding: var(--sp-2) var(--sp-4) 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app.collapsed .foot-note { display: none; }
+@media (max-width: 860px) {
+  /* L'altezza vera della barra in basso, scritta una volta: la usano la barra stessa, il
+     margine sotto l'ultimo elemento della pagina e l'avviso temporaneo. */
+  :root { --barra-bassa: calc(68px + env(safe-area-inset-bottom)); }
+  .app, .app.collapsed { grid-template-columns: 1fr; }
+  .side-nav {
+    position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; top: auto; height: var(--barra-bassa);
+    flex-direction: row; padding: var(--sp-2) var(--sp-2) env(safe-area-inset-bottom); gap: var(--sp-1); background: rgb(var(--bg-rgb) / 92%); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--s2);
+  }
+  .side-nav .wordmark, .side-nav hr, .side-nav .bottom, .side-nav .foot-note { display: none; }
+  .side-nav a { flex: 1; flex-direction: column; justify-content: center; gap: var(--sp-1); height: 52px; padding: 0; font-size: 12px; }
+  .app.collapsed .side-nav .lbl { display: inline; }
+}
+
+/* ---------- selettore a segmenti ---------- */
+.segmented { display: inline-flex; gap: var(--sp-1); padding: var(--sp-1); border-radius: var(--r-tile); background: var(--s1); margin: 0 auto; }
+.segmented button { height: 40px; padding: 0 var(--sp-4); border-radius: var(--r-min); border: 0; background: none; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.segmented button[aria-pressed="true"] { background: var(--s3); }
+
+/* ---------- pillole, pulsanti, campi ---------- */
+/* ---------- pillole di stato ---------- */
+.pill {
+  display: inline-flex; align-items: center; gap: var(--sp-2); height: 30px; padding: 0 var(--sp-3); border-radius: 999px;
+  background: rgb(var(--s1-rgb) / 72%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--line); font-size: 13px; font-weight: 500; white-space: nowrap; color: var(--text);
+}
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--faint)); flex: none; }
+.pill[data-t="ok"] { --c: var(--ok); }
+.pill[data-t="warn"] { --c: var(--warn); }
+.pill[data-t="alarm"] { --c: var(--alarm); }
+.pill[data-t="busy"] { --c: var(--text); }
+.pill[data-t="busy"]::before { animation: breathe 1.2s ease-in-out infinite; }
+.pill.plain::before { display: none; }
+.pill.sim { color: var(--sim); border-color: rgb(var(--sim-rgb) / 40%); }
+.pill.sim::before { background: var(--sim); border-radius: var(--r-micro); transform: rotate(45deg); width: 7px; height: 7px; }
+@keyframes breathe { 50% { opacity: 0.25; } }
+
+/* ---------- pulsanti ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); height: 44px; padding: 0 var(--sp-5); border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--s1); color: var(--text); font-size: 15px; font-weight: 500; white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--s2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* «pieno», non «bianco»: nel tema chiaro e' nero, e un nome che dice la tinta sarebbe una bugia. */
+.btn.pieno { background: var(--pieno-fondo); color: var(--pieno-testo); border-color: var(--pieno-fondo); }
+.btn.pieno:hover:not(:disabled) { background: var(--pieno-fondo-hover); border-color: var(--pieno-fondo-hover); }
+.btn.sm { height: 34px; padding: 0 var(--sp-4); font-size: 13px; }
+/*
+ * Un comando che resta premuto si vede che e' premuto. La scritta non cambia: cambiandola
+ * cambierebbe la larghezza, e l'hero sembrerebbe muoversi (vedi il pulsante della cattura).
+ *
+ * La riga dell'hover va ripetuta, e non e' una ripetizione inutile: `.btn:hover:not(:disabled)`
+ * pesa piu' di `.btn[aria-pressed="true"]`, e dopo un clic il puntatore e' ancora li' sopra.
+ * Senza, il pulsante premuto restava col fondo dell'hover e il testo del premuto — nero su
+ * grigio scuro, **1,3:1**, misurato nel browser.
+ */
+.btn[aria-pressed="true"] { background: var(--pieno-fondo); color: var(--pieno-testo); border-color: var(--pieno-fondo); }
+.btn[aria-pressed="true"]:hover:not(:disabled) { background: var(--pieno-fondo-hover); color: var(--pieno-testo); border-color: var(--pieno-fondo-hover); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--mute); }
+.btn.ghost:hover:not(:disabled) { color: var(--text); background: var(--s1); }
+/* L'unico pulsante che toglie qualcosa, e ci si arriva solo dopo aver chiesto «Elimina
+   contenuto»: porta i colori dell'allarme perche' e' il momento in cui qualcosa sparisce. */
+.btn.pericolo { background: var(--alarm-fondo); color: var(--alarm-fondo-testo); border-color: var(--alarm-fondo); }
+/* Un pulsante la cui scritta cambia ma la cui larghezza no: sotto sta la scritta più lunga,
+   invisibile, e il testo vero ci sta sopra. Serve al pulsante della cattura, che mentre la
+   pausa scorre dice «Fra 1:49» — e senza questo si restringerebbe di 9 px (misurati). */
+.btn.largo-fisso { position: relative; }
+.btn.largo-fisso .riserva-testo { visibility: hidden; }
+.btn.largo-fisso .sopra { position: absolute; inset: 0; display: grid; place-items: center; }
+/* La domanda e i suoi due pulsanti, sulla riga dove stava il pulsante solo. */
+.conferma { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; font-size: 14px; color: var(--text); }
+input[type="text"], input[type="number"], select { height: 44px; padding: 0 var(--sp-4); background: var(--s1); border: 1px solid var(--line); border-radius: 999px; }
+input[type="number"] { padding: 0 var(--sp-2); border-radius: var(--r-min); height: 34px; }
+
+/* ---------- avvisi ---------- */
+/*
+ * Scala di gravità, e va in una sola direzione: un allarme non può pesare meno di un avviso,
+ * e un avviso meno di una nota. Prima l'allarme si distingueva solo per un puntino rosso,
+ * sullo stesso fondo di una nota qualsiasi.
+ */
+.banner { margin-top: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-radius: var(--r-min); background: var(--s1); border: 1px solid var(--line); font-size: 14px; display: flex; gap: var(--sp-3); align-items: flex-start; }
+/* fuori scala: 7 e 6 px centrano il punto sulla prima riga di testo (riga alta 21 px, punto
+   da 8 e da 10). E' centratura ottica, non spaziatura: sulla scala a 4 cadrebbe storto. */
+.banner::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--mute)); margin-top: 7px; flex: none; }
+.banner[data-t="warn"] { --c: var(--warn); background: rgb(var(--warn-rgb) / 9%); border-color: rgb(var(--warn-rgb) / 40%); }
+.banner[data-t="alarm"] { --c: var(--alarm); background: rgb(var(--alarm-rgb) / 15%); border-color: rgb(var(--alarm-rgb) / 65%); color: var(--alarm-testo); font-weight: 500; }
+.banner[data-t="alarm"]::before { width: 10px; height: 10px; margin-top: 6px; box-shadow: 0 0 0 4px rgb(var(--alarm-rgb) / 20%); }
+
+/* ---------- righe ---------- */
+.rows { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); }
+.row {
+  display: grid; grid-template-columns: 28px 120px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center;
+  background: var(--s1); border-radius: var(--r-min); padding: var(--sp-3); text-align: left; border: 1px solid transparent; color: inherit; width: 100%;
+}
+.row img, .row .ph { width: 120px; aspect-ratio: 16 / 9; border-radius: var(--r-min); object-fit: cover; background: var(--s2); display: block; }
+.row .n { color: var(--faint); font-size: 13px; text-align: right; }
+.row .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .d { font-size: 13px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.row { cursor: pointer; }
+button.row:hover { background: var(--s2); }
+.row.hot { border-color: var(--s3); background: var(--s2); }
+
+/* ---------- pannello ---------- */
+/* `minmax(0, 1fr)` e non la colonna implicita `auto`: con `auto` un figlio piu' largo del
+   pannello (i trattini dell'avanzamento) allargava la colonna, e tutto quello che sta dentro
+   usciva di 8 px dal bordo destro del riquadro. */
+.panel { background: var(--s1); border-radius: var(--r-hero); padding: var(--sp-5); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
+.panel h2 { margin: 0; font-size: 20px; font-weight: 450; }
+
+/* ---------- coppie nome-valore ---------- */
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-4); margin: 0; font-size: 14px; }
+.kv dt { color: var(--mute); }
+.kv dd { margin: 0; text-align: right; }
+
+/* ---------- avviso temporaneo ---------- */
+.toast { position: fixed; left: 50%; bottom: var(--sp-5); transform: translateX(-50%); z-index: 40; max-width: min(520px, calc(100% - var(--sp-5))); padding: var(--sp-3) var(--sp-5); border-radius: 999px; background: var(--pieno-fondo); color: var(--pieno-testo); font-size: 14px; font-weight: 500; box-shadow: 0 8px 30px var(--ombra); display: flex; align-items: center; gap: var(--sp-3); }
+/*
+ * L'avviso d'allarme era il più scuro della pagina — un fondo #3a1512 su nero rende 1,3:1 — e
+ * quindi la conferma di routine, bianca su nero, gridava più del fallimento. Scala raddrizzata:
+ * l'allarme è chiaro quanto la conferma, e in più è rosso e porta un segno.
+ */
+.toast.alarm { background: var(--alarm-fondo); color: var(--alarm-fondo-testo); }
+/* L'avviso: giallo pieno e nessun segno. Il segno «!» resta un segno dell'allarme, altrimenti
+   i due livelli si distinguerebbero solo per la tinta. */
+.toast.warn { background: var(--warn-fondo); color: var(--warn-fondo-testo); }
+.toast .segno { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--alarm-segno); color: var(--alarm-segno-testo); font-size: 14px; font-weight: 700; flex: none; }
+@media (max-width: 860px) { .toast { bottom: calc(var(--barra-bassa) + var(--sp-3)); } }
+
+/* ---------- pulsante a icona ---------- */
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: var(--mute); display: grid; place-items: center; cursor: pointer; }
+.icon-btn:hover { background: var(--s2); color: var(--text); }
+/* Il bottone che chiude una riga della striscia: sta dentro una riga alta 21 px, non la gonfia. */
+.icon-btn.sm { width: 24px; height: 24px; font-size: 13px; }
+.icon-btn svg { width: 20px; height: 20px; }
+
+/* ---------- campo con etichetta ---------- */
+.field { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); }
+.field > span { font-size: 13px; color: var(--mute); }
+
+/* ---------- stato vuoto ---------- */
+.empty-state { display: grid; justify-items: center; gap: var(--sp-4); padding: 16vh var(--sp-5); text-align: center; font-size: 20px; color: var(--text); font-weight: 400; }
+.empty-state svg { width: 64px; height: 64px; }
+
+/* ---------- azione distruttiva ---------- */
+/* Per i comandi che tolgono o fermano qualcosa (in Core: «Scollega», «Chiudi test»). Il tono e' quello
+   dell'allarme a bassa dose: si distingue senza gridare, e la conferma resta un passo a parte. */
+.btn.pericolo { color: var(--alarm-riga); border-color: rgb(var(--alarm-rgb) / 65%); }
+.btn.pericolo:hover:not(:disabled) { background: rgb(var(--alarm-rgb) / 15%); }
+
+/* ---------- tabella ---------- */
+/* Il CMS elenca a righe (.rows), uno strumento di misura incolonna: valori allineati a destra e cifre
+   a larghezza fissa, cosi' due misure una sotto l'altra si confrontano a colpo d'occhio. */
+.tabella { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabella th { text-align: left; font-size: 12px; font-weight: 500; color: var(--mute); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tabella td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--s2); }
+.tabella .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabella tbody tr:hover { background: var(--s1); }

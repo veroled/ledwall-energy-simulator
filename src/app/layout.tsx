@@ -1,16 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
-  variable: '--font-inter',
-  subsets: ['latin'],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-jetbrains-mono',
-  subsets: ['latin'],
-});
+/*
+ * Il carattere e' Google Sans Flex della base comune veroled-ui (src/ui/font), lo stesso del CMS:
+ * niente piu' Inter e JetBrains Mono scaricati da Google Fonts a ogni build.
+ */
 
 export const metadata: Metadata = {
   title: 'Simulatore Consumi LEDwall: Efficienza Energetica, APL & TCO | VeroLED',
@@ -52,22 +46,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it" className="h-full">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} min-h-screen flex flex-col bg-[#07090C] text-[#E8EDF2] antialiased`}>
-        <nav style={{ padding: '10px 20px', fontSize: '12px', background: '#0d1117', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '14px', alignItems: 'center', zIndex: 99, position: 'relative' }}>
-          <a href="/" style={{ color: '#2dd4bf', textDecoration: 'none', fontWeight: 600 }}>← VeroLED Home</a>
-          <span style={{ color: '#64748b' }}>·</span>
-          <a href="/simulatore-consumi/express/" style={{ color: '#22a0c2', textDecoration: 'none', fontWeight: 600 }}>⚡ Calcolo Express</a>
-          <span style={{ color: '#64748b' }}>·</span>
-          <a href="/calcolatore-ledwall/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Calcolatore Risoluzione</a>
-          <span style={{ color: '#64748b' }}>·</span>
-          <a href="/configuratore/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Configuratore</a>
-          <span style={{ color: '#64748b' }}>·</span>
-          <a href="/prezzi-ledwall/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Listino Prezzi</a>
-          <span style={{ color: '#64748b' }}>·</span>
-          <a href="/cultura/quanto-consuma-un-ledwall/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Guida Consumi &amp; APL</a>
-          <span style={{ color: '#64748b' }}>·</span>
-          <a href="/contatti/" style={{ color: '#94a3b8', textDecoration: 'none' }}>Contatti</a>
+    <html lang="it" className="h-full" data-theme="scuro">
+      <body className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)] antialiased">
+        {/* A 390 px questa barra usciva dallo schermo e la pagina era larga 580 px: ora scorre dentro di se'. */}
+        <nav style={{ padding: '0 20px', fontSize: '13px', background: 'var(--bg)', borderBottom: '1px solid var(--line)', display: 'flex', gap: '14px', alignItems: 'center', zIndex: 99, position: 'relative', overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: '100vw' }}>
+          <a href="/" style={{ color: 'var(--text)', textDecoration: 'none', fontWeight: 500, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>← VeroLED Home</a>
+          <span style={{ color: 'var(--faint)' }}>·</span>
+          <a href="/simulatore-consumi/express/" style={{ color: 'var(--text)', textDecoration: 'none', fontWeight: 500, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>⚡ Calcolo Express</a>
+          <span style={{ color: 'var(--faint)' }}>·</span>
+          <a href="/calcolatore-ledwall/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Calcolatore Risoluzione</a>
+          <span style={{ color: 'var(--faint)' }}>·</span>
+          <a href="/configuratore/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Configuratore</a>
+          <span style={{ color: 'var(--faint)' }}>·</span>
+          <a href="/prezzi-ledwall/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Listino Prezzi</a>
+          <span style={{ color: 'var(--faint)' }}>·</span>
+          <a href="/cultura/quanto-consuma-un-ledwall/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Guida Consumi &amp; APL</a>
+          <span style={{ color: 'var(--faint)' }}>·</span>
+          <a href="/contatti/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Contatti</a>
         </nav>
         <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>Simulatore Consumi e Dimensionamento LEDwall — Calcolo Preventivo VeroLED</h1>
         {children}
