@@ -1,10 +1,10 @@
 {
   "sorgente": "veroled/veroled-ui",
   "ref": "origin/main",
-  "commit": "4a201e13cf17f401721822ad689ea43fa74209a0",
-  "copiatoIl": "2026-11-01T07:43:44.164Z",
+  "commit": "17ba07d6231c79944cf67fdf7b4e30c65e57ad2b",
+  "copiatoIl": "2026-11-01T10:34:08.509Z",
   "file": {
-    "componenti.css": "f734cae539d531590a790bdea3d91e070726da017829cd92b5b58d84e274e783",
+    "componenti.css": "92794ff50ffb663eb29d65fb6a2ae2f5344729ceebf2479046925fb7a4a73dc2",
     "font/OFL.txt": "7168a081fbcea8dbe975e3a015c4e340761b3b4ddf8de0c8a818543f773a29e0",
     "font/font.css": "1ce9a110328badf6166d7e5c1a24bc57e6e4929be657e585534b0490919deae6",
     "font/google-sans-flex-canadian-aboriginal-wght-normal.woff2": "aaeca97c82451ceff098a70bc77c3bf22320d1e9763bd4989f32f2c2a4a7ced0",
