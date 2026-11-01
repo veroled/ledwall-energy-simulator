@@ -1,0 +1,5 @@
+# La copia di veroled-ui (src/ui) e la scritta ufficiale (public/brand) si verificano byte per byte
+# contro le loro impronte: su Windows git convertirebbe le righe in CRLF e la verifica cadrebbe su
+# file identici all'originale. Stessa regola di veroled-platform. Prova: test/gitattributes-ui.test.ts
+src/ui/** -text
+public/brand/** -text
