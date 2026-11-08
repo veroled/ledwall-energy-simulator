@@ -516,7 +516,7 @@ export function generaReportPdf(data: ReportData): jsPDF {
           if (d) { mono(5.6, accento); doc.text(doc.splitTextToSize(d, tw * 0.22) as string[], c[3], ry - 1.2); }
         });
         mono(5.6, TITANIO);
-        doc.text(doc.splitTextToSize('Canoni: noleggio operativo a 24 mesi con le regole di veroledsrl.com/noleggio-operativo (listino + posa, coefficiente del broker, assicurazione). Istruttoria, struttura, processore video e quadro esclusi.', tw) as string[], tx, 172, { lineHeightFactor: 1.5 });
+        doc.text(doc.splitTextToSize('Canoni: noleggio operativo a 24 mesi con le regole di veroled.it/noleggio-operativo (listino + posa, coefficiente del broker, assicurazione). Istruttoria, struttura, processore video e quadro esclusi.', tw) as string[], tx, 172, { lineHeightFactor: 1.5 });
       }
     });
   }

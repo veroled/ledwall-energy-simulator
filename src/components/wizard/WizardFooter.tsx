@@ -14,7 +14,7 @@ export const WizardFooter: React.FC = () => {
           <span>Norme CEI 64-8 / ITU-R BT.709</span>
         </div>
         <div className="text-[var(--faint)] text-[11px]">
-          © 2026 VeroLED S.r.l. · <a href="https://veroledsrl.com" target="_blank" rel="noopener noreferrer" className="text-[var(--mute)] hover:text-white transition-colors">veroledsrl.com</a>
+          © 2026 VeroLED S.r.l. · <a href="https://veroled.it" target="_blank" rel="noopener noreferrer" className="text-[var(--mute)] hover:text-white transition-colors">veroled.it</a>
         </div>
       </div>
     </footer>

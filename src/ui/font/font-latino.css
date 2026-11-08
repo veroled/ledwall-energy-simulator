@@ -1,0 +1,43 @@
+/* Google Sans Flex, SOLO latino e latino esteso: per chi scrive in italiano e in inglese e paga ogni
+   byte in ogni pagina (il sito pubblico incolla il foglio nell'HTML). Le altre otto facce stanno in
+   font.css, che importa questo: chi vuole tutto importa font.css, come prima.
+   Licenza SIL Open Font License 1.1 (OFL.txt). */
+
+/* google-sans-flex-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Google Sans Flex Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 1 1000;
+  src: url(./google-sans-flex-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* google-sans-flex-latin-wght-normal */
+@font-face {
+  font-family: 'Google Sans Flex Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 1 1000;
+  src: url(./google-sans-flex-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/*
+ * Il ripiego con le metriche allineate (01/11/2026), contro il salto dell'impaginazione mentre il
+ * carattere vero arriva: con `font-display: swap` il testo si dipinge subito con un carattere di
+ * sistema, e se le misure non combaciano le righe vanno a capo diversamente e tutto si sposta (CLS).
+ * Misurato nel browser con la stessa frase a 1000 px, Google Sans Flex 400 contro Arial:
+ *   larghezza 100,05% · ascendente 966 · discendente 286 (per mille)
+ * Gli override si dividono per size-adjust, che li scala. Verificato su un paragrafo di 17 px largo
+ * 360 px: stesse righe e stessa altezza del carattere vero (129 px contro 129; Arial nudo 117).
+ * I `local()` non scaricano niente. Si rimisura se cambia il carattere.
+ */
+@font-face {
+  font-family: 'Google Sans Flex Ripiego';
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 100.05%;
+  ascent-override: 96.56%;
+  descent-override: 28.59%;
+  line-gap-override: 0%;
+}

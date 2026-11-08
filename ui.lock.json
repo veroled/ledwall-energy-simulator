@@ -1,12 +1,13 @@
 {
   "sorgente": "veroled/veroled-ui",
   "ref": "origin/main",
-  "commit": "17ba07d6231c79944cf67fdf7b4e30c65e57ad2b",
-  "copiatoIl": "2026-11-01T10:34:08.509Z",
+  "commit": "482d95a4dd815842912002e829890483d43e8f96",
+  "copiatoIl": "2026-11-08T18:30:41.731Z",
   "file": {
-    "componenti.css": "92794ff50ffb663eb29d65fb6a2ae2f5344729ceebf2479046925fb7a4a73dc2",
+    "componenti.css": "aa340a252490d8b2f5a89efb9aacaabb7e3c5891d91a19955298ea76b32bc346",
     "font/OFL.txt": "7168a081fbcea8dbe975e3a015c4e340761b3b4ddf8de0c8a818543f773a29e0",
-    "font/font.css": "1ce9a110328badf6166d7e5c1a24bc57e6e4929be657e585534b0490919deae6",
+    "font/font-latino.css": "afe350f4c2910915a63fdfb130c4166d16200993fd2b5007eb0b6fc6ce9cc8f4",
+    "font/font.css": "b4cef905e6b9fc7d1d92e7b8a0dd637e49cefec15f47e4ec681dde6e4f82aa9c",
     "font/google-sans-flex-canadian-aboriginal-wght-normal.woff2": "aaeca97c82451ceff098a70bc77c3bf22320d1e9763bd4989f32f2c2a4a7ced0",
     "font/google-sans-flex-cherokee-wght-normal.woff2": "cd48eed0925d2c483b42ef8f15082488e175eabab8704d2cf97cf4136c1a2b5d",
     "font/google-sans-flex-latin-ext-wght-normal.woff2": "db584cd05c9d3857245ea8c0ac9272a93c7e08fb038feace3f621d698e3147b1",
@@ -17,6 +18,6 @@
     "font/google-sans-flex-syriac-wght-normal.woff2": "c782c559ee388463d30b7cf138116d29b19bf8f51922eafe3061437ddac40d23",
     "font/google-sans-flex-tifinagh-wght-normal.woff2": "40d823360a22949b50305ac53709abf6164f64bb5afb6e38ea2e99cc4fc29c85",
     "font/google-sans-flex-vietnamese-wght-normal.woff2": "c3c9f394ebb84e5a77df8e7bae973035114f852986810435775007137cdddebe",
-    "tokens.css": "4e77d453e8ec0d870cc1bbef3f8e316094a6534d47ea68bf02673e708344d41c"
+    "tokens.css": "b6d06675b7d136e2d524e47bf859404de8123aff6974f60d36dfe0bb4fc7657a"
   }
 }

@@ -22,7 +22,8 @@
  * in test/stile.test.ts lo controlla): la barra segue il tema come tutto il resto, e mostra la
  * scritta del colore giusto — il marchio non si ricolora (regola 3.9), si sceglie il file.
  *
- * Quale tema si veda lo decide il JavaScript, che scrive `data-theme` sulla radice: «sistema»
+ * Quale tema si veda lo decide il JavaScript, che scrive `data-theme` sulla radice (`scuro`/`chiaro`;
+ * il CRM scrive `dark`/`light` col suo vl-theme.js, e sono sinonimi dal 04/11/2026): «sistema»
  * non e' un terzo tema, e' una domanda al sistema operativo (vedi `src/web/tema.ts`).
  *
  * Le tinte che servono anche trasparenti stanno **in componenti**: la stessa tinta a dosi
@@ -30,6 +31,7 @@
  */
 :root,
 :root[data-theme="scuro"],
+:root[data-theme="dark"],
 .hero {
   color-scheme: dark;
 
@@ -88,6 +90,7 @@
   /* La cornice di un media: nera in tutti e due i temi, come l'hero e per lo stesso motivo. */
   --media-fondo: #000;
   --ombra: rgb(0 0 0 / 50%);
+
 }
 
 /*
@@ -96,7 +99,8 @@
  * cinque tinte di stato fra 4,9 e 7,2. La regola non e' «almeno 4,5»: e' «**il chiaro non sta
  * peggio dello scuro**», che e' quello che l'e2e misura pagina per pagina.
  */
-:root[data-theme="chiaro"] {
+:root[data-theme="chiaro"],
+:root[data-theme="light"] {
   color-scheme: light;
 
   --bg-rgb: 255 255 255;
@@ -136,6 +140,7 @@
   --pieno-fondo-hover: #3c4043;
 
   --ombra: rgb(0 0 0 / 25%);
+
 }
 
 /*
@@ -191,11 +196,14 @@
   --pieno-fondo-hover: #0d0d0d;
 
   --ombra: rgb(0 0 0 / 50%);
+
 }
 
 /* Le misure, che col tema non c'entrano niente: una scala sola per tutti e tre. */
 :root {
-  --font: "Google Sans Flex Variable", "Google Sans", system-ui, sans-serif;
+  /* Il ripiego misurato (font/font-latino.css) viene subito dopo: mentre il carattere vero arriva,
+     il testo occupa lo stesso spazio e la pagina non salta. */
+  --font: "Google Sans Flex Variable", "Google Sans Flex Ripiego", "Google Sans", system-ui, sans-serif;
 
   /*
    * I raggi: cinque, e quattro hanno un nome. Prima erano undici valori — 2, 3, 9, 10, 11, 12,

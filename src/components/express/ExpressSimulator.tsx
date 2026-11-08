@@ -51,7 +51,7 @@ const CONTENT_PRESETS = [
   { apl: 60, label: 'Chiaro', hint: 'fondi bianchi, foto' },
 ];
 
-const CONTATTI_URL = 'https://veroledsrl.com/contatti/';
+const CONTATTI_URL = 'https://veroled.it/contatti/';
 
 const BASE_HEIGHT_PRESETS = [
   { h: 0, label: '0 m · a terra' },
