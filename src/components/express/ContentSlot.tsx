@@ -139,12 +139,13 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
 
   return (
     <div className="p-3.5 rounded-xl bg-[var(--s1)] border border-[var(--line)] space-y-3 min-w-0">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-semibold text-white flex items-center space-x-2">
-          <span className={`w-5 h-5 rounded-md text-[11px] flex items-center justify-center font-bold ${id === 'A' ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)]' : 'bg-[var(--line)] text-[var(--text)] border border-[var(--s3)]'}`}>{id}</span>
-          <span>{titolo}</span>
+      {/* Titolo e sottotitolo vanno a capo invece di finire coi puntini (08/11/2026). */}
+      <div className="flex items-start gap-2">
+        <span className="w-5 h-5 mt-0.5 shrink-0 rounded-md text-[11px] flex items-center justify-center font-bold bg-[var(--s2)] text-[var(--text)] border border-[var(--line)]">{id}</span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-[var(--text)]">{titolo}</span>
+          <span className="block text-xs text-[var(--mute)]">{sottotitolo}</span>
         </span>
-        <span className="text-[10px] text-[var(--mute)] truncate">{sottotitolo}</span>
       </div>
 
       <ContentPreview
@@ -185,7 +186,7 @@ export const ContentSlot: React.FC<ContentSlotProps> = ({
             <div className="space-y-0.5">
               <span className="text-[11px] font-medium text-[var(--text)] flex items-center justify-center space-x-1.5">
                 {upload ? <CheckCircle2 className="w-3.5 h-3.5 text-[var(--ok)] flex-shrink-0" /> : <Upload className="w-3.5 h-3.5 text-[var(--mute)] flex-shrink-0" />}
-                <span className="truncate max-w-[220px]">{upload ? upload.nome : `Carica il tuo video o la tua foto nello slot ${id}`}</span>
+                <span className={upload ? 'truncate max-w-[220px]' : ''}>{upload ? upload.nome : `Carica il tuo video o la tua foto nello slot ${id}`}</span>
               </span>
               <span className="text-[10px] text-[var(--faint)] block tabular-nums">
                 {manuale

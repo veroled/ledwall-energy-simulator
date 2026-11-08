@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import cornice from './cornice-sito.json';
 
 /*
  * Il carattere e' Google Sans Flex della base comune veroled-ui (src/ui/font), lo stesso del CMS:
@@ -48,24 +49,15 @@ export default function RootLayout({
   return (
     <html lang="it" className="h-full" data-theme="scuro">
       <body className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)] antialiased">
-        {/* A 390 px questa barra usciva dallo schermo e la pagina era larga 580 px: ora scorre dentro di se'. */}
-        <nav style={{ padding: '0 20px', fontSize: '13px', background: 'var(--bg)', borderBottom: '1px solid var(--line)', display: 'flex', gap: '14px', alignItems: 'center', zIndex: 99, position: 'relative', overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: '100vw' }}>
-          <a href="/" style={{ color: 'var(--text)', textDecoration: 'none', fontWeight: 500, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>← VeroLED Home</a>
-          <span style={{ color: 'var(--faint)' }}>·</span>
-          <a href="/simulatore-consumi/express/" style={{ color: 'var(--text)', textDecoration: 'none', fontWeight: 500, display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>⚡ Calcolo Express</a>
-          <span style={{ color: 'var(--faint)' }}>·</span>
-          <a href="/calcolatore-ledwall/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Calcolatore Risoluzione</a>
-          <span style={{ color: 'var(--faint)' }}>·</span>
-          <a href="/configuratore/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Configuratore</a>
-          <span style={{ color: 'var(--faint)' }}>·</span>
-          <a href="/prezzi-ledwall/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Listino Prezzi</a>
-          <span style={{ color: 'var(--faint)' }}>·</span>
-          <a href="/cultura/quanto-consuma-un-ledwall/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Guida Consumi &amp; APL</a>
-          <span style={{ color: 'var(--faint)' }}>·</span>
-          <a href="/contatti/" style={{ color: 'var(--mute)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44 }}>Contatti</a>
-        </nav>
-        <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>Simulatore Consumi e Dimensionamento LEDwall — Calcolo Preventivo VeroLED</h1>
+        {/* La cornice è quella del sito (08/11/2026): testata, menu e piè di pagina letti dalla build di
+            veroled.it da scripts/sync-cornice-sito.mjs. Prima qui c'era una striscia di link propria
+            («← VeroLED Home · ⚡ Calcolo Express · …») e un H1 nascosto: ora il titolo è nella pagina. */}
+        <style dangerouslySetInnerHTML={{ __html: cornice.css }} />
+        <div dangerouslySetInnerHTML={{ __html: cornice.testata + cornice.menu }} style={{ display: 'contents' }} />
+        <div style={{ height: 56 }} aria-hidden="true" />
         {children}
+        <div dangerouslySetInnerHTML={{ __html: cornice.piede }} style={{ display: 'contents' }} />
+        {cornice.script.map((src) => <script key={src} src={src} defer />)}
       </body>
     </html>
   );

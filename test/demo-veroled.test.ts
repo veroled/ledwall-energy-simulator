@@ -60,11 +60,16 @@ describe('demo VeroLED disegnata dal vivo', () => {
     expect(disegno('ottimizzato', 3.1 + DURATA_DEMO_SEC)).toEqual(disegno('ottimizzato', 3.1));
   });
 
-  it('il pannello di pixel è identico nelle due versioni: cambia solo il fondo sopra', () => {
-    const pannello = (c: Chiamata[]) => c.filter((k) => k[0] === 'fillRect').slice(1);
-    const a = pannello(disegno('chiaro', 5));
+  // 08/11/2026: le celle sono le stesse, ma stanno sul fondo della versione. Con il pannello su #111
+  // in tutte e due, il mosaico (62 % del riquadro) rendeva A e B uguali a colpo d'occhio.
+  it('le celle del pannello sono le stesse nelle due versioni, il fondo del pannello è quello della versione', () => {
+    const celle = (c: Chiamata[]) => c.filter((k) => k[0] === 'fillRect').slice(2);
+    const a = celle(disegno('chiaro', 5));
     expect(a.length).toBeGreaterThan(50);
-    expect(pannello(disegno('ottimizzato', 5))).toEqual(a);
+    expect(celle(disegno('ottimizzato', 5))).toEqual(a);
+    expect(disegno('chiaro', 5)[1][1]).toBe(VERSIONI_DEMO.chiaro.pannello);
+    expect(disegno('ottimizzato', 5)[1][1]).toBe(VERSIONI_DEMO.ottimizzato.pannello);
+    expect(VERSIONI_DEMO.chiaro.pannello).not.toBe(VERSIONI_DEMO.ottimizzato.pannello);
     expect(disegno('chiaro', 5)[0]).toEqual(['fillRect', VERSIONI_DEMO.chiaro.fondo, 1, 0, 0, 480, 320]);
     expect(disegno('ottimizzato', 5)[0]).toEqual(['fillRect', VERSIONI_DEMO.ottimizzato.fondo, 1, 0, 0, 480, 320]);
   });

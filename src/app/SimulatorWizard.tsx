@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useSimulatorStore } from '../store/useSimulatorStore';
 import { WizardHeader } from '../components/wizard/WizardHeader';
-import { WizardFooter } from '../components/wizard/WizardFooter';
 
 import { S0Landing } from '../components/wizard/S0Landing';
 import { S1DataSource } from '../components/wizard/S1DataSource';
@@ -90,14 +89,13 @@ export function SimulatorWizard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg)] selection:bg-[var(--ok)] selection:text-[var(--bg)]">
+    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg)] selection:bg-[var(--text)] selection:text-[var(--bg)]">
       <WizardHeader />
       <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">
           {renderScreen()}
         </AnimatePresence>
       </main>
-      <WizardFooter />
     </div>
   );
 }

@@ -4,7 +4,6 @@ import React from 'react';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Zap } from 'lucide-react';
-import { asset } from '../../config/paths';
 
 export const WizardHeader: React.FC = () => {
   const { currentStep, prevStep, nextStep, setStep } = useSimulatorStore();
@@ -23,30 +22,23 @@ export const WizardHeader: React.FC = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[var(--s1)] border-b border-[var(--line)]">
+    <header className="sticky top-[56px] z-40 bg-[var(--s1)] border-b border-[var(--line)]">
+      {/* Sotto la testata del sito (fissa, 56 px): la barra del wizard si ferma lì, non ci passa sotto. */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Logo Ufficiale VeroLED & Brand */}
-        <div
-          onClick={() => setStep(0)}
-          className="flex items-center space-x-3 cursor-pointer select-none group"
-        >
-          <img
-            src={asset('/brand/scritta-bianca.svg')}
-            alt="VEROLED"
-            className="h-6 w-auto object-contain select-none"
-          />
-          <span className="text-xs text-[var(--mute)] font-medium border-l border-[var(--line)] pl-3 hidden sm:inline-block">
-            LEDwall Energy Simulator
-          </span>
-        </div>
+        {/* Il logo sta già nella testata del sito (08/11/2026): qui il titolo della pagina. */}
+        <h1 className="min-w-0">
+          <button type="button" onClick={() => setStep(0)} className="text-sm font-medium text-[var(--text)] cursor-pointer text-left">
+            Simulatore consumi <span className="text-[var(--mute)]">· wizard completo</span>
+          </button>
+        </h1>
 
         {/* Navigation Controls (Indietro & Avanti solidi) */}
         <div className="flex items-center space-x-3">
           <Link
             href="/express"
-            className="px-3 py-1.5 rounded-lg border border-[rgb(var(--ok-rgb)/30%)] bg-[rgb(var(--ok-rgb)/10%)] text-xs font-semibold text-[var(--ok)] hover:bg-[rgb(var(--ok-rgb)/10%)] transition-colors flex items-center space-x-1.5"
+            className="px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] text-xs font-semibold text-[var(--text)] hover:bg-[var(--s2)] transition-colors flex items-center space-x-1.5"
           >
-            <Zap className="w-3.5 h-3.5" />
+            <Zap className="w-3.5 h-3.5 text-[var(--mute)]" />
             <span className="hidden sm:inline">Express</span>
           </Link>
           {currentStep > 0 && (
@@ -71,14 +63,10 @@ export const WizardHeader: React.FC = () => {
             </button>
           )}
 
-          <div className="px-2.5 py-1 rounded-full bg-[var(--s1)] border border-[var(--line)] text-xs font-medium text-[var(--mute)] hidden lg:flex items-center space-x-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--pieno-fondo)]"></span>
-            <span>CEI 64-8 / Fleet Monitor PRO</span>
-          </div>
         </div>
       </div>
 
-      {/* Tab Wizard Navigation B2B: Sottolineatura verde 2px sul tab attivo */}
+      {/* I passi del wizard: il passo attivo sottolineato nel colore del testo */}
       <div className="bg-[var(--bg)] border-t border-[var(--line)] overflow-x-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-xs font-medium text-[var(--mute)]">
           {stepTitles.map((title, idx) => (
@@ -87,7 +75,7 @@ export const WizardHeader: React.FC = () => {
               onClick={() => setStep(idx)}
               className={`py-2 border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                 currentStep === idx
-                  ? 'border-[var(--ok)] text-white font-semibold'
+                  ? 'border-[var(--text)] text-[var(--text)] font-semibold'
                   : 'border-transparent hover:text-[var(--text)]'
               }`}
             >

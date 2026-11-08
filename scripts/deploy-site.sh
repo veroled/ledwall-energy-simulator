@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Esporta il simulatore in statico sotto /simulatore-consumi e lo copia nel repo del sito
-# veroledsrl.com (Cloudflare Pages, deploy automatico al push su main).
+# veroled.it (Cloudflare Pages, deploy automatico al push su main).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SITE="${VEROLED_SITE_DIR:-$HOME/Documents/veroled}"
@@ -10,6 +10,10 @@ DEST="$SITE/public/simulatore-consumi"
 echo "▸ nit per Selection × passo dal listino del sito"
 VEROLED_SITE_DIR="$SITE" node scripts/sync-catalogo-nit.mjs | head -1
 git diff --quiet -- src/config/catalogo-nit.json || echo "  ⚠ il listino è cambiato: committa src/config/catalogo-nit.json e rilancia i test"
+
+echo "▸ testata e piè di pagina dalla build del sito"
+VEROLED_SITE_DIR="$SITE" node scripts/sync-cornice-sito.mjs
+git diff --quiet -- src/app/cornice-sito.json || echo "  ⚠ la cornice del sito è cambiata: committa src/app/cornice-sito.json"
 
 echo "▸ build statica con basePath /simulatore-consumi"
 npm run prebuild --silent

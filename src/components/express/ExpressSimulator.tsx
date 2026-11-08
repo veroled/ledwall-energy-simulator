@@ -3,12 +3,10 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useSimulatorStore, useSimulatorComputed, BASE_MAX_M, ALTEZZA_MAX_M } from '../../store/useSimulatorStore';
-import { asset } from '../../config/paths';
 import { stimaPotenzaDaPassoNit, calcolaPotenzaWmq, calcolaProfiloEnergetico, datoCatalogo, passiDelTier, stessoPasso, tierName, TIERS, PASSI_CATALOGO } from '../../core/physics';
 import { RecommendationBanner } from './RecommendationBanner';
 import { ContentSlot, type DemoSlot, type SlotInfo } from './ContentSlot';
 import { APL_DEMO_PROVVISORIO } from '../../core/demo-veroled';
-import { WizardFooter } from '../wizard/WizardFooter';
 import {
   Play,
   Zap,
@@ -184,43 +182,41 @@ export const ExpressSimulator: React.FC = () => {
     calcolaPotenzaWmq({ apl: apl / 100, lum: softwareOff ? 0 : liveLumDiurna / 100, pMax, pStandby: standbyWmq }) * dimensions.areaM2;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg)] selection:bg-[var(--ok)] selection:text-[var(--bg)]">
-      {/* Header express */}
-      <header className="sticky top-0 z-50 bg-[var(--s1)] border-b border-[var(--line)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-3 select-none">
-            <img src={asset('/brand/scritta-bianca.svg')} alt="VEROLED" className="h-6 w-auto object-contain" />
-            <span className="text-xs text-[var(--mute)] font-medium border-l border-[var(--line)] pl-3 hidden sm:inline-block">
-              Calcolo Express
-            </span>
-          </Link>
-          <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-1 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[11px] font-medium text-[var(--ok)] hidden md:flex items-center space-x-1.5">
-              <Zap className="w-3 h-3" />
-              <span>{tecnico ? 'Modalità tecnica · tutti i parametri' : 'Due dati · risultati live'}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setExpressTecnico(!tecnico)}
-              aria-pressed={tecnico}
-              className={`px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                tecnico ? 'border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)]' : 'border-[var(--line)] bg-[var(--s1)] text-[var(--mute)] hover:text-white hover:border-[var(--s3)]'
-              }`}
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{tecnico ? 'Modalità tecnica attiva' : 'Modalità tecnica'}</span>
-            </button>
-            <Link
-              href="/"
-              onClick={() => goToWizard(0)}
-              className="px-3.5 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--s1)] text-xs font-semibold text-[var(--text)] hover:bg-[var(--s2)] hover:border-[var(--s3)] transition-colors flex items-center space-x-1.5"
-            >
-              <LayoutList className="w-3.5 h-3.5 text-[var(--mute)]" />
-              <span>Wizard completo</span>
-            </Link>
-          </div>
+    <div className="min-h-screen flex flex-col bg-[var(--bg)] selection:bg-[var(--text)] selection:text-[var(--bg)]">
+      {/* La testata è quella del sito (SiteHeader nel layout): qui solo il titolo della pagina e i due
+          comandi dello strumento. Prima c'era una seconda barra col logo e il badge «Due dati · risultati
+          live» (08/11/2026, il titolare: «c'è qualcosa di troppo?»). */}
+      <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="min-w-0">
+          {/* Briciole e titolo come le altre pagine del sito: H1 sulla scala unica (40–72 px, peso 400). */}
+          <nav aria-label="Percorso" className="text-xs text-[var(--mute)] mb-4">
+            <a href="/" className="text-[var(--mute)] hover:text-[var(--text)]">home</a> / <a href="/tool/" className="text-[var(--mute)] hover:text-[var(--text)]">strumenti</a> / calcolo express
+          </nav>
+          <h1 className="text-[clamp(40px,6vw,72px)] leading-[1.22] tracking-[0.02em] font-normal text-[var(--text)]">quanto consuma il tuo ledwall</h1>
+          <p className="mt-2 text-sm text-[var(--mute)] max-w-[60ch]">Scrivi le misure e confronta due contenuti sullo stesso schermo: kW, kWh e bolletta, calcolati mentre scrivi.</p>
         </div>
-      </header>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setExpressTecnico(!tecnico)}
+            aria-pressed={tecnico}
+            className={`min-h-[44px] px-4 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 cursor-pointer ${
+              tecnico ? 'border-[var(--text)] bg-[var(--s2)] text-[var(--text)]' : 'border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:bg-[var(--s2)]'
+            }`}
+          >
+            <Settings2 className="w-4 h-4 text-[var(--mute)]" />
+            <span>{tecnico ? 'Modalità tecnica attiva' : 'Modalità tecnica'}</span>
+          </button>
+          <Link
+            href="/"
+            onClick={() => goToWizard(0)}
+            className="min-h-[44px] px-4 rounded-lg border border-[var(--line)] bg-[var(--s1)] text-sm font-medium text-[var(--text)] hover:bg-[var(--s2)] transition-colors flex items-center gap-2"
+          >
+            <LayoutList className="w-4 h-4 text-[var(--mute)]" />
+            <span>Wizard completo</span>
+          </Link>
+        </div>
+      </div>
 
       <main className="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
@@ -229,8 +225,8 @@ export const ExpressSimulator: React.FC = () => {
             {/* 1. Schermo */}
             <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-5">
               <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                <span className="w-5 h-5 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)] text-[11px] flex items-center justify-center font-bold">1</span>
-                <Monitor className="w-4 h-4 text-[var(--ok)]" />
+                <span className="w-5 h-5 rounded-full bg-[var(--s2)] border border-[var(--line)] text-[var(--text)] text-[11px] flex items-center justify-center font-bold">1</span>
+                <Monitor className="w-4 h-4 text-[var(--mute)]" />
                 <span>{tecnico ? 'Il tuo LEDwall' : 'Quanto è grande'}</span>
               </div>
 
@@ -248,8 +244,8 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setTier(t.id)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center space-x-1.5 ${
                           sel
-                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold shadow-sm'
-                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
+                            ? 'border border-[var(--text)] bg-[var(--s2)] text-[var(--text)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--mute)]'
                         }`}
                       >
                         <span>{t.name}</span>
@@ -284,8 +280,8 @@ export const ExpressSimulator: React.FC = () => {
                         }
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${
                           selected
-                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold shadow-sm'
-                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
+                            ? 'border border-[var(--text)] bg-[var(--s2)] text-[var(--text)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--mute)]'
                         }`}
                       >
                         <span>P{p}</span>
@@ -319,7 +315,7 @@ export const ExpressSimulator: React.FC = () => {
                       step={1}
                       value={modulesW}
                       onChange={(e) => setDimensioniMetri(parseInt(e.target.value || '1', 10), modulesH)}
-                      className="w-full px-3 py-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-sm tabular-nums focus:border-[var(--ok)] outline-none"
+                      className="w-full px-3 py-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-sm tabular-nums focus:border-[var(--focus)] outline-none"
                     />
                     <span className="text-[var(--mute)] text-sm">×</span>
                     <input
@@ -329,7 +325,7 @@ export const ExpressSimulator: React.FC = () => {
                       step={1}
                       value={modulesH}
                       onChange={(e) => setDimensioniMetri(modulesW, parseInt(e.target.value || '1', 10))}
-                      className="w-full px-3 py-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-sm tabular-nums focus:border-[var(--ok)] outline-none"
+                      className="w-full px-3 py-2 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-sm tabular-nums focus:border-[var(--focus)] outline-none"
                     />
                     <span className="text-[var(--mute)] text-xs whitespace-nowrap">m</span>
                   </div>
@@ -342,7 +338,7 @@ export const ExpressSimulator: React.FC = () => {
                           type="button"
                           onClick={() => setDimensioniMetri(s.w, s.h)}
                           className={`px-2 py-1 rounded text-[11px] font-medium cursor-pointer transition-colors ${
-                            sel ? 'bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] border border-[rgb(var(--ok-rgb)/30%)]' : 'bg-[var(--s1)] text-[var(--mute)] border border-[var(--line)] hover:text-white'
+                            sel ? 'bg-[var(--s2)] text-[var(--text)] border border-[var(--text)]' : 'bg-[var(--s1)] text-[var(--mute)] border border-[var(--line)] hover:text-white'
                           }`}
                         >
                           {s.w}×{s.h} m
@@ -397,8 +393,8 @@ export const ExpressSimulator: React.FC = () => {
                     aria-pressed={softwareOff}
                     className={`w-full px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-center space-x-1.5 ${
                       softwareOff
-                        ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
-                        : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
+                        ? 'border border-[var(--text)] bg-[var(--s2)] text-[var(--text)] font-semibold'
+                        : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--mute)]'
                     }`}
                   >
                     <Power className="w-3.5 h-3.5" />
@@ -438,7 +434,7 @@ export const ExpressSimulator: React.FC = () => {
               {/* Distanza di visione */}
               <div className="space-y-2">
                 <span className="text-xs text-[var(--mute)] font-medium flex items-center space-x-1.5">
-                  <Eye className="w-3.5 h-3.5 text-[var(--ok)]" />
+                  <Eye className="w-3.5 h-3.5 text-[var(--mute)]" />
                   <span>Da dove lo guardano? <span className="text-[var(--faint)]">(distanza a terra dal piede dello schermo)</span></span>
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -451,8 +447,8 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setGroundViewingDistM(d.d)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
                           sel
-                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
-                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
+                            ? 'border border-[var(--text)] bg-[var(--s2)] text-[var(--text)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--mute)]'
                         }`}
                       >
                         {d.label}
@@ -466,7 +462,7 @@ export const ExpressSimulator: React.FC = () => {
                       max={200}
                       value={groundViewingDistM}
                       onChange={(e) => setGroundViewingDistM(parseFloat(e.target.value || '1'))}
-                      className="w-20 px-2 py-1.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-xs tabular-nums focus:border-[var(--ok)] outline-none"
+                      className="w-20 px-2 py-1.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-xs tabular-nums focus:border-[var(--focus)] outline-none"
                     />
                     <span className="text-[11px] text-[var(--mute)]">m</span>
                   </div>
@@ -476,7 +472,7 @@ export const ExpressSimulator: React.FC = () => {
               {/* Quota della base: con la distanza a terra dà la linea di vista reale */}
               <div className="space-y-2">
                 <span className="text-xs text-[var(--mute)] font-medium flex items-center space-x-1.5">
-                  <ArrowUpFromLine className="w-3.5 h-3.5 text-[var(--ok)]" />
+                  <ArrowUpFromLine className="w-3.5 h-3.5 text-[var(--mute)]" />
                   <span>A che altezza è la base dello schermo?</span>
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -489,8 +485,8 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setInstallHeightM(b.h)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
                           sel
-                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
-                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
+                            ? 'border border-[var(--text)] bg-[var(--s2)] text-[var(--text)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--mute)]'
                         }`}
                       >
                         {b.label}
@@ -504,7 +500,7 @@ export const ExpressSimulator: React.FC = () => {
                       max={150}
                       value={installHeightM}
                       onChange={(e) => setInstallHeightM(parseFloat(e.target.value || '0'))}
-                      className="w-20 px-2 py-1.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-xs tabular-nums focus:border-[var(--ok)] outline-none"
+                      className="w-20 px-2 py-1.5 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-white text-xs tabular-nums focus:border-[var(--focus)] outline-none"
                     />
                     <span className="text-[11px] text-[var(--mute)]">m</span>
                   </div>
@@ -520,8 +516,8 @@ export const ExpressSimulator: React.FC = () => {
             {/* 2. Contenuto: due slot indipendenti a confronto sullo stesso schermo */}
             <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-4">
               <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                <span className="w-5 h-5 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)] text-[11px] flex items-center justify-center font-bold">2</span>
-                <Play className="w-4 h-4 text-[var(--ok)]" />
+                <span className="w-5 h-5 rounded-full bg-[var(--s2)] border border-[var(--line)] text-[var(--text)] text-[11px] flex items-center justify-center font-bold">2</span>
+                <Play className="w-4 h-4 text-[var(--mute)]" />
                 <span>Cosa trasmetti</span>
                 <span className="text-[11px] text-[var(--mute)] font-normal hidden sm:inline">· stesso schermo, due contenuti: il contenuto pesa più del 70% della bolletta</span>
               </div>
@@ -530,7 +526,7 @@ export const ExpressSimulator: React.FC = () => {
                 <ContentSlot
                   id="A"
                   titolo={slotA && slotA.origine !== 'demo' ? 'Il tuo contenuto' : 'Contenuto chiaro · demo'}
-                  sottotitolo="questo slot va nel report"
+                  sottotitolo="è il contenuto che finisce nel report PDF"
                   demo={demoA}
                   ratioW={modulesW}
                   ratioH={modulesH}
@@ -544,7 +540,7 @@ export const ExpressSimulator: React.FC = () => {
                 <ContentSlot
                   id="B"
                   titolo={slotB && slotB.origine !== 'demo' ? 'Il tuo confronto' : 'Contenuto ottimizzato · demo'}
-                  sottotitolo="stesso schermo"
+                  sottotitolo="stesso schermo, contenuto diverso"
                   demo={demoB}
                   ratioW={modulesW}
                   ratioH={modulesH}
@@ -579,8 +575,8 @@ export const ExpressSimulator: React.FC = () => {
                         onClick={() => setManualAplA(c.apl)}
                         className={`py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer transition-colors ${
                           manualAplA === c.apl
-                            ? 'border border-[var(--ok)] bg-[rgb(var(--ok-rgb)/10%)] text-[var(--ok)] font-semibold'
-                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--ok)]'
+                            ? 'border border-[var(--text)] bg-[var(--s2)] text-[var(--text)] font-semibold'
+                            : 'border border-[var(--line)] bg-[var(--s1)] text-[var(--text)] hover:border-[var(--mute)]'
                         }`}
                       >
                         {c.label} · {c.apl}%
@@ -600,8 +596,8 @@ export const ExpressSimulator: React.FC = () => {
             <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-white font-semibold text-sm">
-                  <span className="w-5 h-5 rounded-full bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)] text-[var(--ok)] text-[11px] flex items-center justify-center font-bold">3</span>
-                  <Zap className="w-4 h-4 text-[var(--ok)]" />
+                  <span className="w-5 h-5 rounded-full bg-[var(--s2)] border border-[var(--line)] text-[var(--text)] text-[11px] flex items-center justify-center font-bold">3</span>
+                  <Zap className="w-4 h-4 text-[var(--mute)]" />
                   <span>Quanto consuma</span>
                   <span className="text-[11px] text-[var(--mute)] font-normal hidden sm:inline tabular-nums">
                     · {softwareOff ? 'a schermo spento da software, tutto il giorno' : 'lo stesso schermo con i due contenuti'}
@@ -657,7 +653,7 @@ export const ExpressSimulator: React.FC = () => {
 
               {/* Su schermi stretti la colonna di destra finisce in fondo: la differenza si ripete qui, in evidenza */}
               {!softwareOff && deltaAnnuoEur !== 0 && (
-                <div className="lg:hidden p-3 rounded-lg bg-[rgb(var(--ok-rgb)/10%)] border border-[rgb(var(--ok-rgb)/30%)]">
+                <div className="lg:hidden p-3 rounded-lg bg-[var(--s2)] border border-[var(--line)]">
                   <span className="text-xl font-semibold text-white tabular-nums">{n(Math.abs(deltaAnnuoEur))} €</span>
                   <span className="text-xs text-[var(--mute)] ml-1.5">all&apos;anno di differenza · {deltaAnnuoEur > 0 ? 'B' : 'A'} spende il {deltaPercento}% in meno</span>
                 </div>
@@ -668,7 +664,7 @@ export const ExpressSimulator: React.FC = () => {
                   <thead>
                     <tr className="text-[10px] uppercase text-[var(--mute)]">
                       <th className="py-2 pr-3 font-medium"></th>
-                      <th className="py-2 px-3 font-medium text-[var(--ok)]">A · {slotA?.origine === 'demo' || !slotA ? 'contenuto chiaro' : 'il tuo contenuto'}</th>
+                      <th className="py-2 px-3 font-medium text-[var(--text)]">A · {slotA?.origine === 'demo' || !slotA ? 'contenuto chiaro' : 'il tuo contenuto'}</th>
                       <th className="py-2 pl-3 font-medium text-[var(--text)]">B · {slotB?.origine === 'demo' || !slotB ? 'contenuto ottimizzato' : 'il tuo confronto'}</th>
                     </tr>
                   </thead>
@@ -705,7 +701,7 @@ export const ExpressSimulator: React.FC = () => {
                   </p>
                   <a
                     href={CONTATTI_URL}
-                    className="px-4 py-2 rounded-lg border border-[var(--ok)] text-[var(--ok)] hover:bg-[rgb(var(--ok-rgb)/10%)] font-semibold text-xs whitespace-nowrap text-center transition-colors"
+                    className="min-h-[44px] inline-flex items-center justify-center px-4 rounded-lg border border-[var(--line)] text-[var(--text)] hover:bg-[var(--s2)] font-semibold text-sm whitespace-nowrap text-center transition-colors"
                   >
                     Contattaci
                   </a>
@@ -745,8 +741,8 @@ export const ExpressSimulator: React.FC = () => {
 
           {/* Anteprima live + banner consiglio (sticky su desktop) */}
           <div className="lg:sticky lg:top-24 space-y-5">
-            <section className="bg-[rgb(var(--ok-rgb)/10%)] p-5 rounded-xl border border-[rgb(var(--ok-rgb)/30%)] shadow-sm space-y-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ok)] flex items-center space-x-2">
+            <section className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm space-y-3">
+              <span className="text-xs font-medium text-[var(--mute)] flex items-center space-x-2">
                 <Zap className="w-3.5 h-3.5" />
                 <span>Quanto pesa il contenuto</span>
               </span>
@@ -767,7 +763,7 @@ export const ExpressSimulator: React.FC = () => {
                 </>
               )}
               <div className="space-y-1.5 pt-1">
-                {([['A', profiloA.annualCostEur, 'bg-[var(--ok)]'], ['B', profiloB.annualCostEur, 'bg-[var(--text)]']] as const).map(([id, costo, colore]) => (
+                {([['A', profiloA.annualCostEur, 'bg-[var(--text)]'], ['B', profiloB.annualCostEur, 'bg-[var(--mute)]']] as const).map(([id, costo, colore]) => (
                   <div key={id} className="flex items-center space-x-2 text-[11px] text-[var(--mute)] tabular-nums">
                     <span className="w-3 font-semibold text-white">{id}</span>
                     <div className="flex-1 h-2 rounded-full bg-[var(--line)] overflow-hidden">
@@ -794,7 +790,6 @@ export const ExpressSimulator: React.FC = () => {
         </div>
       </main>
 
-      <WizardFooter />
     </div>
   );
 };

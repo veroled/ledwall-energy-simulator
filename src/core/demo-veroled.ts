@@ -29,28 +29,32 @@ export const DURATA_DEMO_SEC = SECONDI_PER_PAROLA * TESTI_DEMO.parole.length;
 /** Il carattere della base comune veroled-ui (src/ui/font/font.css) */
 export const FONT_DEMO = '"Google Sans Flex Variable", sans-serif';
 
-export const VERSIONI_DEMO: Record<VersioneDemo, { fondo: string; testo: string; scritta: string; etichetta: string }> = {
+/*
+ * Il pannello di celle colorate sta sul FONDO della versione (08/11/2026, il titolare: «manca qualcosa?»).
+ * Prima stava su #111 in tutte e due: il mosaico occupava il 62 % del riquadro ed era identico, e a
+ * colpo d'occhio A e B sembravano lo stesso contenuto. Ora A è chiaro dappertutto e B scuro dappertutto.
+ * `pannelloMedio` è il colore medio delle celle sul loro fondo (copertura 72,9 %, alfa medio 0,75).
+ */
+export const VERSIONI_DEMO: Record<VersioneDemo, { fondo: string; testo: string; scritta: string; etichetta: string; pannello: string; pannelloMedio: string }> = {
   // Fondo crema e testo scuro: il contenuto «come lo fanno tutti»
-  chiaro: { fondo: '#f4f1ea', testo: '#1b1c1e', scritta: '/brand/scritta-nera.svg', etichetta: 'Demo · contenuto chiaro' },
+  chiaro: { fondo: '#f4f1ea', testo: '#1b1c1e', scritta: '/brand/scritta-nera.svg', etichetta: 'Demo · contenuto chiaro', pannello: '#f4f1ea', pannelloMedio: '#b5b39e' },
   // Fondo nero e testo chiaro: lo stesso messaggio, con meno luce
-  ottimizzato: { fondo: '#000000', testo: '#e8eaed', scritta: '/brand/scritta-bianca.svg', etichetta: 'Demo · contenuto ottimizzato' },
+  ottimizzato: { fondo: '#000000', testo: '#e8eaed', scritta: '/brand/scritta-bianca.svg', etichetta: 'Demo · contenuto ottimizzato', pannello: '#111111', pannelloMedio: '#4f4e3c' },
 };
 
 /**
  * Luminosità media usata dalla pagina SOLO nell'istante prima della prima misura (il tempo di
  * caricare carattere e scritta): poi vale quella misurata sul disegno, nel formato dello schermo.
- * Misurata in Chromium in 3:2 il 01/11/2026; scripts/verifica-demo.mjs controlla che resti entro
+ * Misurata in Chromium in 3:2 il 01/11/2026, rimisurata l'08/11/2026 col pannello sul fondo della versione; scripts/verifica-demo.mjs controlla che resti entro
  * 10 punti dalla misura vera in tutti i formati, altrimenti la cifra che lampeggia mentirebbe.
  */
-export const APL_DEMO_PROVVISORIO: Record<VersioneDemo, number> = { chiaro: 52, ottimizzato: 20 };
+export const APL_DEMO_PROVVISORIO: Record<VersioneDemo, number> = { chiaro: 77, ottimizzato: 20 };
 
 /** Proporzioni della scritta ufficiale (viewBox di public/brand/scritta-*.svg) */
 const SCRITTA_W = 836.61;
 const SCRITTA_H = 132;
 
 const COLORI_PANNELLO = ['#2f6fdb', '#d9542c', '#1f9d55', '#e0a020'];
-/** I quattro colori a metà onda sul fondo #111, pesati per la parte di superficie che le celle coprono */
-const PANNELLO_MEDIO = '#4f4e3c';
 
 /** Quello che il disegno usa del contesto 2D: basta questo, e le prove possono passarne uno finto */
 export type ContestoDemo = Pick<
@@ -170,14 +174,14 @@ function disegnaNastro(
         const bw = verticale ? W : lungo;
         const bh = verticale ? lungo : H;
         if (b.tipo === 'pannello') {
-          x.fillStyle = '#111111';
+          x.fillStyle = VERSIONI_DEMO[versione].pannello;
           x.fillRect(bx, by, bw, bh);
           const lato = u * 7;
           if (lato < 1) {
             // Celle più piccole di un pixel (la miniatura di un nastro da 100 m): migliaia di
             // rettangoli invisibili a ogni fotogramma. Si stende il loro colore medio. Non tocca la
             // misura, che disegna con un lato corto di almeno 48 px (celle da 3 px e oltre).
-            x.fillStyle = PANNELLO_MEDIO;
+            x.fillStyle = VERSIONI_DEMO[versione].pannelloMedio;
             x.fillRect(bx, by, bw, bh);
             pos += lungo;
             continue;
@@ -233,10 +237,9 @@ function disegnaRiquadro(
   x.fillStyle = V.fondo;
   x.fillRect(0, 0, W, H);
 
-  // Il pannello di pixel: la parte bassa, su fondo scuro in tutte e due le versioni, acceso da
-  // un'onda. È la parte uguale; cambia solo il fondo sopra.
+  // Il pannello di pixel: la parte bassa, acceso da un'onda, sul fondo della versione.
   const gy0 = H * 0.38;
-  x.fillStyle = '#111111';
+  x.fillStyle = V.pannello;
   x.fillRect(0, gy0, W, H - gy0);
   const lato = u * 7;
   const passo = lato + u * 1.2;
