@@ -55,8 +55,10 @@ export function SimulatorWizard() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-xs font-medium text-[var(--mute)]">
-        <span>Inizializzazione simulatore...</span>
+      // ⛔ L'export statico disegna solo questo ramo: il titolo deve starci, o l'HTML resta senza H1.
+      <div className="min-h-screen bg-[var(--bg)] max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6">
+        <h1 className="text-sm font-medium text-[var(--text)]">Simulatore consumi <span className="text-[var(--mute)]">· wizard completo</span></h1>
+        <p className="mt-10 text-xs font-medium text-[var(--mute)]">Inizializzazione simulatore...</p>
       </div>
     );
   }

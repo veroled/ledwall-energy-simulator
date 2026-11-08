@@ -31,6 +31,19 @@ const fmtPotenza = (watt: number) => (watt < 10000 ? `${n(watt)} W` : `${n(watt 
 const subscribeNoop = () => () => {};
 const useMounted = () => useSyncExternalStore(subscribeNoop, () => true, () => false);
 
+/** Briciole, titolo e sottotitolo: come le altre pagine del sito, H1 sulla scala unica (40–72 px, peso 400). */
+function IntestazioneExpress() {
+  return (
+    <>
+      <nav aria-label="Percorso" className="text-xs text-[var(--mute)] mb-4">
+        <a href="/" className="text-[var(--mute)] hover:text-[var(--text)]">home</a> / <a href="/tool/" className="text-[var(--mute)] hover:text-[var(--text)]">strumenti</a> / calcolo express
+      </nav>
+      <h1 className="text-[clamp(40px,6vw,72px)] leading-[1.22] tracking-[0.02em] font-normal text-[var(--text)]">quanto consuma il tuo ledwall</h1>
+      <p className="mt-2 text-sm text-[var(--mute)] max-w-[60ch]">Scrivi le misure e confronta due contenuti sullo stesso schermo: kW, kWh e bolletta, calcolati mentre scrivi.</p>
+    </>
+  );
+}
+
 const SIZE_PRESETS = [
   { w: 4, h: 2 },
   { w: 6, h: 3 },
@@ -150,10 +163,15 @@ export const ExpressSimulator: React.FC = () => {
     setStep(step);
   };
 
+  // ⛔ Il titolo sta anche QUI (08/11/2026): l'export statico disegna solo questo ramo, e senza il
+  // titolo l'HTML che leggono i motori restava senza H1 (prima ce n'era uno nascosto nel layout).
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-xs font-medium text-[var(--mute)]">
-        Inizializzazione simulatore...
+      <div className="min-h-screen bg-[var(--bg)]">
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10">
+          <IntestazioneExpress />
+          <p className="mt-10 text-xs font-medium text-[var(--mute)]">Inizializzazione simulatore...</p>
+        </div>
       </div>
     );
   }
@@ -188,12 +206,7 @@ export const ExpressSimulator: React.FC = () => {
           live» (08/11/2026, il titolare: «c'è qualcosa di troppo?»). */}
       <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div className="min-w-0">
-          {/* Briciole e titolo come le altre pagine del sito: H1 sulla scala unica (40–72 px, peso 400). */}
-          <nav aria-label="Percorso" className="text-xs text-[var(--mute)] mb-4">
-            <a href="/" className="text-[var(--mute)] hover:text-[var(--text)]">home</a> / <a href="/tool/" className="text-[var(--mute)] hover:text-[var(--text)]">strumenti</a> / calcolo express
-          </nav>
-          <h1 className="text-[clamp(40px,6vw,72px)] leading-[1.22] tracking-[0.02em] font-normal text-[var(--text)]">quanto consuma il tuo ledwall</h1>
-          <p className="mt-2 text-sm text-[var(--mute)] max-w-[60ch]">Scrivi le misure e confronta due contenuti sullo stesso schermo: kW, kWh e bolletta, calcolati mentre scrivi.</p>
+          <IntestazioneExpress />
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button

@@ -14,7 +14,7 @@
 //   VEROLED_SITE_DIR=<repo del sito> node scripts/sync-cornice-sito.mjs
 //
 // Serve una build del sito recente (`npm run build` nel suo repository): senza, lo script si ferma.
-import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -133,9 +133,10 @@ const script = ['/js/vl-turnstile.js', '/js/vl-scadenza.js', '/scripts/main.clie
   return m[1];
 });
 
+// Niente data di generazione: cambiava a ogni build del sito senza che la cornice cambiasse, e
+// sporcava ogni commit. Il file cambia solo se cambia la cornice.
 const uscita = {
   fonte: 'veroled.it · dist/tool/index.html (BaseLayout + SiteFooter) — rigenerato da scripts/sync-cornice-sito.mjs, non si ritocca a mano',
-  generatoIl: new Date(statSync(PAGINA).mtime).toISOString(),
   testata,
   menu: menuSenzaCondividi,
   piede,
