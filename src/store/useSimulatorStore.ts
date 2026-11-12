@@ -23,9 +23,20 @@ import {
   AlternativeProposal,
 } from '../core/physics';
 import { DatiSchedaTecnica } from '../core/pdf-parser';
+import {
+  prodottoInterno, profiloInterno, confrontaScenariInterno, nitValidi as nitInterniValidi, wmqBianco, wmqNero,
+  NIT_INTERNO, ORE_INTERNO_INIZIALI, type IdProdottoInterno, type ProdottoInterno,
+} from '../core/interno';
+
+export type Ambiente = 'esterno' | 'interno';
 
 export interface SimulatorState {
   currentStep: number;
+  /** Dove va lo schermo: il ramo «interno» usa le misure del Titan Max MiP (src/core/interno.ts). */
+  ambiente: Ambiente;
+  prodottoInterno: IdProdottoInterno;
+  /** Luminanza d'esercizio in sala, in nit (interno). */
+  nitInterno: number;
   dataSource: 'manual' | 'pdf';
   datiSchedaTecnica?: DatiSchedaTecnica | null;
 
@@ -87,6 +98,9 @@ export interface SimulatorState {
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
+  setAmbiente: (a: Ambiente) => void;
+  setProdottoInterno: (id: IdProdottoInterno) => void;
+  setNitInterno: (nit: number) => void;
   setDataSource: (source: 'manual' | 'pdf') => void;
   setDatiSchedaTecnica: (dati: DatiSchedaTecnica | null) => void;
   setSizingMode: (mode: 'cabinet' | 'dimensions' | 'resolution' | 'comparison') => void;
@@ -125,6 +139,9 @@ export const useSimulatorStore = create<SimulatorState>()(
   persist(
     (set, get) => ({
       currentStep: 0,
+      ambiente: 'esterno',
+      prodottoInterno: 'mip094',
+      nitInterno: NIT_INTERNO.iniziale,
       dataSource: 'manual',
       datiSchedaTecnica: null,
 
@@ -174,9 +191,35 @@ export const useSimulatorStore = create<SimulatorState>()(
       },
 
       setStep: (step) => set({ currentStep: step }),
-      nextStep: () => set((s) => ({ currentStep: Math.min(9, s.currentStep + 1) })),
-      prevStep: () => set((s) => ({ currentStep: Math.max(0, s.currentStep - 1) })),
+      // in interno la fase 5 (riduzione notturna) non ha senso: non c'è notte da seguire, fuori orario c'è il relè
+      nextStep: () => set((s) => {
+        const n = Math.min(9, s.currentStep + 1);
+        return { currentStep: s.ambiente === 'interno' && n === 5 ? 6 : n };
+      }),
+      prevStep: () => set((s) => {
+        const n = Math.max(0, s.currentStep - 1);
+        return { currentStep: s.ambiente === 'interno' && n === 5 ? 4 : n };
+      }),
 
+      setAmbiente: (ambiente) =>
+        set((s) => {
+          if (ambiente === s.ambiente) return {};
+          if (ambiente === 'interno') {
+            // in interno: niente scheda PDF da esterno, cabinet 16:9 del MiP, orari da negozio o sala
+            const p = prodottoInterno(s.prodottoInterno);
+            return {
+              ambiente, dataSource: 'manual', datiSchedaTecnica: null, pitchMm: p.pitchMm,
+              modulesW: 4, modulesH: 4, operatingHoursDay: ORE_INTERNO_INIZIALI, hasNightDimming: false,
+            };
+          }
+          return {
+            ambiente, pitchMm: 3.91, modulesW: 5, modulesH: 3,
+            operatingHoursDay: CONFIG.DEFAULT_OPERATING_HOURS_DAY, hasNightDimming: true,
+          };
+        }),
+      setProdottoInterno: (prodottoInternoId) =>
+        set({ prodottoInterno: prodottoInternoId, pitchMm: prodottoInterno(prodottoInternoId).pitchMm }),
+      setNitInterno: (nit) => set({ nitInterno: nitInterniValidi(nit) }),
       setDataSource: (dataSource) => set({ dataSource }),
       setDatiSchedaTecnica: (datiSchedaTecnica) => {
         if (!datiSchedaTecnica) {
@@ -261,6 +304,9 @@ export const useSimulatorStore = create<SimulatorState>()(
         }
         set({
           currentStep: 0,
+          ambiente: 'esterno',
+          prodottoInterno: 'mip094',
+          nitInterno: NIT_INTERNO.iniziale,
           dataSource: 'manual',
           datiSchedaTecnica: null,
           sizingMode: 'cabinet',
@@ -300,6 +346,9 @@ export const useSimulatorStore = create<SimulatorState>()(
       name: 'ledwall-energy-simulator-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
+        ambiente: s.ambiente,
+        prodottoInterno: s.prodottoInterno,
+        nitInterno: s.nitInterno,
         dataSource: s.dataSource,
         formatId: s.formatId,
         modulesW: s.modulesW,
@@ -326,16 +375,21 @@ export const useSimulatorStore = create<SimulatorState>()(
 // Helpers di calcolo selettivo (computed selectors)
 export function useSimulatorComputed() {
   const state = useSimulatorStore();
-  const format: CabinetFormat =
-    CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
+  const interno = state.ambiente === 'interno';
+  const prodotto: ProdottoInterno = prodottoInterno(state.prodottoInterno);
+  const format: CabinetFormat = interno
+    ? { id: '600x337.5', name: `600 × 337,5 mm (16:9, ${prodotto.nome})`, ...prodotto.cabinet }
+    : CABINET_FORMATS.find((f) => f.id === state.formatId) || CABINET_FORMATS[0];
 
   // Calcolo potenza massima e standby reali basate sul passo pixel selezionato e luminosità target (5.000 nit)
   // Tetto di nit e sforzo dalla combinazione Selection × passo del listino (null = dato non disponibile)
   const tier: TierId = state.tier ?? 'bronze';
   const catalogo = datoCatalogo(tier, state.pitchMm);
   const hardwareEstimate = stimaPotenzaDaPassoNit(state.pitchMm, state.targetOutdoorNits || 5000, undefined, undefined, undefined, true, catalogo);
-  const pMax = state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
-  const pStandby = state.datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(state.pitchMm, tier);
+  const nitInterno = nitInterniValidi(state.nitInterno);
+  // in interno: bianco pieno alla luminanza d'esercizio e schermo nero, dalle misure del MiP
+  const pMax = interno ? wmqBianco(prodotto, nitInterno) : state.datiSchedaTecnica?.pMaxWmq?.valore ?? hardwareEstimate.pMaxWmq;
+  const pStandby = interno ? wmqNero(prodotto) : state.datiSchedaTecnica?.pStandbyWmq?.valore ?? standbyWmqPerPasso(state.pitchMm, tier);
 
   const dimensions: ScreenDimensions = calcolaDimensioniSchermo(
     state.modulesW,
@@ -347,7 +401,9 @@ export function useSimulatorComputed() {
   );
   dimensions.formatName = format.name;
 
-  const profile: DailyEnergyProfile = calcolaProfiloEnergetico(
+  const profile: DailyEnergyProfile = interno
+    ? profiloInterno(prodotto, dimensions.areaM2, state.aplPercent / 100, nitInterno, state.operatingHoursDay, state.hasStandby, state.tariffEurKwh)
+    : calcolaProfiloEnergetico(
     dimensions.areaM2,
     state.aplPercent / 100,
     state.liveLumDiurna / 100,
@@ -360,7 +416,12 @@ export function useSimulatorComputed() {
     pStandby
   );
 
-  const scenario: ScenarioResult = confrontaScenari(
+  const scenario: ScenarioResult = interno
+    ? confrontaScenariInterno(prodotto, dimensions.areaM2, state.aplPercent / 100, nitInterno, state.operatingHoursDay, state.tariffEurKwh, {
+        dimmingAdattivo: state.fleetOptions.dimmingAdattivo,
+        standbyZero: state.fleetOptions.standbyZero,
+      })
+    : confrontaScenari(
     dimensions.areaM2,
     state.aplPercent / 100,
     state.operatingHoursDay,
@@ -375,7 +436,10 @@ export function useSimulatorComputed() {
 
   const isDiamond = state.pitchMm <= 2.9;
   const kwDiurnaA = (profile.dayPowerWmq * dimensions.areaM2) / 1000;
-  const kwDiurnaB = kwDiurnaA * (state.fleetOptions.dimmingAdattivo ? 0.55 : 0.85);
+  // in interno il kW del pomeriggio con Fleet Monitor è quello della luminanza tarata, non un 55% di stima
+  const kwDiurnaB = interno
+    ? kwDiurnaA
+    : kwDiurnaA * (state.fleetOptions.dimmingAdattivo ? 0.55 : 0.85);
 
   const powerQuality: PowerQualityAnalysis = calcolaPowerQuality(
     dimensions.totalCabinets,
@@ -421,5 +485,8 @@ export function useSimulatorComputed() {
     opticalConsulting,
     alternative,
     isDiamond,
+    interno,
+    prodotto,
+    nitInterno,
   };
 }

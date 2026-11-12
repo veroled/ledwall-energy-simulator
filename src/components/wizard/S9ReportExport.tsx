@@ -8,10 +8,11 @@ import { FileDown, Share2, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 
 export const S9ReportExport: React.FC = () => {
   const { lead, setLead, resetToDefaults } = useSimulatorStore();
-  const { dimensions, profile, scenario, powerQuality, opticalConsulting, alternative } = useSimulatorComputed();
+  const { dimensions, profile, scenario, powerQuality, opticalConsulting, alternative, interno, prodotto, nitInterno } = useSimulatorComputed();
   // Il report è un documento che va al cliente: non si genera se i nit impostati superano il tetto
   // di listino della combinazione Selection × passo (tetto noto e superato; il dato mancante non blocca).
-  const nitOltreTetto = alternative.currentHasData && !alternative.currentMeetsBrightness;
+  // in interno il tetto di listino outdoor non c'entra: la luminanza sta già nei 100–1.000 nit del MiP
+  const nitOltreTetto = !interno && alternative.currentHasData && !alternative.currentMeetsBrightness;
   const state = useSimulatorStore();
 
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -26,9 +27,18 @@ export const S9ReportExport: React.FC = () => {
         profile,
         aplPercent: state.aplPercent,
         tariffaEurKwh: state.tariffEurKwh,
-        powerQuality,
-        opticalConsulting,
-        alternative,
+        // in interno niente analisi di rete, ottica e alternativa: sono calcoli da esterno
+        powerQuality: interno ? undefined : powerQuality,
+        opticalConsulting: interno ? undefined : opticalConsulting,
+        alternative: interno ? undefined : alternative,
+        interno: interno
+          ? {
+              prodotto: `${prodotto.nome} ${prodotto.etichettaPasso}`,
+              nit: nitInterno,
+              nitFabbrica: Math.max(prodotto.nitD65, nitInterno),
+              misura: `Misure alla presa su ${prodotto.nome} ${prodotto.passoMisura}: ${prodotto.wNeroCabinet} W col nero e ${prodotto.wBiancoCabinet.toLocaleString('it-IT')} W col bianco a ${prodotto.nitMisura} nit, per cabinet da 600 x 337,5 mm.`,
+            }
+          : undefined,
         userName: lead.name,
         userCompany: lead.company,
         userEmail: lead.email,
@@ -50,6 +60,14 @@ export const S9ReportExport: React.FC = () => {
     url.searchParams.set('apl', String(state.aplPercent));
     url.searchParams.set('hours', String(state.operatingHoursDay));
     url.searchParams.set('tariff', String(state.tariffEurKwh));
+    // ramo interno: senza questi tre il link riapriva la simulazione da esterno
+    if (state.ambiente === 'interno') {
+      url.searchParams.set('amb', 'interno');
+      url.searchParams.set('mip', state.prodottoInterno);
+      url.searchParams.set('nit', String(state.nitInterno));
+    } else {
+      ['amb', 'mip', 'nit'].forEach((k) => url.searchParams.delete(k));
+    }
 
     navigator.clipboard.writeText(url.toString());
     setCopiedUrl(true);
@@ -101,7 +119,7 @@ export const S9ReportExport: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--mute)]">Passo Pixel:</span>
-                  <span className="text-white font-medium">P{dimensions.pitchMm} mm Outdoor</span>
+                  <span className="text-white font-medium">{interno ? `${prodotto.nome} ${prodotto.etichettaPasso}` : `P${dimensions.pitchMm} mm Outdoor`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--mute)]">Risparmio Stimato:</span>
@@ -121,7 +139,7 @@ export const S9ReportExport: React.FC = () => {
 
               <div className="text-[10px] text-[var(--mute)] border-t border-[var(--line)] pt-2 flex justify-between items-center">
                 <span>Modello: Fleet Monitor PRO</span>
-                <span>Garanzia: Fino a 8 anni</span>
+                <span>{interno ? `Cabinet ${prodotto.cabinet.widthMm} × 337,5 mm` : 'Garanzia: Fino a 8 anni'}</span>
               </div>
             </div>
 

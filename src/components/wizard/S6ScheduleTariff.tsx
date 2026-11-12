@@ -9,6 +9,7 @@ export const S6ScheduleTariff: React.FC = () => {
   const {
     operatingHoursDay,
     tariffEurKwh,
+    ambiente,
     setSchedule,
     setTariffRate,
     nextStep,
@@ -31,7 +32,9 @@ export const S6ScheduleTariff: React.FC = () => {
           Orari di accensione e tariffa energetica
         </h2>
         <p className="text-sm text-[var(--mute)] max-w-2xl mx-auto">
-          Imposta le ore di attività diurna del maxischermo e il costo di acquisto dell&apos;elettricità.
+          {ambiente === 'interno'
+            ? 'Imposta per quante ore al giorno lo schermo resta acceso e il costo dell\'elettricità. Fuori orario conta la scelta della fase 4: schermo nero acceso o spento col relè.'
+            : 'Imposta le ore di attività diurna del maxischermo e il costo di acquisto dell\'elettricità.'}
         </p>
       </div>
 
@@ -44,7 +47,8 @@ export const S6ScheduleTariff: React.FC = () => {
               <span>Orario di Accensione Giornaliera:</span>
             </div>
             <span className="text-sm font-semibold text-white tabular-nums">
-              06:00 → {String(6 + operatingHoursDay).padStart(2, '0')}:00 ({operatingHoursDay} ore/giorno)
+              {/* 24 ore davano «06:00 → 30:00»: l'ora si legge modulo 24 */}
+              {operatingHoursDay >= 24 ? 'Sempre acceso' : `06:00 → ${String((6 + operatingHoursDay) % 24).padStart(2, '0')}:00`} ({operatingHoursDay} ore/giorno)
             </span>
           </div>
           <input

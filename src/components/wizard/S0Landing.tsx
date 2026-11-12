@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { ArrowRight, BarChart3, ShieldCheck, Zap } from 'lucide-react';
 
 export const S0Landing: React.FC = () => {
-  const { setStep } = useSimulatorStore();
+  const { setStep, setAmbiente } = useSimulatorStore();
 
   return (
     <motion.div
@@ -22,11 +22,11 @@ export const S0Landing: React.FC = () => {
       </div>
 
       <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white max-w-3xl mx-auto leading-tight">
-        Simulatore Energetico LEDwall Outdoor
+        Simulatore Energetico LEDwall, da esterno e da interno
       </h1>
 
       <p className="text-[var(--mute)] max-w-2xl mx-auto text-base sm:text-lg leading-relaxed">
-        Calcola con precisione ingegneristica i costi energetici reali di un impianto display outdoor e scopri come abbattere <strong className="text-white font-semibold">oltre il 50%</strong> della bolletta con la gestione fotometrica dinamica <strong className="text-white font-semibold">Fleet Monitor VeroLED</strong>.
+        Calcola i costi energetici reali di un impianto LED. Da esterno, scopri come abbattere <strong className="text-white font-semibold">oltre il 50%</strong> della bolletta con la gestione fotometrica dinamica <strong className="text-white font-semibold">Fleet Monitor VeroLED</strong>. Da interno, il calcolo parte dalle nostre misure sul <strong className="text-white font-semibold">Titan Max MiP</strong>.
       </p>
 
       <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -40,10 +40,19 @@ export const S0Landing: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setStep(1)}
+          onClick={() => { setAmbiente('esterno'); setStep(1); }}
           className="w-full sm:w-auto px-5 py-3 rounded-lg font-semibold text-[var(--text)] bg-[var(--s1)] border border-[var(--line)] hover:bg-[var(--s2)] hover:border-[var(--s3)] transition-colors text-sm flex items-center justify-center space-x-2 cursor-pointer"
         >
           <span>Wizard completo (9 step)</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setAmbiente('interno'); setStep(1); }}
+          className="w-full sm:w-auto px-5 py-3 rounded-lg font-semibold text-[var(--text)] bg-[var(--s1)] border border-[var(--line)] hover:bg-[var(--s2)] hover:border-[var(--s3)] transition-colors text-sm flex items-center justify-center space-x-2 cursor-pointer"
+        >
+          <span>Ledwall da interno</span>
           <ArrowRight className="w-4 h-4" />
         </button>
 

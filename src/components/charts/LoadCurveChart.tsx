@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'recharts';
 import { useSimulatorComputed, useSimulatorStore } from '../../store/useSimulatorStore';
+import { potenzaInternoWmq, wmqNero } from '../../core/interno';
 
 // Curva fotometrica solare reale (Standard DIN 5034 / CIE):
 // Alba ore 06:00 (bassa luce), Picco irraggiamento ore 13:00 (massimo lux), Tramonto ore 20:30, Crepuscolo ore 21:30
@@ -21,8 +22,8 @@ function getSolarLuxFactor(hour: number): number {
 }
 
 export const LoadCurveChart: React.FC = () => {
-  const { dimensions, profile } = useSimulatorComputed();
-  const { operatingHoursDay, hasNightDimming, nightDimmingPercent, liveLumDiurna, aplPercent, hasStandby } =
+  const { dimensions, profile, interno, prodotto, nitInterno } = useSimulatorComputed();
+  const { operatingHoursDay, hasNightDimming, nightDimmingPercent, liveLumDiurna, aplPercent, hasStandby, fleetOptions } =
     useSimulatorStore();
 
   // Genera 24 punti orari (00:00 -> 23:00)
@@ -36,6 +37,21 @@ export const LoadCurveChart: React.FC = () => {
   for (let hour = 0; hour < 24; hour++) {
     const isDay = hour >= startDay && hour < endDay;
     const timeLabel = `${String(hour).padStart(2, '0')}:00`;
+
+    // Interno (12/11/2026): stesso calcolo del confronto fra scenari, dalle misure del MiP.
+    // A: almeno i 600 nit di fabbrica, schermo nero acceso fuori orario. B: nit tarati e relè.
+    if (interno) {
+      const kw = (wmq: number) => Math.round(((wmq * dimensions.areaM2) / 1000) * 100) / 100;
+      const nitA = Math.max(prodotto.nitD65, nitInterno);
+      const nitB = fleetOptions.dimmingAdattivo ? nitInterno : nitA;
+      const acceso = operatingHoursDay >= 24 || isDay;
+      data.push({
+        time: timeLabel,
+        'Scenario A (Non Gestito)': kw(acceso ? potenzaInternoWmq(prodotto, aplPercent / 100, nitA) : wmqNero(prodotto)),
+        'Scenario B (Fleet Monitor)': kw(acceso ? potenzaInternoWmq(prodotto, aplPercent / 100, nitB) : fleetOptions.standbyZero ? 0 : wmqNero(prodotto)),
+      });
+      continue;
+    }
 
     // Scenario A: Non Gestito (senza sensori lux)
     let kwA = 0;
@@ -78,7 +94,15 @@ export const LoadCurveChart: React.FC = () => {
             Curva di Carico 24h (Potenza kW assorbita)
           </span>
           <span className="text-xs text-[var(--mute)] block">
-            <span className="text-[var(--alarm)] font-medium">Scenario A (Non Gestito)</span>: 100% fisso · <span className="text-[var(--ok)] font-medium">Scenario B (Fleet Monitor)</span>: sensore Lux VeroLED
+            {interno ? (
+              <>
+                <span className="text-[var(--alarm)] font-medium">Scenario A (Non Gestito)</span>: {Math.max(prodotto.nitD65, nitInterno)} nit, nero acceso fuori orario · <span className="text-[var(--ok)] font-medium">Scenario B (Fleet Monitor)</span>: nit tarati e relè
+              </>
+            ) : (
+              <>
+                <span className="text-[var(--alarm)] font-medium">Scenario A (Non Gestito)</span>: 100% fisso · <span className="text-[var(--ok)] font-medium">Scenario B (Fleet Monitor)</span>: sensore Lux VeroLED
+              </>
+            )}
           </span>
         </div>
         <span className="text-xs font-medium text-[var(--text)] bg-[var(--s1)] border border-[var(--line)] px-2 py-1 rounded-md self-start sm:self-auto tabular-nums">

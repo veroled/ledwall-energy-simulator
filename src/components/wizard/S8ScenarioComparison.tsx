@@ -9,9 +9,11 @@ import { Check, X, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export const S8ScenarioComparison: React.FC = () => {
   const { fleetOptions, toggleFleetOption, nextStep, prevStep } = useSimulatorStore();
-  const { scenario, powerQuality } = useSimulatorComputed();
+  const { scenario, powerQuality, interno, prodotto, nitInterno, pStandby } = useSimulatorComputed();
 
-  const isClaimVerified = scenario.savingsPercent >= CONFIG.CLAIM_SAVINGS_PERCENT;
+  // ⛔ in interno nessuna soglia di risparmio da «confermare»: il 50% è tarato sugli esterni
+  const isClaimVerified = !interno && scenario.savingsPercent >= CONFIG.CLAIM_SAVINGS_PERCENT;
+  const nitA = Math.max(prodotto.nitD65, nitInterno);
 
   return (
     <motion.div
@@ -37,7 +39,9 @@ export const S8ScenarioComparison: React.FC = () => {
         <div className="flex items-center justify-center space-x-2 text-xs font-semibold text-[var(--ok)] uppercase tracking-wider">
           <ShieldCheck className="w-4 h-4 text-[var(--ok)]" />
           <span>
-            {isClaimVerified
+            {interno
+              ? 'Risparmio con Fleet Monitor, dalle misure del Titan Max MiP'
+              : isClaimVerified
               ? `Risparmio superiore al ${CONFIG.CLAIM_SAVINGS_PERCENT}% confermato`
               : 'Risparmio inferiore alla soglia ottimale (riattiva i controlli)'}
           </span>
@@ -63,6 +67,18 @@ export const S8ScenarioComparison: React.FC = () => {
               <span className="font-semibold text-[var(--alarm)] text-base">Scenario A: Non Gestito</span>
               <span className="text-xs text-[var(--mute)]">Standard mercato</span>
             </div>
+            {interno ? (
+            <ul className="text-xs text-[var(--mute)] space-y-3">
+              <li className="flex items-center space-x-2.5">
+                <X className="w-4 h-4 flex-shrink-0 text-[var(--alarm)]" />
+                <span className="text-[var(--text)]">{nitA} nit fissi, la taratura di fabbrica</span>
+              </li>
+              <li className="flex items-center space-x-2.5">
+                <X className="w-4 h-4 flex-shrink-0 text-[var(--alarm)]" />
+                <span className="text-[var(--text)]">Fuori orario schermo nero ma acceso: {Math.round(pStandby)} W/m² ({prodotto.wNeroCabinet} W a cabinet)</span>
+              </li>
+            </ul>
+            ) : (
             <ul className="text-xs text-[var(--mute)] space-y-3">
               <li className="flex items-center space-x-2.5">
                 <X className="w-4 h-4 flex-shrink-0 text-[var(--alarm)]" />
@@ -81,6 +97,7 @@ export const S8ScenarioComparison: React.FC = () => {
                 <span className="text-[var(--text)]">Alimentatori costantemente caldi ed usura accelerata LED</span>
               </li>
             </ul>
+            )}
           </div>
 
           <div className="pt-4 border-t border-[rgb(var(--alarm-rgb)/35%)] flex justify-between items-baseline">
@@ -115,13 +132,14 @@ export const S8ScenarioComparison: React.FC = () => {
               >
                 <div className="flex items-center space-x-2">
                   <Check className="w-3.5 h-3.5 text-[var(--ok)]" />
-                  <span className="text-[var(--text)] font-medium">Dimming Adattivo su APL</span>
+                  <span className="text-[var(--text)] font-medium">{interno ? `Luminanza tarata a ${nitInterno} nit` : 'Dimming Adattivo su APL'}</span>
                 </div>
                 <span className={`font-semibold ${fleetOptions.dimmingAdattivo ? 'text-[var(--ok)]' : 'text-[var(--mute)]'}`}>
                   {fleetOptions.dimmingAdattivo ? 'Attivo' : 'Escluso'}
                 </span>
               </button>
 
+              {!interno && (
               <button
                 type="button"
                 onClick={() => toggleFleetOption('dimmingNotturno')}
@@ -135,6 +153,7 @@ export const S8ScenarioComparison: React.FC = () => {
                   {fleetOptions.dimmingNotturno ? 'Attivo' : 'Escluso'}
                 </span>
               </button>
+              )}
 
               <button
                 type="button"
@@ -143,13 +162,14 @@ export const S8ScenarioComparison: React.FC = () => {
               >
                 <div className="flex items-center space-x-2">
                   <Check className="w-3.5 h-3.5 text-[var(--ok)]" />
-                  <span className="text-[var(--text)] font-medium">Standby Notturno Zero (Relè Smart)</span>
+                  <span className="text-[var(--text)] font-medium">{interno ? 'Spento col relè fuori orario' : 'Standby Notturno Zero (Relè Smart)'}</span>
                 </div>
                 <span className={`font-semibold ${fleetOptions.standbyZero ? 'text-[var(--ok)]' : 'text-[var(--mute)]'}`}>
                   {fleetOptions.standbyZero ? 'Attivo' : 'Escluso'}
                 </span>
               </button>
 
+              {!interno && (
               <button
                 type="button"
                 onClick={() => toggleFleetOption('sensoreLux')}
@@ -163,6 +183,7 @@ export const S8ScenarioComparison: React.FC = () => {
                   {fleetOptions.sensoreLux ? 'Attivo' : 'Escluso'}
                 </span>
               </button>
+              )}
             </div>
           </div>
 
@@ -183,7 +204,8 @@ export const S8ScenarioComparison: React.FC = () => {
       {/* Breakdown Chart */}
       <SavingsBreakdownChart />
 
-      {/* Ingegneria di Rete & Power Quality (Serie Diamond vs Grandi Formati 6x3) */}
+      {/* Ingegneria di Rete & Power Quality (Serie Diamond vs Grandi Formati 6x3): è un'analisi da esterno */}
+      {!interno && (
       <div className="p-6 rounded-xl bg-[var(--s1)] border border-[rgb(var(--ok-rgb)/30%)] shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[var(--line)] pb-3">
           <div className="space-y-0.5">
@@ -290,9 +312,13 @@ export const S8ScenarioComparison: React.FC = () => {
         </div>
       </div>
 
+      )}
+
       {/* Visual Disclaimer */}
       <div className="p-3.5 rounded-xl bg-[var(--s1)] border border-[var(--line)] text-xs text-[var(--mute)] text-center">
-        Valori stimati a scopo dimostrativo secondo i modelli fisici CEI 64-8 e ITU-R BT.709. Il risparmio effettivo può variare in base alla tipologia di contenuti trasmessi.
+        {interno
+          ? `Calcolo sulle nostre misure alla presa su ${prodotto.nome} ${prodotto.passoMisura} (${prodotto.wNeroCabinet} W col nero, ${prodotto.wBiancoCabinet.toLocaleString('it-IT')} W col bianco a ${prodotto.nitMisura} nit, per cabinet). Il consumo effettivo dipende dai contenuti e si misura al collaudo.`
+          : 'Valori stimati a scopo dimostrativo secondo i modelli fisici CEI 64-8 e ITU-R BT.709. Il risparmio effettivo può variare in base alla tipologia di contenuti trasmessi.'}
       </div>
 
       {/* Actions */}

@@ -27,6 +27,8 @@ export interface ReportData {
   userName?: string;
   userCompany?: string;
   userEmail?: string;
+  /** Ramo interno (12/11/2026): niente notte né sensore di luce; le diciture cambiano. */
+  interno?: { prodotto: string; nit: number; nitFabbrica: number; misura: string };
 }
 
 /**
@@ -307,7 +309,7 @@ export function generaReportPdf(data: ReportData): jsPDF {
     scheda(
       [
         ['Potenza in esercizio', `${fmt(data.profile.dayPowerWmq * dim.areaM2)} W`, `${fmt(data.profile.dayPowerWmq)} W/m² con questo contenuto`],
-        ['Ciclo operativo', `${data.profile.dayHours} h + ${data.profile.nightHours} h`, 'piena luminosità + regime notturno'],
+        ['Ciclo operativo', `${data.profile.dayHours} h + ${data.profile.nightHours} h`, data.interno ? `acceso a ${fmt(data.interno.nit)} nit + fuori orario` : 'piena luminosità + regime notturno'],
         ['Tariffa energia', `${fmt(data.tariffaEurKwh, 2)} €/kWh`],
       ],
       M, 140, 3, span(6), 20
@@ -321,11 +323,11 @@ export function generaReportPdf(data: ReportData): jsPDF {
     scheda(
       [
         ['Energia annua', `${fmt(data.profile.annualKwh)} kWh`],
-        ['Energia al giorno', `${fmt(data.profile.totalDailyKwh, 1)} kWh`, `${fmt(data.profile.dayKwh, 1)} diurni + ${fmt(data.profile.nightKwh, 1)} notturni`],
+        ['Energia al giorno', `${fmt(data.profile.totalDailyKwh, 1)} kWh`, data.interno ? `${fmt(data.profile.dayKwh, 1)} da acceso + ${fmt(data.profile.nightKwh, 1)} fuori orario` : `${fmt(data.profile.dayKwh, 1)} diurni + ${fmt(data.profile.nightKwh, 1)} notturni`],
         ['Costo al mese', eur(data.profile.monthlyCostEur)],
         ['Costo al giorno', `€ ${fmt(data.profile.dailyCostEur, 2)}`],
-        ['Regime diurno', `${fmt(data.profile.dayPowerWmq)} W/m²`, `${data.profile.dayHours} ore`],
-        ['Regime notturno', `${fmt(data.profile.nightPowerWmq)} W/m²`, `${data.profile.nightHours} ore`],
+        [data.interno ? 'Acceso' : 'Regime diurno', `${fmt(data.profile.dayPowerWmq)} W/m²`, `${data.profile.dayHours} ore`],
+        [data.interno ? 'Fuori orario' : 'Regime notturno', `${fmt(data.profile.nightPowerWmq)} W/m²`, `${data.profile.nightHours} ore`],
         ['Emissioni', `${fmt((data.profile.annualKwh * 0.305) / 1000, 2)} t CO2`, '0,305 kg CO2 per kWh, rete italiana'],
         ['Tariffa', `${fmt(data.tariffaEurKwh, 2)} €/kWh`],
       ],
@@ -336,7 +338,9 @@ export function generaReportPdf(data: ReportData): jsPDF {
   // ───────────────────────── 04 · LA GESTIONE ─────────────────────────
   tavole.push(() => {
     const sc = data.scenario;
-    cornice('04', 'LA GESTIONE', 'La gestione come strumento.', 'Lo stesso impianto in due regimi: luminosità fissa giorno e notte, oppure governata da Fleet Monitor con sensore di luce, dimming notturno e distacco a schermo spento. Valori stimati dal modello.');
+    cornice('04', 'LA GESTIONE', 'La gestione come strumento.', data.interno
+      ? `Lo stesso impianto in due regimi: ${fmt(data.interno.nitFabbrica)} nit di fabbrica e schermo nero acceso fuori orario, oppure luminanza tarata a ${fmt(data.interno.nit)} nit e relè fuori orario con Fleet Monitor. ${data.interno.misura}`
+      : 'Lo stesso impianto in due regimi: luminosità fissa giorno e notte, oppure governata da Fleet Monitor con sensore di luce, dimming notturno e distacco a schermo spento. Valori stimati dal modello.');
     const bx = M, bw = span(7);
     const maxKwh = Math.max(sc.annualKwhA, sc.annualKwhB, 1);
     mono(6.2, TITANIO);
@@ -356,9 +360,12 @@ export function generaReportPdf(data: ReportData): jsPDF {
     sans(11, BIANCO);
     doc.text(`${eur(sc.savingsEur)} all'anno`, colX(8), 114);
     mono(5.8, TITANIO);
-    doc.text(doc.splitTextToSize('Rispetto al regime A, non alla bolletta della tavola 03, che applica già il dimming notturno.', span(4)) as string[], colX(8), 120);
+    doc.text(doc.splitTextToSize(data.interno ? 'Rispetto al regime A, non alla bolletta della tavola 03, che applica già le scelte della simulazione.' : 'Rispetto al regime A, non alla bolletta della tavola 03, che applica già il dimming notturno.', span(4)) as string[], colX(8), 120);
 
-    const voci: [string, number, string][] = [
+    const voci: [string, number, string][] = data.interno ? [
+      [`Luminanza tarata a ${fmt(data.interno.nit)} nit`, sc.breakdown.adaptiveLuxEur, `invece dei ${fmt(data.interno.nitFabbrica)} nit di fabbrica`],
+      ['Relè fuori orario', sc.breakdown.standbyZeroEur, 'schermo spento invece che nero e acceso'],
+    ] : [
       ['Sensore di luce e dimming adattivo', sc.breakdown.adaptiveLuxEur, 'la luminanza diurna segue l\'ambiente'],
       ['Dimming notturno', sc.breakdown.nightDimmingEur, 'regime serale conforme ai limiti di luminanza'],
       ['Distacco a schermo spento', sc.breakdown.standbyZeroEur, 'azzera l\'assorbimento dell\'elettronica'],

@@ -13,10 +13,24 @@ import {
 import { useSimulatorComputed } from '../../store/useSimulatorStore';
 
 export const SavingsBreakdownChart: React.FC = () => {
-  const { scenario } = useSimulatorComputed();
+  const { scenario, interno, nitInterno, pStandby } = useSimulatorComputed();
   const { breakdown, savingsEur } = scenario;
 
-  const data = [
+  // in interno: niente riduzione notturna; il risparmio viene dalla luminanza tarata e dal relè fuori orario
+  const data = interno ? [
+    {
+      name: `Luminanza tarata a ${nitInterno} nit`,
+      valore: Math.round(breakdown.adaptiveLuxEur),
+      colore: 'var(--focus)',
+      desc: 'Lo schermo lavora alla luminanza scelta invece che ai 600 nit di fabbrica',
+    },
+    {
+      name: 'Relè fuori orario',
+      valore: Math.round(breakdown.standbyZeroEur),
+      colore: 'var(--ok)',
+      desc: `Schermo spento invece che nero e acceso: ${Math.round(pStandby)} W/m² in meno fuori orario`,
+    },
+  ] : [
     {
       name: 'Dimming Notturno (10%)',
       valore: Math.round(breakdown.nightDimmingEur),
@@ -33,7 +47,7 @@ export const SavingsBreakdownChart: React.FC = () => {
       name: 'Standby Zero (Relè Smart)',
       valore: Math.round(breakdown.standbyZeroEur),
       colore: 'var(--ok)',
-      desc: 'Azzeramento integrale dei 50 W/m² passivi a display spento',
+      desc: `Azzeramento integrale dei ${Math.round(pStandby)} W/m² passivi a display spento`,
     },
   ];
 
