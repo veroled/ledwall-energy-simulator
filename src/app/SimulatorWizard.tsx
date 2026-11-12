@@ -8,6 +8,7 @@ import { WizardHeader } from '../components/wizard/WizardHeader';
 import { S0Landing } from '../components/wizard/S0Landing';
 import { S1DataSource } from '../components/wizard/S1DataSource';
 import { S2Dimensions } from '../components/wizard/S2Dimensions';
+import { S2Interno } from '../components/wizard/S2Interno';
 import { S3AplEngine } from '../components/wizard/S3AplEngine';
 import { S4Standby } from '../components/wizard/S4Standby';
 import { S5NightDimming } from '../components/wizard/S5NightDimming';
@@ -19,6 +20,10 @@ import { S9ReportExport } from '../components/wizard/S9ReportExport';
 export function SimulatorWizard() {
   const {
     currentStep,
+    ambiente,
+    setAmbiente,
+    setProdottoInterno,
+    setNitInterno,
     setModulesW,
     setModulesH,
     setPitchMm,
@@ -39,6 +44,14 @@ export function SimulatorWizard() {
       const apl = params.get('apl');
       const hours = params.get('hours');
       const tariff = params.get('tariff');
+      // il link del ramo interno (prima delle misure: cambiare ambiente reimposta griglia e orari)
+      if (params.get('amb') === 'interno') {
+        setAmbiente('interno');
+        const mip = params.get('mip');
+        if (mip === 'mip078' || mip === 'mip094') setProdottoInterno(mip);
+        const nit = params.get('nit');
+        if (nit) setNitInterno(parseInt(nit, 10));
+      }
 
       if (w) setModulesW(parseInt(w, 10));
       if (h) setModulesH(parseInt(h, 10));
@@ -51,7 +64,7 @@ export function SimulatorWizard() {
         );
       }
     }
-  }, [setModulesW, setModulesH, setPitchMm, setAplPercent, setSchedule]);
+  }, [setModulesW, setModulesH, setPitchMm, setAplPercent, setSchedule, setAmbiente, setProdottoInterno, setNitInterno]);
 
   if (!mounted) {
     return (
@@ -70,7 +83,8 @@ export function SimulatorWizard() {
       case 1:
         return <S1DataSource key="s1" />;
       case 2:
-        return <S2Dimensions key="s2" />;
+        // il ramo interno ha il suo dimensionamento (Titan Max MiP, cabinet 16:9)
+        return ambiente === 'interno' ? <S2Interno key="s2i" /> : <S2Dimensions key="s2" />;
       case 3:
         return <S3AplEngine key="s3" />;
       case 4:

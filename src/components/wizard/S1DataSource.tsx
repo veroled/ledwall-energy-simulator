@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSimulatorStore } from '../../store/useSimulatorStore';
+import { prodottoInterno } from '../../core/interno';
 import { estraiTestoDaPdf, analizzaTestoSchedaTecnica, DatiSchedaTecnica } from '../../core/pdf-parser';
 import { FileText, Settings, Upload, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export const S1DataSource: React.FC = () => {
-  const { dataSource, setDataSource, setDatiSchedaTecnica, nextStep } = useSimulatorStore();
+  const { dataSource, setDataSource, setDatiSchedaTecnica, nextStep, ambiente, setAmbiente, prodottoInterno: idInterno } = useSimulatorStore();
+  const mip = prodottoInterno(idInterno);
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedData, setExtractedData] = useState<DatiSchedaTecnica | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,6 +56,42 @@ export const S1DataSource: React.FC = () => {
         </p>
       </div>
 
+      {/* Dove va lo schermo (12/11/2026): il ramo interno usa le misure del Titan Max MiP */}
+      <div className="space-y-2">
+        <div className="text-xs font-medium text-[var(--mute)]">Dove va lo schermo?</div>
+        <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Dove va lo schermo">
+          {(['esterno', 'interno'] as const).map((a) => (
+            <button
+              key={a}
+              type="button"
+              role="radio"
+              aria-checked={ambiente === a}
+              onClick={() => setAmbiente(a)}
+              className={`min-h-12 px-4 py-3 rounded-lg border text-left text-sm font-semibold transition-colors cursor-pointer ${
+                ambiente === a ? 'border-2 border-[var(--ok)] text-white bg-[rgb(var(--ok-rgb)/10%)]' : 'border-[var(--line)] text-[var(--text)] bg-[var(--s1)] hover:border-[var(--s3)]'
+              }`}
+            >
+              {a === 'esterno' ? 'All\'esterno' : 'In interno'}
+              <span className="block text-xs font-normal text-[var(--mute)] mt-0.5">
+                {a === 'esterno' ? 'Facciate, DOOH, piazze: luce del sole e notte' : 'Sale controllo, negozi, sale riunioni'}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {ambiente === 'interno' ? (
+        <div className="p-6 rounded-lg bg-[var(--s1)] border border-[var(--line)] space-y-3">
+          <h3 className="font-semibold text-white text-base">{mip.nome}: i consumi misurati</h3>
+          <p className="text-xs text-[var(--mute)] leading-relaxed">
+            Il calcolo parte dalle nostre misure alla presa su un cabinet {mip.nome} {mip.passoMisura} da 600 × 337,5 mm:
+            {' '}<strong className="text-white">{mip.wNeroCabinet} W</strong> con lo schermo acceso e nero,
+            {' '}<strong className="text-white">{mip.wBiancoCabinet.toLocaleString('it-IT')} W</strong> col bianco pieno a {mip.nitMisura} nit (calibrazione D65).
+            Fra i due valori la potenza cresce col contenuto e con la luminanza; oltre i {mip.nitMisura} nit, fino ai {mip.nitMax.toLocaleString('it-IT')} a D93, è una stima.
+          </p>
+          <a href={mip.scheda} className="text-xs font-medium text-[var(--text)] underline underline-offset-2">Scheda del {mip.nome}</a>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
         {/* Option A: Upload PDF */}
         <div
@@ -138,7 +176,9 @@ export const S1DataSource: React.FC = () => {
         </div>
       </div>
 
-      {extractedData && (
+      )}
+
+      {ambiente === 'esterno' && extractedData && (
         <div className="p-4 rounded-lg bg-[var(--s1)] border border-[var(--line)] text-xs text-[var(--mute)] space-y-1.5">
           <div className="text-white font-semibold">Parametri rilevati dalla scheda tecnica:</div>
           <div className="grid grid-cols-2 gap-2 pt-1">

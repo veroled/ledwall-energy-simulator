@@ -6,11 +6,14 @@ import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulato
 import { AlertCircle, ArrowRight } from 'lucide-react';
 
 export const S4Standby: React.FC = () => {
-  const { hasStandby, setHasStandby, nextStep } = useSimulatorStore();
-  const { dimensions } = useSimulatorComputed();
+  const { hasStandby, setHasStandby, nextStep, tariffEurKwh } = useSimulatorStore();
+  const { dimensions, pStandby, profile, interno, prodotto } = useSimulatorComputed();
 
-  const annualStandbyKwh = (((50 * dimensions.areaM2) / 1000) * 6 * 365).toFixed(0);
-  const annualStandbyEur = (((50 * dimensions.areaM2) / 1000) * 6 * 365 * 0.35).toFixed(0);
+  // Standby, ore fuori orario e tariffa sono quelli della simulazione, non un 50 W/m² × 6 ore × 0,35 € scritto a mano
+  const standbyWmq = Math.round(pStandby);
+  const oreFuori = profile.nightHours;
+  const annualStandbyKwh = (((pStandby * dimensions.areaM2) / 1000) * oreFuori * 365).toFixed(0);
+  const annualStandbyEur = (((pStandby * dimensions.areaM2) / 1000) * oreFuori * 365 * tariffEurKwh).toFixed(0);
 
   return (
     <motion.div
@@ -44,11 +47,13 @@ export const S4Standby: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="font-semibold text-white text-base">SÌ: Resta in Standby</span>
             <span className="text-xs font-semibold text-[var(--alarm)] bg-[rgb(var(--alarm-rgb)/35%)] px-2.5 py-0.5 rounded">
-              50 W/m² fisso
+              {standbyWmq} W/m² fisso
             </span>
           </div>
           <p className="text-xs text-[var(--mute)] leading-relaxed">
-            Comportamento standard del 90% degli schermi LED sul mercato. Il pannello è oscurato ma le schede riceventi e gli alimentatori restano sotto tensione H24.
+            {interno
+              ? `Lo schermo è nero ma acceso: schede riceventi e alimentatori restano sotto tensione. Misurato da noi su ${prodotto.nome} ${prodotto.passoMisura}: ${prodotto.wNeroCabinet} W per cabinet da 600 × 337,5 mm.`
+              : 'Comportamento standard del 90% degli schermi LED sul mercato. Il pannello è oscurato ma le schede riceventi e gli alimentatori restano sotto tensione H24.'}
           </p>
         </div>
 
@@ -76,7 +81,7 @@ export const S4Standby: React.FC = () => {
       <div className="p-4 rounded-xl bg-[var(--s1)] border border-[var(--line)] text-xs text-[var(--mute)] flex items-start space-x-3">
         <AlertCircle className="w-5 h-5 flex-shrink-0 text-[var(--mute)] mt-0.5" />
         <div className="leading-relaxed">
-          Sul tuo schermo ({dimensions.areaM2.toFixed(1)} m²), 50 W/m² in standby per 6 ore notturne equivalgono a circa{' '}
+          Sul tuo schermo ({dimensions.areaM2.toFixed(1)} m²), {standbyWmq} W/m² in standby per {oreFuori} ore {interno ? 'fuori orario' : 'notturne'} equivalgono a circa{' '}
           <strong className="text-white font-semibold tabular-nums">{annualStandbyKwh} kWh sprecati all&apos;anno</strong> (~
           <span className="tabular-nums font-semibold text-white">{annualStandbyEur} €/anno</span> a schermo spento).
         </div>
@@ -88,7 +93,7 @@ export const S4Standby: React.FC = () => {
           onClick={nextStep}
           className="px-6 py-2.5 rounded-lg bg-[var(--pieno-fondo)] hover:bg-[var(--pieno-fondo-hover)] text-[var(--pieno-testo)] font-semibold text-xs tracking-wider flex items-center space-x-2 transition-colors shadow-sm cursor-pointer"
         >
-          <span>Continua al Dimming Notturno</span>
+          <span>{interno ? 'Continua a orari e tariffa' : 'Continua al Dimming Notturno'}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

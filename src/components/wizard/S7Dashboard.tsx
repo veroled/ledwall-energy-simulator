@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSimulatorStore, useSimulatorComputed } from '../../store/useSimulatorStore';
+import { wmqNero } from '../../core/interno';
 import { CircularGauge } from '../ui/CircularGauge';
 import { LoadCurveChart } from '../charts/LoadCurveChart';
 import { analizzaVideoApl, analizzaFotoApl } from '../../core/apl-engine';
@@ -29,6 +30,8 @@ export const S7Dashboard: React.FC = () => {
     videoFileName,
     setLiveLumDiurna,
     setAplPercent,
+    nitInterno,
+    setNitInterno,
     nextStep,
     prevStep,
   } = useSimulatorStore();
@@ -39,6 +42,8 @@ export const S7Dashboard: React.FC = () => {
     scenario,
     instantaneousPowerKw,
     maxNominalPowerKw,
+    interno,
+    prodotto,
   } = useSimulatorComputed();
 
   const [isAnalyzingVideo, setIsAnalyzingVideo] = useState(false);
@@ -189,8 +194,17 @@ export const S7Dashboard: React.FC = () => {
               </div>
             </div>
             <div className="pt-2 border-t border-[rgb(var(--alarm-rgb)/35%)] text-xs text-[var(--text)] space-y-1">
-              <div>Luminosità fissa 100% (senza sensore)</div>
-              <div>Standby passivo di notte (~50 W/m²)</div>
+              {interno ? (
+                <>
+                  <div>{Math.max(prodotto.nitD65, nitInterno)} nit fissi (taratura di fabbrica)</div>
+                  <div>Schermo nero acceso fuori orario (~{Math.round(wmqNero(prodotto))} W/m²)</div>
+                </>
+              ) : (
+                <>
+                  <div>Luminosità fissa 100% (senza sensore)</div>
+                  <div>Standby passivo di notte (~50 W/m²)</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -210,8 +224,17 @@ export const S7Dashboard: React.FC = () => {
               </div>
             </div>
             <div className="pt-2 border-t border-[rgb(var(--ok-rgb)/30%)] text-xs text-[var(--text)] space-y-1">
-              <div>Sensore Lux modulante in tempo reale</div>
-              <div>Standby Zero reale a relè (0 kW)</div>
+              {interno ? (
+                <>
+                  <div>Luminanza tarata a {nitInterno} nit</div>
+                  <div>Spento col relè fuori orario (0 kW)</div>
+                </>
+              ) : (
+                <>
+                  <div>Sensore Lux modulante in tempo reale</div>
+                  <div>Standby Zero reale a relè (0 kW)</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -256,7 +279,7 @@ export const S7Dashboard: React.FC = () => {
           <div className="bg-[var(--s1)] p-5 rounded-xl border border-[var(--line)] shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
               <span className="text-xs text-[var(--mute)] font-medium uppercase tracking-wide">Potenza Attiva Istantanea:</span>
-              <span className="text-[10px] text-[var(--ok)] font-semibold">Luce Diurna</span>
+              <span className="text-[10px] text-[var(--ok)] font-semibold">{interno ? 'Acceso' : 'Luce Diurna'}</span>
             </div>
             <div className="text-2xl font-semibold text-white tabular-nums mt-1">
               {instantaneousPowerKw.toFixed(2)} kW
@@ -452,6 +475,24 @@ export const S7Dashboard: React.FC = () => {
             />
           </div>
 
+          {interno ? (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-[var(--mute)] font-medium">Luminanza in sala:</span>
+                <span className="text-white font-semibold tabular-nums">{nitInterno} nit</span>
+              </div>
+              <input
+                type="range"
+                min="100"
+                max="1000"
+                step="10"
+                value={nitInterno}
+                onChange={(e) => setNitInterno(parseInt(e.target.value, 10))}
+                className="w-full custom-slider cursor-pointer"
+                aria-label="Luminanza in sala"
+              />
+            </div>
+          ) : (
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-[var(--mute)] font-medium">Luminosità diurna di picco:</span>
@@ -466,6 +507,7 @@ export const S7Dashboard: React.FC = () => {
               className="w-full custom-slider cursor-pointer"
             />
           </div>
+          )}
         </div>
       </div>
 

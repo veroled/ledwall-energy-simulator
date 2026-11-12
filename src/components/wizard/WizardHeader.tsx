@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Zap } from 'lucide-react';
 
 export const WizardHeader: React.FC = () => {
-  const { currentStep, prevStep, nextStep, setStep } = useSimulatorStore();
+  const { currentStep, prevStep, nextStep, setStep, ambiente } = useSimulatorStore();
 
   const stepTitles = [
     'Panoramica',
     'Fonte Dati',
     'Dimensioni & Cabinet',
     'APL & Video',
-    'Standby Zero',
+    ambiente === 'interno' ? 'Standby e relè' : 'Standby Zero',
     'Dimming Notte',
     'Orari & Tariffa',
     'Dashboard Realtime',
@@ -69,7 +69,7 @@ export const WizardHeader: React.FC = () => {
       {/* I passi del wizard: il passo attivo sottolineato nel colore del testo */}
       <div className="bg-[var(--bg)] border-t border-[var(--line)] overflow-x-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-xs font-medium text-[var(--mute)]">
-          {stepTitles.map((title, idx) => (
+          {stepTitles.map((title, idx) => (ambiente === 'interno' && idx === 5 ? null : (
             <button
               key={idx}
               onClick={() => setStep(idx)}
@@ -81,7 +81,7 @@ export const WizardHeader: React.FC = () => {
             >
               {idx}. {title}
             </button>
-          ))}
+          )))}
         </div>
       </div>
     </header>
